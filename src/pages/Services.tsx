@@ -5,15 +5,18 @@ import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 import { storage } from '@/lib/storage';
 import { Clock } from 'lucide-react';
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { cn } from '@/lib/utils';
 
 const Services = () => {
   const services = storage.getServices();
+  const [containerRef, containerVisible] = useScrollAnimation();
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="pt-32 pb-20 px-4">
+      <div ref={containerRef} className={cn("pt-32 pb-20 px-4 transition-opacity duration-700 ease-out", containerVisible ? "animate-fade-in-up" : "opacity-0")}>
         <div className="container mx-auto">
           <h1 className="text-5xl font-bold text-center mb-4">
             Nossos <span className="text-primary">Serviços</span>
@@ -23,8 +26,8 @@ const Services = () => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {services.map((service) => (
-              <Card key={service.id} className="p-8 border-border hover:border-primary transition-all hover:shadow-lg">
+            {services.map((service, index) => (
+              <Card key={service.id} className={cn("p-8 border-border hover:border-primary transition-all hover:shadow-lg", containerVisible ? `animate-fade-in-up animation-delay-${index * 100}` : "opacity-0")}>
                 <h3 className="text-2xl font-bold mb-3">{service.name}</h3>
                 <p className="text-muted-foreground mb-6">{service.description}</p>
                 

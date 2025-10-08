@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,6 +127,14 @@ const Dashboard = () => {
               <Users className="w-12 h-12 text-primary mb-4" />
               <h3 className="text-xl font-bold mb-2">Clientes</h3>
               <p className="text-muted-foreground">Base de clientes e histórico</p>
+            </Card>
+          </Link>
+
+          <Link to="/admin/reports">
+            <Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer">
+              <TrendingUp className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Relatórios</h3>
+              <p className="text-muted-foreground">Análise de vendas e desempenho</p>
             </Card>
           </Link>
         </div>

@@ -71,42 +71,40 @@ const Dashboard = () => {
   const isStaff = user.role === 'admin' || user.role === 'barber';
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
-      <div className="pt-32 pb-20 px-4">
-          <div> {/* New div */}
-          <div className="container mx-auto max-w-6xl">
-            <h1 className="text-4xl font-bold mb-8 px-4 text-center lg:text-left">
-              Meu Painel
-            </h1>
-            <MiniProfile user={user} setIsEditProfileOpen={setIsEditProfileOpen} bestBarber={bestBarber} className="mb-24" /> {/* Increased mb to mb-24 for even more spacing */}
-            <div className="flex flex-col gap-8 mt-8"> {/* Main content wrapper, added mt-8 */}
-                {isStaff ? <StaffView user={user} /> : <ClientView user={user} />}
-            </div>
-          </div> {/* Closing tag for container mx-auto max-w-6xl */}
-          {/* Edit Profile Dialog */}
-          <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Editar Perfil</DialogTitle></DialogHeader>
-              <div className="py-4 space-y-4">
-                <div>
-                  <Label htmlFor="edit-avatarUrl">URL do Avatar</Label>
-                  <Input id="edit-avatarUrl" value={editProfileData.avatarUrl} onChange={(e) => setEditProfileData({ ...editProfileData, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" />
-                </div>
-                <div>
-                  <Label htmlFor="edit-favoriteProducts">Produtos Favoritos (separados por vírgula)</Label>
-                  <Textarea id="edit-favoriteProducts" value={editProfileData.favoriteProducts} onChange={(e) => setEditProfileData({ ...editProfileData, favoriteProducts: e.target.value })} placeholder="Pomada, Shampoo" />
-                </div>
+      <main className="flex-grow pt-32 pb-20 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <h1 className="text-4xl font-bold mb-8 px-4 text-center lg:text-left">
+            Meu Painel
+          </h1>
+          <MiniProfile user={user} setIsEditProfileOpen={setIsEditProfileOpen} bestBarber={bestBarber} className="mb-24" /> {/* Increased mb to mb-24 for even more spacing */}
+          <div className="flex flex-col gap-8 mt-8"> {/* Main content wrapper, added mt-8 */}
+            {isStaff ? <StaffView user={user} /> : <ClientView user={user} />}
+          </div>
+        </div> {/* Closing tag for container mx-auto max-w-6xl */}
+        {/* Edit Profile Dialog */}
+        <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Editar Perfil</DialogTitle></DialogHeader>
+            <div className="py-4 space-y-4">
+              <div>
+                <Label htmlFor="edit-avatarUrl">URL do Avatar</Label>
+                <Input id="edit-avatarUrl" value={editProfileData.avatarUrl} onChange={(e) => setEditProfileData({ ...editProfileData, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" />
               </div>
-              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-                <Button onClick={handleUpdateProfile}>Salvar Alterações</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Footer />
-        </div> {/* End New div */}
-      </div>
+              <div>
+                <Label htmlFor="edit-favoriteProducts">Produtos Favoritos (separados por vírgula)</Label>
+                <Textarea id="edit-favoriteProducts" value={editProfileData.favoriteProducts} onChange={(e) => setEditProfileData({ ...editProfileData, favoriteProducts: e.target.value })} placeholder="Pomada, Shampoo" />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
+              <Button onClick={handleUpdateProfile}>Salvar Alterações</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
+      <Footer />
     </div>
   );
 
