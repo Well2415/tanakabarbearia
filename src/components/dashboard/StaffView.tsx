@@ -41,11 +41,21 @@ export const StaffView = ({ user }: StaffViewProps) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link to="/admin/appointments"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Calendar className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Agendamentos</h3><p className="text-muted-foreground">Gerencie todos os agendamentos</p></Card></Link>
+                <Link to={user.role === 'barber' ? "/my-schedule" : "/admin/appointments"}>
+          <Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between">
+            <Calendar className="w-12 h-12 text-primary mb-4" />
+            <h3 className="text-xl font-bold mb-2">Agendamentos</h3>
+            <p className="text-muted-foreground">
+              {user.role === 'barber' ? 'Visualize seus agendamentos' : 'Gerencie todos os agendamentos'}
+            </p>
+          </Card>
+        </Link>
         
         {user.role === 'barber' && (
-            <Link to="/my-schedule"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Clock className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Meus Horários</h3><p className="text-muted-foreground">Gerencie seus horários de trabalho</p></Card></Link>
+            <Link to="/barber/availability"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Clock className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Minha Disponibilidade</h3><p className="text-muted-foreground">Gerencie suas datas e horários de trabalho</p></Card></Link>
         )}
+        
+
 
         {user.role === 'admin' && (
           <>
