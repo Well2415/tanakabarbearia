@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format, parseISO, startOfDay } from 'date-fns'; // Import format, parseISO, startOfDay
 import { ptBR } from 'date-fns/locale'; // Import ptBR
 import { Barber } from '@/types';
+import { AdminMenu } from '@/components/admin/AdminMenu';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 const COMMON_HOURS = [
   '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -27,7 +29,7 @@ const Barbers = () => {
   const { toast } = useToast();
   const user = storage.getCurrentUser();
   const [barbers, setBarbers] = useState(storage.getBarbers());
-  
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newBarberData, setNewBarberData] = useState({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '' });
 
@@ -43,6 +45,14 @@ const Barbers = () => {
       navigate('/dashboard');
     }
   }, [user, navigate, toast]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('action') === 'new-barber') {
+      setIsAddOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (editingBarber) {
@@ -84,17 +94,18 @@ const Barbers = () => {
 
   const handleUpdateBarber = (e: React.FormEvent) => {
     e.preventDefault();
-    const updatedBarbers = barbers.map(b => 
-      b.id === editingBarber?.id 
-        ? { ...b, 
-            name: editBarberData.name,
-            photo: editBarberData.photo || undefined,
-            yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
-            description: editBarberData.description || undefined,
-            specialties: editBarberData.specialties.split(',').map(s => s.trim()),
-            availableHours: [...editBarberData.availableHours, ...editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')].sort(),
-            availableDates: editBarberData.availableDates, // availableDates is already an array
-          }
+    const updatedBarbers = barbers.map(b =>
+      b.id === editingBarber?.id
+        ? {
+          ...b,
+          name: editBarberData.name,
+          photo: editBarberData.photo || undefined,
+          yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
+          description: editBarberData.description || undefined,
+          specialties: editBarberData.specialties.split(',').map(s => s.trim()),
+          availableHours: [...editBarberData.availableHours, ...editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')].sort(),
+          availableDates: editBarberData.availableDates, // availableDates is already an array
+        }
         : b
     );
     storage.saveBarbers(updatedBarbers);
@@ -112,28 +123,45 @@ const Barbers = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Link to="/dashboard"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Button></Link>
-        </div>
-      </nav>
+      <AdminMenu />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="container mx-auto px-4 py-8 pb-32">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <h2 className="text-3xl font-bold">Gerenciar Barbeiros</h2>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Novo Barbeiro</Button></DialogTrigger>
-            <DialogContent>
+            <DialogTrigger asChild><Button className="hidden md:flex w-full md:w-auto gap-2 h-12 md:h-10 text-lg md:text-base order-first md:order-last"><Plus className="w-5 h-5 md:w-4 h-4" />Novo Barbeiro</Button></DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
               <DialogHeader><DialogTitle>Cadastrar Novo Barbeiro</DialogTitle></DialogHeader>
               <form onSubmit={handleAddNewBarber} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div><Label htmlFor="name">Nome</Label><Input id="name" value={newBarberData.name} onChange={(e) => setNewBarberData({ ...newBarberData, name: e.target.value })} required /></div>
-                  <div><Label htmlFor="yearsOfExperience">Anos de Profissão</Label><Input id="yearsOfExperience" type="number" value={newBarberData.yearsOfExperience} onChange={(e) => setNewBarberData({ ...newBarberData, yearsOfExperience: e.target.value })} /></div>
+                  <div><Label htmlFor="yearsOfExperience">Anos de Profissão</Label><Input id="yearsOfExperience" type="text" inputMode="numeric" pattern="[0-9]*" value={newBarberData.yearsOfExperience} onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setNewBarberData({ ...newBarberData, yearsOfExperience: value });
+                  }} /></div>
                 </div>
-                <div><Label htmlFor="photo">URL da Foto</Label><Input id="photo" value={newBarberData.photo} onChange={(e) => setNewBarberData({ ...newBarberData, photo: e.target.value })} placeholder="https://example.com/barber.jpg" /></div>
-                <div><Label htmlFor="specialties">Especialidades (separadas por vírgula)</Label><Input id="specialties" value={newBarberData.specialties} onChange={(e) => setNewBarberData({ ...newBarberData, specialties: e.target.value })} placeholder="Corte, Barba" required /></div>
-                <div><Label htmlFor="description">Descrição</Label><Textarea id="description" value={newBarberData.description} onChange={(e) => setNewBarberData({ ...newBarberData, description: e.target.value })} /></div>
-                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="mb-2 block">Foto do Barbeiro</Label>
+                    <ImageUpload
+                      value={newBarberData.photo}
+                      onChange={(photo) => setNewBarberData({ ...newBarberData, photo })}
+                      label="Carregar Foto"
+                      maxWidth={400}
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="specialties">Especialidades (separadas por vírgula)</Label>
+                      <Input id="specialties" value={newBarberData.specialties} onChange={(e) => setNewBarberData({ ...newBarberData, specialties: e.target.value })} placeholder="Corte, Barba" required />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea id="description" value={newBarberData.description} onChange={(e) => setNewBarberData({ ...newBarberData, description: e.target.value })} className="h-24" />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Horários Disponíveis</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -186,7 +214,7 @@ const Barbers = () => {
                           {newBarberData.availableDates.length > 0
                             ? newBarberData.availableDates.slice(0, 2).map(dateStr => format(new Date(dateStr), 'dd/MM/yyyy')).join(', ')
                             : 'Selecione as datas'}
-                          {newBarberData.availableDates.length > 2 && 
+                          {newBarberData.availableDates.length > 2 &&
                             ` (+${newBarberData.availableDates.length - 2} mais)`
                           }
                         </span>
@@ -194,13 +222,18 @@ const Barbers = () => {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
-                        mode="multiple" // Use multiple mode directly
-                        selected={newBarberData.availableDates.map(dateStr => startOfDay(parseISO(dateStr)))}
-                        onSelect={(selectedDates) => {
-                          console.log('Selected Dates (raw):', selectedDates);
-                          const formattedDates = selectedDates ? selectedDates.map(date => format(date, 'yyyy-MM-dd')) : [];
-                          console.log('Formatted Dates:', formattedDates);
-                          setNewBarberData({ ...newBarberData, availableDates: formattedDates });
+                        mode="single"
+                        selected={undefined} // Don't highlight a "single" date specifically here since it's a list
+                        onSelect={(date) => {
+                          if (date) {
+                            const formatted = format(date, 'yyyy-MM-dd');
+                            const exists = newBarberData.availableDates.includes(formatted);
+                            const updated = exists
+                              ? newBarberData.availableDates.filter(d => d !== formatted)
+                              : [...newBarberData.availableDates, formatted];
+                            setNewBarberData({ ...newBarberData, availableDates: updated.sort() });
+                          }
+                          setIsAddCalendarOpen(false);
                         }}
                         initialFocus
                         locale={ptBR}
@@ -227,8 +260,8 @@ const Barbers = () => {
                   <h3 className="text-xl font-bold">{barber.name}</h3>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingBarber(barber)}><Edit className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(barber.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/20 transition-colors" onClick={() => setEditingBarber(barber)}><Edit className="w-4 h-4 text-primary" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDelete(barber.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </div>
               {barber.yearsOfExperience && <p className="text-sm text-muted-foreground mb-2">{barber.yearsOfExperience} anos de profissão</p>}
@@ -253,17 +286,38 @@ const Barbers = () => {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingBarber} onOpenChange={(isOpen) => !isOpen && setEditingBarber(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Barbeiro</DialogTitle></DialogHeader>
           <form onSubmit={handleUpdateBarber} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><Label htmlFor="edit-name">Nome</Label><Input id="edit-name" value={editBarberData.name} onChange={(e) => setEditBarberData({ ...editBarberData, name: e.target.value })} required /></div>
-              <div><Label htmlFor="edit-yearsOfExperience">Anos de Profissão</Label><Input id="edit-yearsOfExperience" type="number" value={editBarberData.yearsOfExperience} onChange={(e) => setEditBarberData({ ...editBarberData, yearsOfExperience: e.target.value })} /></div>
+              <div><Label htmlFor="edit-yearsOfExperience">Anos de Profissão</Label><Input id="edit-yearsOfExperience" type="text" inputMode="numeric" pattern="[0-9]*" value={editBarberData.yearsOfExperience} onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                setEditBarberData({ ...editBarberData, yearsOfExperience: value });
+              }} /></div>
             </div>
-            <div><Label htmlFor="edit-photo">URL da Foto</Label><Input id="edit-photo" value={editBarberData.photo} onChange={(e) => setEditBarberData({ ...editBarberData, photo: e.target.value })} placeholder="https://example.com/barber.jpg" /></div>
-            <div><Label htmlFor="edit-specialties">Especialidades (separadas por vírgula)</Label><Input id="edit-specialties" value={editBarberData.specialties} onChange={(e) => setEditBarberData({ ...editBarberData, specialties: e.target.value })} placeholder="Corte, Barba" required /></div>
-            <div><Label htmlFor="edit-description">Descrição</Label><Textarea id="edit-description" value={editBarberData.description} onChange={(e) => setEditBarberData({ ...editBarberData, description: e.target.value })} /></div>
-            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-2 block">Foto do Barbeiro</Label>
+                <ImageUpload
+                  value={editBarberData.photo}
+                  onChange={(photo) => setEditBarberData({ ...editBarberData, photo })}
+                  label="Alterar Foto"
+                  maxWidth={400}
+                />
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-specialties">Especialidades (separadas por vírgula)</Label>
+                  <Input id="edit-specialties" value={editBarberData.specialties} onChange={(e) => setEditBarberData({ ...editBarberData, specialties: e.target.value })} placeholder="Corte, Barba" required />
+                </div>
+                <div>
+                  <Label htmlFor="edit-description">Descrição</Label>
+                  <Textarea id="edit-description" value={editBarberData.description} onChange={(e) => setEditBarberData({ ...editBarberData, description: e.target.value })} className="h-24" />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Horários Disponíveis</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -316,7 +370,7 @@ const Barbers = () => {
                       {editBarberData.availableDates.length > 0
                         ? editBarberData.availableDates.slice(0, 2).map(dateStr => format(new Date(dateStr), 'dd/MM/yyyy')).join(', ')
                         : 'Selecione as datas'}
-                      {editBarberData.availableDates.length > 2 && 
+                      {editBarberData.availableDates.length > 2 &&
                         ` (+${editBarberData.availableDates.length - 2} mais)`
                       }
                     </span>
@@ -324,13 +378,18 @@ const Barbers = () => {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
-                    mode="multiple" // Use multiple mode directly
-                    selected={editBarberData.availableDates.map(dateStr => startOfDay(parseISO(dateStr)))}
-                    onSelect={(selectedDates) => {
-                      console.log('Selected Dates (raw):', selectedDates);
-                      const formattedDates = selectedDates ? selectedDates.map(date => format(date, 'yyyy-MM-dd')) : [];
-                      console.log('Formatted Dates:', formattedDates);
-                      setEditBarberData({ ...editBarberData, availableDates: formattedDates });
+                    mode="single"
+                    selected={undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const formatted = format(date, 'yyyy-MM-dd');
+                        const exists = editBarberData.availableDates.includes(formatted);
+                        const updated = exists
+                          ? editBarberData.availableDates.filter(d => d !== formatted)
+                          : [...editBarberData.availableDates, formatted];
+                        setEditBarberData({ ...editBarberData, availableDates: updated.sort() });
+                      }
+                      setIsEditCalendarOpen(false);
                     }}
                     initialFocus
                     locale={ptBR}

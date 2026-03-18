@@ -3,7 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { Calendar, Users, Scissors, TrendingUp, LogOut } from 'lucide-react';
+import { Calendar, Users, Scissors, TrendingUp, DollarSign, Check, X, Wallet, UserCog } from 'lucide-react';
+import { AdminMenu } from '@/components/admin/AdminMenu';
+import { formatCurrency, cn } from '@/lib/utils';
+import { format, subDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,13 +22,13 @@ const Dashboard = () => {
   if (!user) return null;
 
   const appointments = storage.getAppointments();
-  const clients = storage.getClients();
+  const clients = storage.getUsers().filter(u => u.role === 'client');
   const services = storage.getServices();
-  
+
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === today);
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
-  
+
   const totalRevenue = appointments
     .filter(a => a.status === 'completed')
     .reduce((sum, a) => {
@@ -32,27 +36,11 @@ const Dashboard = () => {
       return sum + (service?.price || 0);
     }, 0);
 
-  const handleLogout = () => {
-    storage.setCurrentUser(null);
-    navigate('/admin/login');
-  };
-
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary">Beardy Flow Admin</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Olá, {user.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <AdminMenu />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-32">
         <h2 className="text-3xl font-bold mb-8">Dashboard</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -90,12 +78,13 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Receita Total</p>
-                <p className="text-3xl font-bold">R$ {totalRevenue}</p>
+                <p className="text-3xl font-bold">{formatCurrency(totalRevenue)}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-primary" />
             </div>
           </Card>
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link to="/admin/appointments">
@@ -130,11 +119,19 @@ const Dashboard = () => {
             </Card>
           </Link>
 
-          <Link to="/admin/reports">
-            <Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer">
-              <TrendingUp className="w-12 h-12 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-2">Relatórios</h3>
-              <p className="text-muted-foreground">Análise de vendas e desempenho</p>
+          <Link to="/barber/finance">
+            <Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between">
+              <Wallet className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Financeiro Geral</h3>
+              <p className="text-muted-foreground">Caixa, receitas globais e despesas</p>
+            </Card>
+          </Link>
+
+          <Link to="/admin/users">
+            <Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between">
+              <UserCog className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Usuários</h3>
+              <p className="text-muted-foreground">Gerenciar contas e acessos</p>
             </Card>
           </Link>
         </div>

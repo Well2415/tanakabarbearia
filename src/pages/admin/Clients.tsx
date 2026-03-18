@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Mail, Phone, Calendar, Star, Edit } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AdminMenu } from '@/components/admin/AdminMenu';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -20,6 +21,23 @@ const Clients = () => {
   const [newPoints, setNewPoints] = useState(0);
   const [loyaltyTarget, setLoyaltyTarget] = useState(0);
   const [newLoyaltyTarget, setNewLoyaltyTarget] = useState(0); // New state for the input
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const search = searchTerm.toLowerCase();
+      const nameMatch = client.fullName.toLowerCase().includes(search);
+      const emailMatch = client.email?.toLowerCase().includes(search);
+      const phoneMatch = client.phone?.includes(search);
+      return nameMatch || emailMatch || phoneMatch;
+    });
+  }, [clients, searchTerm]);
+
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const displayedClients = filteredClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Effect to load loyalty target only once on mount
   useEffect(() => {
@@ -68,7 +86,7 @@ const Clients = () => {
     if (!editingClient) return;
 
     const allUsers = storage.getUsers();
-    const updatedUsers = allUsers.map(u => 
+    const updatedUsers = allUsers.map(u =>
       u.id === editingClient.id ? { ...u, loyaltyPoints: newPoints } : u
     );
     storage.saveUsers(updatedUsers);
@@ -79,58 +97,107 @@ const Clients = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border"><div className="container mx-auto px-4 py-4"><Link to="/dashboard"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Button></Link></div></nav>
-      <div className="container mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold mb-8">Gerenciar Clientes</h2>
+      <AdminMenu />
+      <div className="container mx-auto px-4 py-6 md:py-8 pb-32">
+        <h2 className="text-2xl md:text-3xl font-bold mb-6">Gerenciar Clientes</h2>
 
         {/* Loyalty Plan Management Card */}
-        <Card className="mb-8 p-6 border-border">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="text-2xl font-bold">Gerenciar Plano de Fidelidade</CardTitle>
+        <Card className="mb-6 p-4 md:p-6 border-border">
+          <CardHeader className="p-0 mb-3 md:mb-4">
+            <CardTitle className="text-xl md:text-2xl font-bold">Plano de Fidelidade</CardTitle>
           </CardHeader>
           <CardContent className="p-0 mb-4">
-            <Label htmlFor="loyalty-target">Pontos de Fidelidade Necessários por Mês</Label>
+            <Label htmlFor="loyalty-target" className="text-sm text-muted-foreground">Pontos necessários para recompensa</Label>
             <Input
               id="loyalty-target"
               type="number"
+              inputMode="numeric"
               value={newLoyaltyTarget}
               onChange={(e) => setNewLoyaltyTarget(parseInt(e.target.value) || 0)}
-              className="mt-2"
+              className="mt-2 h-11 md:h-10 bg-card border-border"
             />
           </CardContent>
           <CardFooter className="p-0">
-            <Button onClick={handleSaveLoyaltyTarget}>Salvar Meta de Fidelidade</Button>
+            <Button onClick={handleSaveLoyaltyTarget} className="w-full md:w-auto h-11 md:h-10">Salvar Meta de Fidelidade</Button>
           </CardFooter>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clients.length === 0 ? (
-            <Card className="p-8 text-center border-border col-span-full"><p className="text-muted-foreground">Nenhum cliente cadastrado</p></Card>
+        {/* Barra de Pesquisa */}
+        <div className="relative w-full mb-6 mt-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar por nome, e-mail ou telefone..." 
+            className="pl-11 h-12 bg-card border-border rounded-xl w-full text-base"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {displayedClients.length === 0 ? (
+            <Card className="p-8 text-center border-border border-dashed bg-muted/20 col-span-full">
+              <p className="text-muted-foreground">
+                {searchTerm ? 'Nenhum cliente encontrado para sua pesquisa.' : 'Nenhum cliente cadastrado ainda.'}
+              </p>
+            </Card>
           ) : (
-            clients.map((client) => (
-              <Card key={client.id} className="p-6 border-border flex flex-col">
+            displayedClients.map((client) => (
+              <Card key={client.id} className="p-4 md:p-6 border-border flex flex-col hover:border-primary/30 transition-colors">
                 <div className="flex-grow">
-                  <h3 className="text-xl font-bold mb-4">{client.fullName}</h3>
-                  <div className="space-y-2 mb-4">
-                    {client.email && <div className="flex items-center gap-2 text-muted-foreground"><Mail className="w-4 h-4" /><span className="text-sm">{client.email}</span></div>}
-                    {client.phone && <div className="flex items-center gap-2 text-muted-foreground"><Phone className="w-4 h-4" /><span className="text-sm">{client.phone}</span></div>}
-                    <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" /><span className="text-sm">{getClientAppointmentsCount(client.id)} agendamento(s)</span></div>
-                    <div className="flex items-center gap-2 text-muted-foreground"><Star className="w-4 h-4" /><span className="text-sm">{client.loyaltyPoints || 0}/{loyaltyTarget} pontos de fidelidade</span></div>
+                  <h3 className="text-lg md:text-xl font-bold mb-3">{client.fullName}</h3>
+                  <div className="space-y-1.5 md:space-y-2 mb-4">
+                    {client.phone && <div className="flex items-center gap-2 text-zinc-500"><Phone className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{client.phone}</span></div>}
+                    {client.email && <div className="flex items-center gap-2 text-zinc-500"><Mail className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm truncate">{client.email}</span></div>}
+                    <div className="flex items-center gap-2 text-zinc-500"><Calendar className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{getClientAppointmentsCount(client.id)} agendamento(s)</span></div>
+                    <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20"><Star className="w-3.5 h-3.5" /><span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts de fidelidade</span></div>
                   </div>
-                  <p className="text-xs text-muted-foreground">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
-                <CardFooter className="p-0 pt-4 mt-4 border-t">
-                  <Button variant="outline" className="w-full" onClick={() => setEditingClient(client)}><Edit className="w-4 h-4 mr-2" />Editar Pontos</Button>
+                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50">
+                  <Button variant="outline" className="w-full text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
+                    <Edit className="w-4 h-4 mr-2" />Editar Pontos
+                  </Button>
                 </CardFooter>
               </Card>
             ))
           )}
         </div>
+
+        {/* Pagination Controls */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            Mostrando <span className="font-medium">{filteredClients.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredClients.length)}</span> de <span className="font-medium">{filteredClients.length}</span> clientes
+          </p>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-sm font-medium px-2">
+              Página {currentPage} de {Math.max(1, totalPages)}
+            </div>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages || totalPages === 0}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Edit Points Dialog */}
       <Dialog open={!!editingClient} onOpenChange={(isOpen) => !isOpen && setEditingClient(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Pontos de Fidelidade</DialogTitle></DialogHeader>
           <div className="py-4">
             <Label htmlFor="points">Pontos para <span className="font-bold">{editingClient?.fullName}</span></Label>

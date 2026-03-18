@@ -16,7 +16,9 @@ export interface Service {
   description: string;
   duration: number;
   price: number;
-  loyaltyPoints: number; // New field for loyalty points
+  loyaltyPoints: number;
+  image?: string; // Base64 image
+  category?: string; // New field for category
 }
 
 export interface User {
@@ -32,8 +34,9 @@ export interface User {
   createdAt: string;
   avatarUrl?: string; // New field
   cutsCount?: number; // New field
-  favoriteProducts?: string[]; // New field
+  stylePreferences?: string[]; // New field
   latestCuts?: Cut[]; // New field for latest cuts
+  noShowCount?: number; // Tracks number of times the client didn't show up
 }
 
 export interface Cut {
@@ -55,9 +58,10 @@ export interface Appointment {
   serviceId: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'in_progress' | 'completed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'in_progress' | 'completed' | 'no_show';
   createdAt: string;
-  
+  reminderSent?: boolean;
+
   startTime?: string;
   endTime?: string;
   paymentType?: 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link';
@@ -65,4 +69,24 @@ export interface Appointment {
   servicePrice: number; // Price of the service at the time of booking
   extraCharges?: number; // New: For additional costs
   finalPrice?: number; // New: Final price after all adjustments
+}
+export interface RecurringSchedule {
+  id: string;
+  userId: string;
+  barberId: string;
+  serviceId: string;
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  time: string; // "HH:mm"
+  active: boolean;
+  createdAt: string;
+}
+
+export interface Expense {
+  id: string;
+  barberId: string;
+  description: string;
+  amount: number;
+  date: string; // e.g. "2024-03-20"
+  category: string;
+  createdAt: string;
 }

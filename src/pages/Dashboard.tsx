@@ -15,15 +15,24 @@ import { User, Barber, Cut } from '@/types';
 import { ClientView } from '@/components/dashboard/ClientView';
 import { StaffView } from '@/components/dashboard/StaffView';
 import { MiniProfile } from '@/components/dashboard/MiniProfile';
+import { cn } from '@/lib/utils';
+
+const AVAILABLE_AVATARS = [
+  '/avatars/avatar1.png',
+  '/avatars/avatar2.png',
+  '/avatars/avatar3.png',
+  '/avatars/avatar4.png',
+];
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(() => storage.getCurrentUser());
   const [showSensitiveData, setShowSensitiveData] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
     avatarUrl: '',
-    favoriteProducts: '',
+    stylePreferences: '',
   });
 
   // Placeholder for My Best Barber
@@ -43,7 +52,7 @@ const Dashboard = () => {
       setUser(currentUser);
       setEditProfileData({
         avatarUrl: currentUser.avatarUrl || '',
-        favoriteProducts: currentUser.favoriteProducts?.join(', ') || '',
+        stylePreferences: currentUser.stylePreferences?.join(', ') || '',
       });
     }
   }, [navigate]);
@@ -55,7 +64,7 @@ const Dashboard = () => {
       u.id === user.id ? {
         ...u,
         avatarUrl: editProfileData.avatarUrl || undefined,
-        favoriteProducts: editProfileData.favoriteProducts.split(',').map(p => p.trim()).filter(p => p !== '') || undefined,
+        stylePreferences: editProfileData.stylePreferences.split(',').map(p => p.trim()).filter(p => p !== '') || undefined,
       } : u
     );
     storage.saveUsers(updatedUsers);
@@ -78,7 +87,19 @@ const Dashboard = () => {
           <h1 className="text-4xl font-bold mb-8 px-4 text-center lg:text-left">
             Meu Painel
           </h1>
-          <MiniProfile user={user} setIsEditProfileOpen={setIsEditProfileOpen} bestBarber={bestBarber} className="mb-24" /> {/* Increased mb to mb-24 for even more spacing */}
+          <div className="mb-24">
+            <MiniProfile 
+              user={user} 
+              setIsEditProfileOpen={() => {
+                if (isStaff) {
+                  navigate('/barber/profile');
+                } else {
+                  setIsEditProfileOpen(true);
+                }
+              }} 
+              bestBarber={bestBarber} 
+            />
+          </div>
           <div className="flex flex-col gap-8 mt-8"> {/* Main content wrapper, added mt-8 */}
             {isStaff ? <StaffView user={user} /> : <ClientView user={user} />}
           </div>
@@ -89,12 +110,25 @@ const Dashboard = () => {
             <DialogHeader><DialogTitle>Editar Perfil</DialogTitle></DialogHeader>
             <div className="py-4 space-y-4">
               <div>
-                <Label htmlFor="edit-avatarUrl">URL do Avatar</Label>
-                <Input id="edit-avatarUrl" value={editProfileData.avatarUrl} onChange={(e) => setEditProfileData({ ...editProfileData, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" />
+                <Label className="mb-2 block">Escolha seu Avatar</Label>
+                <div className="grid grid-cols-4 gap-4">
+                  {AVAILABLE_AVATARS.map((url) => (
+                    <div
+                      key={url}
+                      onClick={() => setEditProfileData({ ...editProfileData, avatarUrl: url })}
+                      className={cn(
+                        "cursor-pointer rounded-full border-2 p-1 transition-all hover:scale-105",
+                        editProfileData.avatarUrl === url ? "border-primary bg-primary/10" : "border-transparent"
+                      )}
+                    >
+                      <img src={url} alt="Avatar Option" className="w-full h-full rounded-full object-cover aspect-square" />
+                    </div>
+                  ))}
+                </div>
               </div>
               <div>
-                <Label htmlFor="edit-favoriteProducts">Produtos Favoritos (separados por vírgula)</Label>
-                <Textarea id="edit-favoriteProducts" value={editProfileData.favoriteProducts} onChange={(e) => setEditProfileData({ ...editProfileData, favoriteProducts: e.target.value })} placeholder="Pomada, Shampoo" />
+                <Label htmlFor="edit-stylePreferences">Preferências de Estilo (separados por vírgula)</Label>
+                <Textarea id="edit-stylePreferences" value={editProfileData.stylePreferences} onChange={(e) => setEditProfileData({ ...editProfileData, stylePreferences: e.target.value })} placeholder="Degradê, Barba Alinhada" />
               </div>
             </div>
             <DialogFooter>

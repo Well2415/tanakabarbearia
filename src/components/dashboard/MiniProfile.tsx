@@ -1,7 +1,7 @@
 import { User, Barber } from '@/types'; // Added Barber import
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button'; // Added import
-import { Tag, Star } from 'lucide-react'; // Added Star import
+import { Star, Scissors } from 'lucide-react'; // Added Star and Scissors import
 
 interface MiniProfileProps {
   user: User;
@@ -31,14 +31,14 @@ export const MiniProfile = ({ user, setIsEditProfileOpen, bestBarber }: MiniProf
         </Button>
       </div>
 
-      {user.favoriteProducts && user.favoriteProducts.length > 0 && (
+      {user.stylePreferences && user.stylePreferences.length > 0 && (
         <div className="mt-2 w-full">
           <p className="text-sm font-semibold mb-2 flex items-center gap-1">
-            <Tag className="h-4 w-4" /> Produtos Favoritos:
+            <Scissors className="h-4 w-4" /> Preferências de Estilo:
           </p>
           <div className="flex flex-wrap gap-2">
-            {user.favoriteProducts.map((product, idx) => (
-              <span key={idx} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{product}</span>
+            {user.stylePreferences.map((style, idx) => (
+              <span key={idx} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{style}</span>
             ))}
           </div>
         </div>

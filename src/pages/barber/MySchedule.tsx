@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Check, X, Play, DollarSign } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -20,7 +20,7 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
-  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | '' >('');
+  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
 
@@ -106,13 +106,14 @@ const MyAppointments = () => {
       const userToUpdate = allUsers.find(u => u.id === currentAppointmentToComplete.userId);
       if (userToUpdate) {
         const updatedUser = { ...userToUpdate };
+        // Update user's cutsCount and stylePreferences
         updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
 
         const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
-        if (service && updatedUser.favoriteProducts && !updatedUser.favoriteProducts.includes(service.name)) {
-          updatedUser.favoriteProducts = [...updatedUser.favoriteProducts, service.name];
-        } else if (service && !updatedUser.favoriteProducts) {
-          updatedUser.favoriteProducts = [service.name];
+        if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
+          updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
+        } else if (service && !updatedUser.stylePreferences) {
+          updatedUser.stylePreferences = [service.name];
         }
 
         const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
@@ -151,11 +152,22 @@ const MyAppointments = () => {
     completed: 'Concluído',
   };
 
+  const paymentTypeLabels: Record<string, string> = {
+    cash: 'Dinheiro',
+    credit_card: 'Cartão de Crédito',
+    debit_card: 'Cartão de Débito',
+    pix: 'Pix',
+    link: 'Link de Pagamento',
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <Link to="/dashboard"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Button></Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Link>
+          </Button>
+
         </div>
       </nav>
 
@@ -179,20 +191,20 @@ const MyAppointments = () => {
                     <p className="text-muted-foreground"><span className="font-medium">Data:</span> {new Date(appointment.date).toLocaleDateString('pt-BR')} às {appointment.time}</p>
                     {appointment.startTime && <p className="text-muted-foreground"><span className="font-medium">Início:</span> {appointment.startTime}</p>}
                     {appointment.endTime && <p className="text-muted-foreground"><span className="font-medium">Fim:</span> {appointment.endTime}</p>}
-                    {appointment.paymentType && <p className="text-muted-foreground"><span className="font-medium">Pagamento:</span> {appointment.paymentType}</p>}
+                    {appointment.paymentType && <p className="text-muted-foreground"><span className="font-medium">Pagamento:</span> {paymentTypeLabels[appointment.paymentType] || appointment.paymentType}</p>}
                     {appointment.status === 'completed' && appointment.finalPrice && <p className="text-muted-foreground"><span className="font-medium">Valor Pago:</span> R$ {appointment.finalPrice.toFixed(2)}</p>}
                   </div>
-                  <div className="flex flex-col gap-2 items-start">
+                  <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-border">
                     {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
-                      <Button size="sm" onClick={() => handleStartService(appointment)} className="bg-blue-600 hover:bg-blue-700"><Play className="w-4 h-4 mr-1" />Iniciar Corte</Button>
+                      <Button size="sm" onClick={() => handleStartService(appointment)} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto h-11 md:h-9"><Play className="w-4 h-4 mr-2" />Iniciar Corte</Button>
                     )}
                     {appointment.status === 'in_progress' && (
-                      <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700"><DollarSign className="w-4 h-4 mr-1" />Finalizar</Button>
+                      <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700 w-full md:w-auto h-11 md:h-9"><DollarSign className="w-4 h-4 mr-2" />Finalizar</Button>
                     )}
                     {appointment.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateStatus(appointment.id, 'confirmed')} className="bg-green-600 hover:bg-green-700"><Check className="w-4 h-4 mr-1" />Confirmar</Button>
-                        <Button size="sm" variant="destructive" onClick={() => updateStatus(appointment.id, 'cancelled')}><X className="w-4 h-4 mr-1" />Cancelar</Button>
+                      <div className="flex gap-2 w-full md:w-auto">
+                        <Button size="sm" onClick={() => updateStatus(appointment.id, 'confirmed')} className="bg-green-600 hover:bg-green-700 flex-1 h-11 md:h-9"><Check className="w-4 h-4 mr-1" />Confirmar</Button>
+                        <Button size="sm" variant="destructive" onClick={() => updateStatus(appointment.id, 'cancelled')} className="flex-1 h-11 md:h-9"><X className="w-4 h-4 mr-1" />Cancelar</Button>
                       </div>
                     )}
                   </div>
@@ -205,41 +217,76 @@ const MyAppointments = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="mb-2">
-              Finalizar agendamento de <span className="font-bold">{getClientName(currentAppointmentToComplete!)}</span>.<br />
+          <div className="py-2 space-y-4">
+            <p className="mb-2 text-sm text-muted-foreground">
+              Finalizando atemdimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
               Valor do Serviço: R$ {currentAppointmentToComplete?.servicePrice?.toFixed(2)}
             </p>
-            
+
             <div>
               <Label htmlFor="extraCharges">Encargos Extras (R$)</Label>
-              <Input id="extraCharges" type="number" step="0.01" value={extraChargesInput} onChange={(e) => setExtraChargesInput(parseFloat(e.target.value) || 0)} />
+              <Input id="extraCharges" type="text" inputMode="decimal" className="h-12 mt-1" placeholder="0.00" value={extraChargesInput === 0 ? '' : extraChargesInput} onChange={(e) => {
+                  const val = e.target.value.replace(',', '.');
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setExtraChargesInput(val === '' ? 0 : parseFloat(val));
+                  }
+                }} />
             </div>
 
             <div>
               <Label htmlFor="finalPrice">Preço Final (R$)</Label>
-              <Input id="finalPrice" type="number" step="0.01" value={finalPrice} readOnly />
+              <Input id="finalPrice" type="number" step="0.01" className="h-12 mt-1 font-bold text-primary" value={finalPrice} readOnly disabled />
             </div>
 
             <div>
               <Label htmlFor="paymentType">Tipo de Pagamento</Label>
-              <Select value={paymentType} onValueChange={(value: 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link') => setPaymentType(value)}>
-                <SelectTrigger><SelectValue placeholder="Tipo de Pagamento" /></SelectTrigger>
+              <Select value={paymentType} onValueChange={(value: any) => setPaymentType(value)}>
+                <SelectTrigger className="h-12 mt-1"><SelectValue placeholder="Tipo de Pagamento" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Dinheiro</SelectItem>
                   <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                   <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                  <SelectItem value="pix">Pix</SelectItem>
+                  <SelectItem value="pix">Pix (Chave)</SelectItem>
                   <SelectItem value="link">Link de Pagamento</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {paymentType === 'pix' && storage.getPixKey() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
+                <p className="text-base font-bold text-foreground">Receber via Pix</p>
+                <p className="text-xs text-muted-foreground mb-4">Peça para o cliente inserir a chave abaixo no app do banco e conferir o valor de R$ {finalPrice.toFixed(2).replace('.', ',')}.</p>
+                
+                <div className="w-full relative">
+                  <div className="bg-background border flex items-center justify-between border-primary/20 px-3 py-3 rounded-xl overflow-hidden shadow-sm">
+                    <span className="font-mono text-sm font-bold text-primary truncate mr-2">{storage.getPixKey()}</span>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(storage.getPixKey());
+                        toast({ title: 'Chave Copiada!', description: 'Chave Pix copiada com sucesso.' });
+                      }}
+                      className="shrink-0 rounded-lg h-8 px-3"
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {paymentType === 'pix' && !storage.getPixKey() && (
+               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Nenhuma Chave PIX cadastrada. Acesse Configurações no painel Admin para definir.</p>
+            )}
+            
           </div>
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-            <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0}>Confirmar Pagamento</Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
+            <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0} className="w-full h-12 text-lg">Confirmar</Button>
+            <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

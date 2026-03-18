@@ -7,9 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Plus, Trash2, Clock, Star, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Clock, Star, Edit, Camera, Image as ImageIcon, X, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency, cn } from '@/lib/utils';
 import { Service } from '@/types';
+import { AdminMenu } from '@/components/admin/AdminMenu';
+import { ImageUpload } from '@/components/ui/ImageUpload';
+import { optimizeImage } from '@/lib/imageUtils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import serviceHaircut from '@/assets/service-haircut.jpg';
+import serviceBeard from '@/assets/service-beard.jpg';
+import serviceStyling from '@/assets/service-styling.jpg';
+
+const defaultServiceImages = [serviceHaircut, serviceBeard, serviceStyling];
 
 const Services = () => {
   const navigate = useNavigate();
@@ -24,8 +34,17 @@ const Services = () => {
     description: '',
     duration: '',
     price: '',
-    loyaltyPoints: '', // New field
+    loyaltyPoints: '',
+    image: '',
   });
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('action') === 'new-service') {
+      setIsOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -38,7 +57,7 @@ const Services = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingService) {
       // Editing existing service
       const updatedService: Service = {
@@ -48,6 +67,7 @@ const Services = () => {
         duration: parseInt(formData.duration),
         price: parseFloat(formData.price),
         loyaltyPoints: parseInt(formData.loyaltyPoints),
+        image: formData.image,
       };
       const updatedServices = services.map(s => s.id === updatedService.id ? updatedService : s);
       storage.saveServices(updatedServices);
@@ -67,6 +87,7 @@ const Services = () => {
         duration: parseInt(formData.duration),
         price: parseFloat(formData.price),
         loyaltyPoints: parseInt(formData.loyaltyPoints),
+        image: formData.image,
       };
       const updatedServices = [...services, newService];
       storage.saveServices(updatedServices);
@@ -77,7 +98,7 @@ const Services = () => {
         description: 'O serviço foi cadastrado com sucesso',
       });
     }
-    setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '' }); // Reset form
+    setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '', image: '' }); // Reset form
   };
 
   const handleEditClick = (service: Service) => {
@@ -88,6 +109,7 @@ const Services = () => {
       duration: (service.duration || 0).toString(),
       price: (service.price || 0).toString(),
       loyaltyPoints: (service.loyaltyPoints || 0).toString(),
+      image: service.image || '',
     });
     setIsEditModalOpen(true);
   };
@@ -104,41 +126,32 @@ const Services = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Link to="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
-            </Button>
-          </Link>
-        </div>
-      </nav>
+      <AdminMenu />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="container mx-auto px-4 py-8 pb-32">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <h2 className="text-3xl font-bold">Serviços</h2>
-          
+
           {/* Dialog for New/Edit Service */}
           <Dialog open={isOpen || isEditModalOpen} onOpenChange={(open) => {
             if (!open) {
               setIsOpen(false);
               setIsEditModalOpen(false);
               setEditingService(null);
-              setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '' }); // Reset form
+              setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '', image: '' }); // Reset form
             }
           }}>
-            <DialogTrigger onClick={() => { // onClick directly on DialogTrigger
-                setEditingService(null); // Ensure no service is being edited when opening for new
-                setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '' }); // Clear form
-                setIsOpen(true);
-              }}>
-                <span className="flex items-center">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Serviço
-                </span>
+            <DialogTrigger asChild onClick={() => {
+              setEditingService(null); // Ensure no service is being edited when opening for new
+              setFormData({ name: '', description: '', duration: '', price: '', loyaltyPoints: '', image: '' }); // Clear form
+              setIsOpen(true);
+            }}>
+              <Button className="hidden md:flex w-full md:w-auto gap-2 h-12 md:h-10 text-lg md:text-base order-first md:order-last">
+                <Plus className="w-5 h-5 md:w-4 h-4" />
+                Novo Serviço
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
               <DialogHeader>
                 <DialogTitle>{editingService ? 'Editar Serviço' : 'Cadastrar Novo Serviço'}</DialogTitle>
               </DialogHeader>
@@ -161,14 +174,32 @@ const Services = () => {
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Foto do Serviço</Label>
+                  <div className="max-w-[200px]">
+                    <ImageUpload
+                      value={formData.image}
+                      onChange={(image) => setFormData({ ...formData, image })}
+                      label="Carregar Foto"
+                      maxWidth={600}
+                    />
+                  </div>
+                  <p className="text-[10px] text-zinc-500 italic mt-1">Otimização automática ativada.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="duration">Duração (min)</Label>
                     <Input
                       id="duration"
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        setFormData({ ...formData, duration: value });
+                      }}
                       required
                     />
                   </div>
@@ -176,20 +207,31 @@ const Services = () => {
                     <Label htmlFor="price">Preço (R$)</Label>
                     <Input
                       id="price"
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, '');
+                        // Allow only one decimal point
+                        const parts = value.split('.');
+                        if (parts.length > 2) return;
+                        setFormData({ ...formData, price: value });
+                      }}
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="loyaltyPoints">Pontos de Fidelidade</Label>
+                    <Label htmlFor="loyaltyPoints">Pontos</Label>
                     <Input
                       id="loyaltyPoints"
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={formData.loyaltyPoints}
-                      onChange={(e) => setFormData({ ...formData, loyaltyPoints: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        setFormData({ ...formData, loyaltyPoints: value });
+                      }}
                       required
                     />
                   </div>
@@ -201,39 +243,39 @@ const Services = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <Card key={service.id} className="p-6 border-border">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold">{service.name}</h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditClick(service)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(service.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+          {services.map((service, index) => (
+            <Card key={service.id} className="overflow-hidden border-border group shadow-md hover:shadow-lg transition-all">
+              <div className="relative overflow-hidden">
+                <AspectRatio ratio={16 / 9}>
+                  <img
+                    src={service.image || defaultServiceImages[index % defaultServiceImages.length]}
+                    alt={service.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                </AspectRatio>
+              </div>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-bold">{service.name}</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditClick(service)}
+                      className="rounded-full hover:bg-primary/20 hover:text-primary transition-colors h-8 w-8 p-0"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(service.id)}
+                      className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors h-8 w-8 p-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <p className="text-muted-foreground mb-4">{service.description}</p>
-              <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm">{service.duration} min</span>
-              </div>
-              <div className="text-2xl font-bold text-primary mb-2">
-                R$ {service.price.toFixed(2)}
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Star className="w-4 h-4" />
-                <span className="text-sm">{service.loyaltyPoints} pontos de fidelidade</span>
               </div>
             </Card>
           ))}

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
-import { Calendar, Users, Scissors, TrendingUp, Clock, UserCog, Star } from 'lucide-react';
+import { Calendar, Users, Scissors, TrendingUp, Clock, UserCog, Star, Wallet } from 'lucide-react';
 import { User } from '@/types';
 
 interface StaffViewProps {
@@ -52,16 +52,20 @@ export const StaffView = ({ user }: StaffViewProps) => {
         </Link>
         
         {user.role === 'barber' && (
+          <>
             <Link to="/barber/availability"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Clock className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Minha Disponibilidade</h3><p className="text-muted-foreground">Gerencie suas datas e horários de trabalho</p></Card></Link>
+            <Link to="/barber/finance"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Wallet className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Financeiro</h3><p className="text-muted-foreground">Acompanhe despesas e receitas do mês</p></Card></Link>
+          </>
         )}
         
 
 
         {user.role === 'admin' && (
           <>
+            <Link to="/barber/finance"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Wallet className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Financeiro Geral</h3><p className="text-muted-foreground">Caixa, receitas globais e despesas</p></Card></Link>
+            <Link to="/admin/users"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer"><UserCog className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Gerenciar Usuários</h3><p className="text-muted-foreground">Contas e permissões</p></Card></Link>
             <Link to="/admin/barbers"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer h-full flex flex-col justify-between"><Scissors className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Barbeiros</h3><p className="text-muted-foreground">Perfis públicos dos barbeiros</p></Card></Link>
             <Link to="/admin/services"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer"><Scissors className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Serviços</h3><p className="text-muted-foreground">Cadastro e preços de serviços</p></Card></Link>
-            <Link to="/admin/users"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer"><UserCog className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Gerenciar Usuários</h3><p className="text-muted-foreground">Contas e permissões</p></Card></Link>
             <Link to="/admin/clients"><Card className="p-6 border-border hover:border-primary transition-colors cursor-pointer"><Star className="w-12 h-12 text-primary mb-4" /><h3 className="text-xl font-bold mb-2">Plano de Fidelidade</h3><p className="text-muted-foreground">Gerencie os pontos dos clientes</p></Card></Link>
           </>
         )}

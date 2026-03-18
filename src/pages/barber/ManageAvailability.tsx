@@ -16,7 +16,7 @@ const ManageAvailability = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const user = storage.getCurrentUser();
-  
+
   const [barberProfile, setBarberProfile] = useState<Barber | null>(null);
   const [availableHours, setAvailableHours] = useState<string[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
@@ -99,7 +99,7 @@ const ManageAvailability = () => {
 
   useEffect(() => {
     const currentUser = storage.getCurrentUser();
-    
+
     if (!currentUser || currentUser.role !== 'barber') {
       toast({ title: "Acesso Negado", variant: "destructive" });
       navigate('/dashboard');
@@ -124,13 +124,13 @@ const ManageAvailability = () => {
     if (!barberProfile) return;
 
     const allBarbers = storage.getBarbers();
-    const updatedBarbers = allBarbers.map(b => 
-      b.id === barberProfile.id 
-        ? { 
-            ...b, 
-            availableHours: availableHours,
-            availableDates: availableDates,
-          }
+    const updatedBarbers = allBarbers.map(b =>
+      b.id === barberProfile.id
+        ? {
+          ...b,
+          availableHours: availableHours,
+          availableDates: availableDates,
+        }
         : b
     );
 
@@ -143,9 +143,12 @@ const ManageAvailability = () => {
 
   return (
     <div className="min-h-screen bg-background">
-       <nav className="bg-card border-b border-border">
+      <nav className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <Link to="/dashboard"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Button></Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Link>
+          </Button>
+
         </div>
       </nav>
 

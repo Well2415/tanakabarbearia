@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
+import LogoLoginImg from '../../img/LOGO LOGIN.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -44,6 +45,9 @@ const Login = () => {
       <Navigation />
       <div className="pt-32 pb-20 px-4">
         <div className="container mx-auto max-w-md">
+          <div className="flex justify-center mb-6">
+            <img src={LogoLoginImg} alt="Logotipo da Barbearia" className="h-32 w-auto object-contain" />
+          </div>
           <h1 className="text-4xl font-bold text-center mb-4">
             Acesse sua <span className="text-primary">Conta</span>
           </h1>
