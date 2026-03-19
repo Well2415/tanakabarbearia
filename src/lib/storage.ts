@@ -43,13 +43,13 @@ export const storage = {
 
       // 2. Carregar Dados Principais em Paralelo
       const [
-        { data: barbers },
-        { data: services },
-        { data: users },
-        { data: appointments },
-        { data: recurring },
-        { data: expenses },
-        { data: expenseCategories }
+        barbersRes,
+        servicesRes,
+        usersRes,
+        appointmentsRes,
+        recurringRes,
+        expensesRes,
+        expenseCategoriesRes
       ] = await Promise.all([
         supabase.from('barbers').select('*'),
         supabase.from('services').select('*'),
@@ -60,13 +60,16 @@ export const storage = {
         supabase.from('expense_categories').select('*')
       ]);
 
-      cache.barbers = barbers || [];
-      cache.services = services || [];
-      cache.users = users || [];
-      cache.appointments = appointments || [];
-      cache.recurringSchedules = recurring || [];
-      cache.expenses = expenses || [];
-      cache.expenseCategories = expenseCategories?.map(c => c.name) || [];
+      if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
+      if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
+
+      cache.barbers = barbersRes.data || [];
+      cache.services = servicesRes.data || [];
+      cache.users = usersRes.data || [];
+      cache.appointments = appointmentsRes.data || [];
+      cache.recurringSchedules = recurringRes.data || [];
+      cache.expenses = expensesRes.data || [];
+      cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
 
       // Se o banco estiver vazio, inicializar com dados padrão
       if (cache.services.length === 0) {
