@@ -1,8 +1,9 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
-import TanakaImg from '../../img/barbeiro/TANAKA.png';
-import LogoMenu from '../../img/LOGO MENU.png';
+// Usando caminhos estáticos relativos à pasta public/
+const TanakaImg = "/img/barbeiro/TANAKA.png";
+const LogoMenu = "/img/LOGO MENU.png";
 
 // Cache interno para manter o funcionamento síncrono dos componentes
 let cache: {

@@ -1,5 +1,6 @@
 import { Barber, Service, User, Appointment } from '@/types';
-import TanakaImg from '../../img/barbeiro/TANAKA.png';
+// Usando caminhos estáticos para garantir compatibilidade com o deploy/public
+const TanakaImg = "/img/barbeiro/TANAKA.png";
 import { format } from 'date-fns';
 
 const today = new Date();
