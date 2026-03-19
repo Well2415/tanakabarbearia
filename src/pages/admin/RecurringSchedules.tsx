@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
@@ -38,7 +39,7 @@ const RecurringSchedules = () => {
     const [formData, setFormData] = useState({
         userId: '',
         barberId: '',
-        serviceId: '',
+        serviceIds: [] as string[],
         dayOfWeek: '1',
         time: '',
     });
@@ -52,12 +53,17 @@ const RecurringSchedules = () => {
 
         setSchedules(storage.getRecurringSchedules());
         setUsers(storage.getUsers().filter(u => u.role === 'client'));
-        setBarbers(storage.getBarbers());
+        const barbersList = storage.getBarbers();
+        setBarbers(barbersList);
         setServices(storage.getServices());
-    }, [navigate]);
+
+        if (barbersList.length === 1 && !formData.barberId) {
+            setFormData(prev => ({ ...prev, barberId: barbersList[0].id }));
+        }
+    }, [navigate, formData.barberId]);
 
     const handleCreateSchedule = () => {
-        if (!formData.userId || !formData.barberId || !formData.serviceId || !formData.time) {
+        if (!formData.userId || !formData.barberId || formData.serviceIds.length === 0 || !formData.time) {
             toast({ title: 'Erro', description: 'Preencha todos os campos.', variant: 'destructive' });
             return;
         }
@@ -66,7 +72,8 @@ const RecurringSchedules = () => {
             id: Date.now().toString(),
             userId: formData.userId,
             barberId: formData.barberId,
-            serviceId: formData.serviceId,
+            serviceId: formData.serviceIds[0], // Mantido para compatibilidade simples
+            serviceIds: formData.serviceIds,
             dayOfWeek: parseInt(formData.dayOfWeek),
             time: formData.time,
             active: true,
@@ -77,7 +84,7 @@ const RecurringSchedules = () => {
         storage.saveRecurringSchedules(updated);
         setSchedules(updated);
         setIsDialogOpen(false);
-        setFormData({ userId: '', barberId: '', serviceId: '', dayOfWeek: '1', time: '' });
+        setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '' });
         toast({ title: 'Sucesso', description: 'Horário fixo cadastrado com sucesso.' });
     };
 
@@ -90,7 +97,10 @@ const RecurringSchedules = () => {
 
     const getClientName = (id: string) => users.find(u => u.id === id)?.fullName || 'Desconhecido';
     const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'N/A';
-    const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'N/A';
+    const getServiceName = (ids: string | string[]) => {
+        const idList = Array.isArray(ids) ? ids : [ids];
+        return idList.map(id => services.find(s => s.id === id)?.name).filter(Boolean).join(' + ') || 'N/A';
+    };
     const getDayName = (day: number) => DAYS_OF_WEEK.find(d => d.id === day)?.name || '';
 
     return (
@@ -110,7 +120,7 @@ const RecurringSchedules = () => {
                             <Plus className="w-4 h-4" /> Novo Horário Fixo
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
                         <DialogHeader>
                             <DialogTitle>Cadastrar Horário Fixo</DialogTitle>
                         </DialogHeader>
@@ -176,15 +186,60 @@ const RecurringSchedules = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Serviço</Label>
-                                <Select value={formData.serviceId} onValueChange={(v) => setFormData({ ...formData, serviceId: v })}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione o serviço" /></SelectTrigger>
-                                    <SelectContent>
-                                        {services.map(s => (
-                                            <SelectItem key={s.id} value={s.id}>{s.name} - R$ {s.price}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Label>Serviços</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-between font-normal h-auto min-h-[44px]">
+                                            <div className="flex flex-wrap gap-1 items-center text-left">
+                                                {formData.serviceIds.length > 0 ? (
+                                                    formData.serviceIds.map(id => (
+                                                        <Badge key={id} variant="secondary" className="font-normal text-[10px] py-0 px-1">
+                                                            {services.find(s => s.id === id)?.name}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-muted-foreground">Selecione os serviços</span>
+                                                )}
+                                            </div>
+                                            <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Pesquisar serviço..." />
+                                            <CommandList>
+                                                <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
+                                                <CommandGroup>
+                                                    {services.map((service) => (
+                                                        <CommandItem
+                                                            key={service.id}
+                                                            value={service.name}
+                                                            onSelect={() => {
+                                                                const current = formData.serviceIds;
+                                                                const next = current.includes(service.id)
+                                                                    ? current.filter(id => id !== service.id)
+                                                                    : [...current, service.id];
+                                                                setFormData(prev => ({ ...prev, serviceIds: next }));
+                                                            }}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            <div className={cn(
+                                                                "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                                                formData.serviceIds.includes(service.id)
+                                                                    ? "bg-primary text-primary-foreground"
+                                                                    : "opacity-50 [&_svg]:invisible"
+                                                            )}>
+                                                                <Check className="h-4 w-4" />
+                                                            </div>
+                                                            <span>{service.name}</span>
+                                                            <span className="ml-auto text-xs text-muted-foreground">R$ {service.price}</span>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -236,7 +291,7 @@ const RecurringSchedules = () => {
                                 </div>
 
                                 <h3 className="font-bold text-lg mb-1">{getClientName(schedule.userId)}</h3>
-                                <p className="text-sm text-primary font-medium mb-4">{getServiceName(schedule.serviceId)}</p>
+                                <p className="text-sm text-primary font-medium mb-4">{getServiceName(schedule.serviceIds || schedule.serviceId)}</p>
 
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -241,7 +241,7 @@ const Users = () => {
 
       {/* Edit Role Dialog */}
       <Dialog open={!!editingUser} onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}>
-        <DialogContent className="w-[95vw] max-w-[425px] rounded-xl p-6">
+        <DialogContent className="w-[95vw] max-w-[425px] rounded-xl p-6 max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
           <DialogHeader><DialogTitle>Editar Função</DialogTitle></DialogHeader>
           <div className="py-2">
             <p className="text-sm text-muted-foreground mb-4">Alterar permissões de <span className="font-bold text-foreground">{editingUser?.fullName}</span>:</p>

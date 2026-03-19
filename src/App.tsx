@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Home from "./pages/Home";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
@@ -24,13 +24,41 @@ import AdminSettings from "./pages/admin/Settings";
 import RecurringSchedules from "./pages/admin/RecurringSchedules";
 import Finance from "./pages/barber/Finance";
 import BarberProfile from "./pages/barber/Profile";
+import ResetPassword from "./pages/ResetPassword";
+import AdminLogin from "./pages/admin/Login";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
+import { storage } from "@/lib/storage";
+import { Loader2 } from "lucide-react";
+
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    storage.initialize().then(() => setIsReady(true));
+  }, []);
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0F172A]">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-primary/20 rounded-full animate-pulse" />
+            <Loader2 className="w-24 h-24 text-primary animate-spin absolute top-0 left-0" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Tanaka Barbearia</h2>
+            <p className="text-xs font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando Dados...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -44,6 +72,8 @@ const App = () => {
             <Route path="/booking" element={<Booking />} />
             <Route path="/guest-booking" element={<GuestBooking />} />
             <Route path="/login" element={<ClientLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/register" element={<Register />} />
 
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

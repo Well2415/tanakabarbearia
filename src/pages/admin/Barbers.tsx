@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { cn } from '@/lib/utils'; // Import cn
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,10 +11,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Plus, Trash2, Scissors, Edit, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Scissors, Edit, CalendarIcon, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO, startOfDay } from 'date-fns'; // Import format, parseISO, startOfDay
-import { ptBR } from 'date-fns/locale'; // Import ptBR
+import { format, parseISO, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Barber } from '@/types';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -36,8 +37,8 @@ const Barbers = () => {
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
   const [editBarberData, setEditBarberData] = useState({ id: '', name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '' });
 
-  const [isAddCalendarOpen, setIsAddCalendarOpen] = useState(false); // For add barber calendar popover
-  const [isEditCalendarOpen, setIsEditCalendarOpen] = useState(false); // For edit barber calendar popover
+  const [isAddCalendarOpen, setIsAddCalendarOpen] = useState(false);
+  const [isEditCalendarOpen, setIsEditCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -60,9 +61,9 @@ const Barbers = () => {
         id: editingBarber.id,
         name: editingBarber.name,
         specialties: editingBarber.specialties.join(', '),
-        availableHours: editingBarber.availableHours.filter(h => COMMON_HOURS.includes(h)) || [], // Filter out custom hours
+        availableHours: editingBarber.availableHours.filter(h => COMMON_HOURS.includes(h)) || [],
         availableDates: editingBarber.availableDates || [],
-        customHours: editingBarber.availableHours.filter(h => !COMMON_HOURS.includes(h)).join(', '), // Extract custom hours
+        customHours: editingBarber.availableHours.filter(h => !COMMON_HOURS.includes(h)).join(', '),
         photo: editingBarber.photo || '',
         yearsOfExperience: editingBarber.yearsOfExperience?.toString() || '',
         description: editingBarber.description || '',
@@ -82,7 +83,7 @@ const Barbers = () => {
       description: newBarberData.description || undefined,
       specialties: newBarberData.specialties.split(',').map(s => s.trim()),
       availableHours: [...newBarberData.availableHours, ...newBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')].sort(),
-      availableDates: newBarberData.availableDates, // availableDates is already an array
+      availableDates: newBarberData.availableDates,
     };
     const updated = [...barbers, newBarber];
     storage.saveBarbers(updated);
@@ -168,6 +169,7 @@ const Barbers = () => {
                     {COMMON_HOURS.map(hour => (
                       <Button
                         key={hour}
+                        type="button"
                         variant={newBarberData.availableHours.includes(hour) ? 'default' : 'outline'}
                         onClick={() => {
                           const currentHours = newBarberData.availableHours;
@@ -212,34 +214,44 @@ const Barbers = () => {
                         <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                         <span className="flex-grow overflow-hidden whitespace-nowrap text-ellipsis">
                           {newBarberData.availableDates.length > 0
-                            ? newBarberData.availableDates.slice(0, 2).map(dateStr => format(new Date(dateStr), 'dd/MM/yyyy')).join(', ')
-                            : 'Selecione as datas'}
-                          {newBarberData.availableDates.length > 2 &&
-                            ` (+${newBarberData.availableDates.length - 2} mais)`
-                          }
+                            ? newBarberData.availableDates.length + ' datas selecionadas'
+                            : 'Selecionar datas'}
                         </span>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
-                        mode="single"
-                        selected={undefined} // Don't highlight a "single" date specifically here since it's a list
-                        onSelect={(date) => {
-                          if (date) {
-                            const formatted = format(date, 'yyyy-MM-dd');
-                            const exists = newBarberData.availableDates.includes(formatted);
-                            const updated = exists
-                              ? newBarberData.availableDates.filter(d => d !== formatted)
-                              : [...newBarberData.availableDates, formatted];
-                            setNewBarberData({ ...newBarberData, availableDates: updated.sort() });
-                          }
-                          setIsAddCalendarOpen(false);
+                        mode="multiple"
+                        selected={newBarberData.availableDates.map(d => new Date(d + 'T12:00:00'))}
+                        onSelect={(dates) => {
+                          const formatted = (dates as Date[] || []).map(d => format(d, 'yyyy-MM-dd'));
+                          setNewBarberData({ ...newBarberData, availableDates: formatted.sort() });
                         }}
                         initialFocus
                         locale={ptBR}
                       />
                     </PopoverContent>
                   </Popover>
+                  {newBarberData.availableDates.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {newBarberData.availableDates.map(dateStr => (
+                        <Badge
+                          key={dateStr}
+                          variant="secondary"
+                          className="gap-1 pr-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                          onClick={() => {
+                            setNewBarberData({
+                              ...newBarberData,
+                              availableDates: newBarberData.availableDates.filter(d => d !== dateStr)
+                            });
+                          }}
+                        >
+                          {format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy')}
+                          <X className="w-3 h-3" />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" className="w-full">Cadastrar</Button>
               </form>
@@ -324,6 +336,7 @@ const Barbers = () => {
                 {COMMON_HOURS.map(hour => (
                   <Button
                     key={hour}
+                    type="button"
                     variant={editBarberData.availableHours.includes(hour) ? 'default' : 'outline'}
                     onClick={() => {
                       const currentHours = editBarberData.availableHours;
@@ -368,34 +381,44 @@ const Barbers = () => {
                     <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
                     <span className="flex-grow overflow-hidden whitespace-nowrap text-ellipsis">
                       {editBarberData.availableDates.length > 0
-                        ? editBarberData.availableDates.slice(0, 2).map(dateStr => format(new Date(dateStr), 'dd/MM/yyyy')).join(', ')
-                        : 'Selecione as datas'}
-                      {editBarberData.availableDates.length > 2 &&
-                        ` (+${editBarberData.availableDates.length - 2} mais)`
-                      }
+                        ? editBarberData.availableDates.length + ' datas selecionadas'
+                        : 'Selecionar datas'}
                     </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
-                    mode="single"
-                    selected={undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const formatted = format(date, 'yyyy-MM-dd');
-                        const exists = editBarberData.availableDates.includes(formatted);
-                        const updated = exists
-                          ? editBarberData.availableDates.filter(d => d !== formatted)
-                          : [...editBarberData.availableDates, formatted];
-                        setEditBarberData({ ...editBarberData, availableDates: updated.sort() });
-                      }
-                      setIsEditCalendarOpen(false);
+                    mode="multiple"
+                    selected={editBarberData.availableDates.map(d => new Date(d + 'T12:00:00'))}
+                    onSelect={(dates) => {
+                      const formatted = (dates as Date[] || []).map(d => format(d, 'yyyy-MM-dd'));
+                      setEditBarberData({ ...editBarberData, availableDates: formatted.sort() });
                     }}
                     initialFocus
                     locale={ptBR}
                   />
                 </PopoverContent>
               </Popover>
+              {editBarberData.availableDates.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editBarberData.availableDates.map(dateStr => (
+                    <Badge
+                      key={dateStr}
+                      variant="secondary"
+                      className="gap-1 pr-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      onClick={() => {
+                        setEditBarberData({
+                          ...editBarberData,
+                          availableDates: editBarberData.availableDates.filter(d => d !== dateStr)
+                        });
+                      }}
+                    >
+                      {format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy')}
+                      <X className="w-3 h-3" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>

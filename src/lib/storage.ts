@@ -1,408 +1,261 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
-import { format } from 'date-fns';
+import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
 import TanakaImg from '../../img/barbeiro/TANAKA.png';
 import LogoMenu from '../../img/LOGO MENU.png';
-import LogoLogin from '../../img/LOGO LOGIN.png';
 
-const STORAGE_KEYS = {
-  BARBERS: 'barbershop_barbers',
-  SERVICES: 'barbershop_services',
-  APPOINTMENTS: 'barbershop_appointments',
-  USERS: 'barbershop_users',
-  LOGGED_IN_USER_ID: 'barbershop_logged_in_user_id',
-  LOYALTY_TARGET: 'barbershop_loyalty_target',
-  HOLIDAY_MODE: 'barbershop_holiday_mode',
-  AUTO_REMINDERS: 'barbershop_auto_reminders',
-  SHOP_NAME: 'barbershop_shop_name',
-  SHOP_PHONE: 'barbershop_shop_phone',
-  SHOP_LOGO: 'barbershop_shop_logo',
-  SHOP_ADDRESS: 'barbershop_shop_address',
-  WHATSAPP_API_URL: 'barbershop_whatsapp_api_url',
-  WHATSAPP_API_TOKEN: 'barbershop_whatsapp_api_token',
-  WHATSAPP_INSTANCE_ID: 'barbershop_whatsapp_instance_id',
-  REMINDER_MINUTES: 'barbershop_reminder_minutes',
-  SHOP_INSTAGRAM: 'barbershop_shop_instagram',
-  SHOP_FACEBOOK: 'barbershop_shop_facebook',
-  SHOP_EMAIL: 'barbershop_shop_email',
-  SHOP_OPENING_HOURS: 'barbershop_shop_opening_hours',
-  SHOP_MAPS_LINK: 'barbershop_shop_maps_link',
-  SHOP_GALLERY: 'barbershop_shop_gallery',
-  RECURRING_SCHEDULES: 'barbershop_recurring_schedules',
-  EXPENSES: 'barbershop_expenses',
-  EXPENSE_CATEGORIES: 'barbershop_expense_categories',
-  PIX_KEY: 'barbershop_pix_key',
-  MP_ACCESS_TOKEN: 'barbershop_mp_access_token',
-  MP_PUBLIC_KEY: 'barbershop_mp_public_key',
+// Cache interno para manter o funcionamento síncrono dos componentes
+let cache: {
+  barbers: Barber[];
+  services: Service[];
+  appointments: Appointment[];
+  users: User[];
+  recurringSchedules: RecurringSchedule[];
+  expenses: Expense[];
+  expenseCategories: string[];
+  settings: Record<string, any>;
+} = {
+  barbers: [],
+  services: [],
+  appointments: [],
+  users: [],
+  recurringSchedules: [],
+  expenses: [],
+  expenseCategories: [],
+  settings: {}
 };
 
-// Initialize with default data
-const initializeData = () => {
-  // ... (previous initializations)
-  if (!localStorage.getItem(STORAGE_KEYS.SERVICES)) {
-    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(DEFAULT_SERVICES));
-  } else {
-    const currentServices = JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
-    if (currentServices.length > 0 && !currentServices[0].category) {
-      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(DEFAULT_SERVICES));
-    }
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.BARBERS)) {
-    localStorage.setItem(STORAGE_KEYS.BARBERS, JSON.stringify(DEFAULT_BARBERS));
-  } else {
-    let currentBarbers: Barber[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.BARBERS) || '[]');
-    let barbersChanged = false;
-    let tanakaBarberExists = false;
-    currentBarbers = currentBarbers.map(b => {
-      if (b.name === 'TANAKA' || b.id === 'admin' || String(b.name).toLowerCase().includes('tanaka')) {
-        tanakaBarberExists = true;
-        if (b.name !== 'TANAKA' || b.photo !== TanakaImg) {
-          barbersChanged = true;
-          return { ...b, name: 'TANAKA', photo: TanakaImg };
-        }
-      }
-      return b;
-    });
-
-    if (!tanakaBarberExists) {
-      currentBarbers.unshift(DEFAULT_BARBERS.find(b => b.id === 'admin') || DEFAULT_BARBERS[0]);
-      barbersChanged = true;
-    }
-    if (barbersChanged) {
-      localStorage.setItem(STORAGE_KEYS.BARBERS, JSON.stringify(currentBarbers));
-    }
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(DEFAULT_USERS));
-  } else {
-    let currentUsers: User[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    let hasChanges = false;
-    let tanakaUserExists = false;
-
-    currentUsers = currentUsers.map(u => {
-      if (u.username === 'tanaka') {
-        tanakaUserExists = true;
-        if (u.fullName !== 'TANAKA' || u.avatarUrl !== TanakaImg) {
-          hasChanges = true;
-          return { ...u, fullName: 'TANAKA', avatarUrl: TanakaImg };
-        }
-      }
-      return u;
-    });
-
-    if (!tanakaUserExists) {
-      currentUsers.unshift(DEFAULT_USERS.find(u => u.username === 'tanaka') || DEFAULT_USERS[0]);
-      hasChanges = true;
-    }
-
-    if (!currentUsers.some(u => u.username === 'wellington')) {
-      const wellington = DEFAULT_USERS.find(u => u.username === 'wellington');
-      if (wellington) {
-        currentUsers.push(wellington);
-        hasChanges = true;
-      }
-    }
-
-    if (hasChanges) {
-      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(currentUsers));
-    }
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
-    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(DEFAULT_APPOINTMENTS));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.LOYALTY_TARGET)) {
-    localStorage.setItem(STORAGE_KEYS.LOYALTY_TARGET, JSON.stringify(LOYALTY_TARGET_DEFAULT));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_NAME)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_NAME, JSON.stringify('TANAKA BARBEARIA'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_PHONE)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_PHONE, JSON.stringify('5562985328737'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_ADDRESS)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_ADDRESS, JSON.stringify('Av. 01, Centro — Bonfinópolis, GO'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.REMINDER_MINUTES)) {
-    localStorage.setItem(STORAGE_KEYS.REMINDER_MINUTES, JSON.stringify('30'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_LOGO)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_LOGO, JSON.stringify(LogoMenu));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_INSTAGRAM)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_INSTAGRAM, JSON.stringify('https://instagram.com/'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_OPENING_HOURS)) {
-    localStorage.setItem(STORAGE_KEYS.SHOP_OPENING_HOURS, JSON.stringify('Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00'));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.SHOP_GALLERY)) {
-    const defaultGallery = [
-      "/img/CABELOS/BARBA 1.png",
-      "/img/CABELOS/BARBA 2.png",
-      "/img/CABELOS/cabelo 1.png",
-      "/img/CABELOS/cabelo 2.png",
-      "/img/CABELOS/cabelo 3.png",
-    ];
-    localStorage.setItem(STORAGE_KEYS.SHOP_GALLERY, JSON.stringify(defaultGallery));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.EXPENSES)) {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify([]));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.EXPENSE_CATEGORIES)) {
-    const defaultCategories = [
-      'Aluguel',
-      'Energia/Luz',
-      'Água',
-      'Produtos e Materiais',
-      'Marketing e Anúncios',
-      'Impostos e Taxas',
-      'Manutenção de Equipamentos',
-      'Salários e Comissões',
-      'Internet/Telefone',
-      'Outros',
-    ];
-    localStorage.setItem(STORAGE_KEYS.EXPENSE_CATEGORIES, JSON.stringify(defaultCategories));
-  }
-
-  if (!localStorage.getItem(STORAGE_KEYS.PIX_KEY)) {
-    localStorage.setItem(STORAGE_KEYS.PIX_KEY, JSON.stringify(''));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.MP_ACCESS_TOKEN)) {
-    localStorage.setItem(STORAGE_KEYS.MP_ACCESS_TOKEN, JSON.stringify(''));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.MP_PUBLIC_KEY)) {
-    localStorage.setItem(STORAGE_KEYS.MP_PUBLIC_KEY, JSON.stringify(''));
-  }
-};
-
-initializeData();
+let isInitialized = false;
 
 export const storage = {
-  // ... (previous methods)
-  // Barbers
-  getBarbers: (): Barber[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.BARBERS) || '[]');
+  async initialize() {
+    if (isInitialized) return;
+
+    try {
+      // 1. Carregar Configurações (Settings)
+      const { data: settingsData } = await supabase.from('shop_settings').select('*');
+      const settingsMap: Record<string, any> = {};
+      settingsData?.forEach(s => {
+        settingsMap[s.key] = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+      });
+      cache.settings = settingsMap;
+
+      // 2. Carregar Dados Principais em Paralelo
+      const [
+        { data: barbers },
+        { data: services },
+        { data: users },
+        { data: appointments },
+        { data: recurring },
+        { data: expenses },
+        { data: expenseCategories }
+      ] = await Promise.all([
+        supabase.from('barbers').select('*'),
+        supabase.from('services').select('*'),
+        supabase.from('users').select('*'),
+        supabase.from('appointments').select('*'),
+        supabase.from('recurring_schedules').select('*'),
+        supabase.from('expenses').select('*'),
+        supabase.from('expense_categories').select('*')
+      ]);
+
+      cache.barbers = barbers || [];
+      cache.services = services || [];
+      cache.users = users || [];
+      cache.appointments = appointments || [];
+      cache.recurringSchedules = recurring || [];
+      cache.expenses = expenses || [];
+      cache.expenseCategories = expenseCategories?.map(c => c.name) || [];
+
+      // Se o banco estiver vazio, inicializar com dados padrão
+      if (cache.services.length === 0) {
+        await this.seedDefaultData();
+      }
+
+      isInitialized = true;
+      console.log('✅ Supabase Initialized & Cached');
+    } catch (error) {
+      console.error('❌ Error initializing Supabase:', error);
+      isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
+    }
   },
-  saveBarbers: (barbers: Barber[]) => {
-    localStorage.setItem(STORAGE_KEYS.BARBERS, JSON.stringify(barbers));
+
+  async seedDefaultData() {
+    console.log('🌱 Seeding default data to Supabase...');
+    await supabase.from('services').insert(DEFAULT_SERVICES);
+    await supabase.from('barbers').insert(DEFAULT_BARBERS);
+    await supabase.from('users').insert(DEFAULT_USERS);
+    await supabase.from('appointments').insert(DEFAULT_APPOINTMENTS);
+
+    const defaultCategories = [
+      'Aluguel', 'Energia/Luz', 'Água', 'Produtos e Materiais', 'Marketing e Anúncios',
+      'Impostos e Taxas', 'Manutenção de Equipamentos', 'Salários e Comissões',
+      'Internet/Telefone', 'Outros',
+    ];
+    await supabase.from('expense_categories').insert(defaultCategories.map(name => ({ name })));
+
+    await supabase.from('shop_settings').upsert([
+      { key: 'loyalty_target', value: JSON.stringify(LOYALTY_TARGET_DEFAULT) },
+      { key: 'shop_name', value: JSON.stringify('TANAKA BARBEARIA') },
+      { key: 'shop_phone', value: JSON.stringify('5562985328737') },
+      { key: 'shop_address', value: JSON.stringify('Av. 01, Centro — Bonfinópolis, GO') },
+      { key: 'reminder_minutes', value: JSON.stringify('30') },
+      { key: 'shop_logo', value: JSON.stringify(LogoMenu) },
+      { key: 'shop_instagram', value: JSON.stringify('https://instagram.com/') },
+      { key: 'shop_opening_hours', value: JSON.stringify('Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00') },
+      { key: 'shop_gallery', value: JSON.stringify([
+        "/img/CABELOS/BARBA 1.png", "/img/CABELOS/BARBA 2.png", "/img/CABELOS/cabelo 1.png",
+        "/img/CABELOS/cabelo 2.png", "/img/CABELOS/cabelo 3.png",
+      ])},
+      { key: 'pix_key', value: JSON.stringify('') },
+      { key: 'mp_access_token', value: JSON.stringify('TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596') },
+      { key: 'mp_public_key', value: JSON.stringify('TEST-5f1446b5-2aa6-42e1-8e37-b4e9cb61dacd') },
+      { key: 'holiday_mode', value: JSON.stringify(false) },
+      { key: 'auto_reminders', value: JSON.stringify(false) },
+      { key: 'whatsapp_api_url', value: JSON.stringify('') },
+      { key: 'whatsapp_api_token', value: JSON.stringify('') },
+      { key: 'whatsapp_instance_id', value: JSON.stringify('') },
+      { key: 'shop_facebook', value: JSON.stringify('') },
+      { key: 'shop_email', value: JSON.stringify('tanakabnf@gmail.com') },
+      { key: 'shop_maps_link', value: JSON.stringify('') },
+    ]);
+
+    isInitialized = false;
+    await this.initialize();
+  },
+
+  // Barbers
+  getBarbers: (): Barber[] => cache.barbers,
+  async saveBarbers(barbers: Barber[]) {
+    cache.barbers = barbers;
+    await supabase.from('barbers').delete().neq('id', '_none_');
+    await supabase.from('barbers').insert(barbers);
   },
 
   // Services
-  getServices: (): Service[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SERVICES) || '[]');
-  },
-  saveServices: (services: Service[]) => {
-    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+  getServices: (): Service[] => cache.services,
+  async saveServices(services: Service[]) {
+    cache.services = services;
+    await supabase.from('services').delete().neq('id', '_none_');
+    await supabase.from('services').insert(services);
   },
 
   // Appointments
-  getAppointments: (): Appointment[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.APPOINTMENTS) || '[]');
-  },
-  saveAppointments: (appointments: Appointment[]) => {
-    localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+  getAppointments: (): Appointment[] => cache.appointments,
+  async saveAppointments(appointments: Appointment[]) {
+    cache.appointments = appointments;
+    await supabase.from('appointments').upsert(appointments);
   },
 
   // Users
-  getUsers: (): User[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-  },
-  saveUsers: (users: User[]) => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  getUsers: (): User[] => cache.users,
+  async saveUsers(users: User[]) {
+    cache.users = users;
+    await supabase.from('users').upsert(users);
   },
 
   // Auth
   loginUser: (userId: string) => {
-    localStorage.setItem(STORAGE_KEYS.LOGGED_IN_USER_ID, userId);
+    localStorage.setItem('barbershop_logged_in_user_id', userId);
   },
   logoutUser: () => {
-    localStorage.removeItem(STORAGE_KEYS.LOGGED_IN_USER_ID);
+    localStorage.removeItem('barbershop_logged_in_user_id');
   },
   getCurrentUser: (): User | null => {
-    const userId = localStorage.getItem(STORAGE_KEYS.LOGGED_IN_USER_ID);
+    const userId = localStorage.getItem('barbershop_logged_in_user_id');
     if (!userId) return null;
-
-    const users = storage.getUsers();
-    const user = users.find(u => u.id === userId);
+    const user = cache.users.find(u => u.id === userId);
     if (user && !user.latestCuts) {
-      user.latestCuts = []; // Initialize latestCuts if missing
+      user.latestCuts = []; 
     }
     return user || null;
   },
 
-  // Loyalty
-  getLoyaltyTarget: (): number => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.LOYALTY_TARGET) || '10');
+  // Settings helpers
+  getSetting: (key: string, defaultValue: any) => {
+    return cache.settings[key] !== undefined ? cache.settings[key] : defaultValue;
   },
-  saveLoyaltyTarget: (target: number) => {
-    localStorage.setItem(STORAGE_KEYS.LOYALTY_TARGET, JSON.stringify(target));
-  },
-
-  // Holiday Mode
-  getHolidayMode: (): boolean => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.HOLIDAY_MODE) || 'false');
-  },
-  saveHolidayMode: (isActive: boolean) => {
-    localStorage.setItem(STORAGE_KEYS.HOLIDAY_MODE, JSON.stringify(isActive));
-  },
-  // Auto Reminders
-  getAutoReminders: (): boolean => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTO_REMINDERS) || 'false');
-  },
-  saveAutoReminders: (isEnabled: boolean) => {
-    localStorage.setItem(STORAGE_KEYS.AUTO_REMINDERS, JSON.stringify(isEnabled));
+  async saveSetting(key: string, value: any) {
+    cache.settings[key] = value;
+    await supabase.from('shop_settings').upsert({ key, value: JSON.stringify(value) }, { onConflict: 'key' });
   },
 
-  // Shop Settings
-  getShopName: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_NAME) || '"TANAKA BARBEARIA"');
-  },
-  saveShopName: (name: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_NAME, JSON.stringify(name));
-  },
-  getShopPhone: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_PHONE) || '"5562985328737"');
-  },
-  saveShopPhone: (phone: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_PHONE, JSON.stringify(phone));
-  },
-  getShopLogo: (): string => {
-    try {
-      const logo = localStorage.getItem(STORAGE_KEYS.SHOP_LOGO);
-      if (!logo) return LogoMenu;
-      const parsed = JSON.parse(logo);
-      return parsed && parsed.length > 0 ? parsed : LogoMenu;
-    } catch {
-      return LogoMenu;
-    }
-  },
-  saveShopLogo: (logoUrl: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_LOGO, JSON.stringify(logoUrl));
-  },
-  getShopAddress: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_ADDRESS) || '"Av. 01, Centro — Bonfinópolis, GO"');
-  },
-  saveShopAddress: (address: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_ADDRESS, JSON.stringify(address));
-  },
-  getShopInstagram: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_INSTAGRAM) || '"https://instagram.com/"');
-  },
-  saveShopInstagram: (url: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_INSTAGRAM, JSON.stringify(url));
-  },
-  getShopFacebook: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_FACEBOOK) || '""');
-  },
-  saveShopFacebook: (url: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_FACEBOOK, JSON.stringify(url));
-  },
-  getShopEmail: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_EMAIL) || '"tanakabnf@gmail.com"');
-  },
-  saveShopEmail: (email: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_EMAIL, JSON.stringify(email));
-  },
-  getShopOpeningHours: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_OPENING_HOURS) || '"Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00"');
-  },
-  saveShopOpeningHours: (hours: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_OPENING_HOURS, JSON.stringify(hours));
-  },
-  getShopMapsLink: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_MAPS_LINK) || '""');
-  },
-  saveShopMapsLink: (link: string) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_MAPS_LINK, JSON.stringify(link));
-  },
-  getShopGallery: (): string[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.SHOP_GALLERY) || '[]');
-  },
-  saveShopGallery: (images: string[]) => {
-    localStorage.setItem(STORAGE_KEYS.SHOP_GALLERY, JSON.stringify(images));
+  getLoyaltyTarget: (): number => storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT),
+  saveLoyaltyTarget: (target: number) => storage.saveSetting('loyalty_target', target),
+
+  getHolidayMode: (): boolean => storage.getSetting('holiday_mode', false),
+  saveHolidayMode: (isActive: boolean) => storage.saveSetting('holiday_mode', isActive),
+
+  getAutoReminders: (): boolean => storage.getSetting('auto_reminders', false),
+  saveAutoReminders: (isEnabled: boolean) => storage.saveSetting('auto_reminders', isEnabled),
+
+  getShopName: (): string => storage.getSetting('shop_name', 'TANAKA BARBEARIA'),
+  saveShopName: (name: string) => storage.saveSetting('shop_name', name),
+
+  getShopPhone: (): string => storage.getSetting('shop_phone', '5562985328737'),
+  saveShopPhone: (phone: string) => storage.saveSetting('shop_phone', phone),
+
+  getShopLogo: (): string => storage.getSetting('shop_logo', LogoMenu),
+  saveShopLogo: (logoUrl: string) => storage.saveSetting('shop_logo', logoUrl),
+
+  getShopAddress: (): string => storage.getSetting('shop_address', 'Av. 01, Centro — Bonfinópolis, GO'),
+  saveShopAddress: (address: string) => storage.saveSetting('shop_address', address),
+
+  getShopInstagram: (): string => storage.getSetting('shop_instagram', 'https://instagram.com/'),
+  saveShopInstagram: (url: string) => storage.saveSetting('shop_instagram', url),
+
+  getShopFacebook: (): string => storage.getSetting('shop_facebook', ''),
+  saveShopFacebook: (url: string) => storage.saveSetting('shop_facebook', url),
+
+  getShopEmail: (): string => storage.getSetting('shop_email', 'tanakabnf@gmail.com'),
+  saveShopEmail: (email: string) => storage.saveSetting('shop_email', email),
+
+  getShopOpeningHours: (): string => storage.getSetting('shop_opening_hours', 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00'),
+  saveShopOpeningHours: (hours: string) => storage.saveSetting('shop_opening_hours', hours),
+
+  getShopMapsLink: (): string => storage.getSetting('shop_maps_link', ''),
+  saveShopMapsLink: (link: string) => storage.saveSetting('shop_maps_link', link),
+
+  getShopGallery: (): string[] => storage.getSetting('shop_gallery', []),
+  saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
+
+  getPixKey: (): string => storage.getSetting('pix_key', ''),
+  savePixKey: (key: string) => storage.saveSetting('pix_key', key),
+
+  getWhatsAppApiUrl: (): string => storage.getSetting('whatsapp_api_url', ''),
+  saveWhatsAppApiUrl: (url: string) => storage.saveSetting('whatsapp_api_url', url),
+
+  getWhatsAppApiToken: (): string => storage.getSetting('whatsapp_api_token', ''),
+  saveWhatsAppApiToken: (token: string) => storage.saveSetting('whatsapp_api_token', token),
+
+  getWhatsAppInstanceId: (): string => storage.getSetting('whatsapp_instance_id', ''),
+  saveWhatsAppInstanceId: (id: string) => storage.saveSetting('whatsapp_instance_id', id),
+
+  getReminderMinutes: (): string => storage.getSetting('reminder_minutes', '30'),
+  saveReminderMinutes: (minutes: string) => storage.saveSetting('reminder_minutes', minutes),
+
+  getRecurringSchedules: (): RecurringSchedule[] => cache.recurringSchedules,
+  async saveRecurringSchedules(schedules: RecurringSchedule[]) {
+    cache.recurringSchedules = schedules;
+    await supabase.from('recurring_schedules').upsert(schedules);
   },
 
-  // Payments
-  getPixKey: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.PIX_KEY) || '""');
-  },
-  savePixKey: (key: string) => {
-    localStorage.setItem(STORAGE_KEYS.PIX_KEY, JSON.stringify(key));
+  getMPAccessToken: (): string => storage.getSetting('mp_access_token', ''),
+  saveMPAccessToken: (token: string) => storage.saveSetting('mp_access_token', token),
+
+  getMPPublicKey: (): string => storage.getSetting('mp_public_key', ''),
+  saveMPPublicKey: (key: string) => storage.saveSetting('mp_public_key', key),
+
+  getExpenses: (): Expense[] => cache.expenses,
+  async saveExpenses(expenses: Expense[]) {
+    cache.expenses = expenses;
+    await supabase.from('expenses').upsert(expenses);
   },
 
-  // WhatsApp API Settings
-  getWhatsAppApiUrl: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.WHATSAPP_API_URL) || '""');
-  },
-  saveWhatsAppApiUrl: (url: string) => {
-    localStorage.setItem(STORAGE_KEYS.WHATSAPP_API_URL, JSON.stringify(url));
-  },
-  getWhatsAppApiToken: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.WHATSAPP_API_TOKEN) || '""');
-  },
-  saveWhatsAppApiToken: (token: string) => {
-    localStorage.setItem(STORAGE_KEYS.WHATSAPP_API_TOKEN, JSON.stringify(token));
-  },
-  getWhatsAppInstanceId: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.WHATSAPP_INSTANCE_ID) || '""');
-  },
-  saveWhatsAppInstanceId: (id: string) => {
-    localStorage.setItem(STORAGE_KEYS.WHATSAPP_INSTANCE_ID, JSON.stringify(id));
-  },
-  getReminderMinutes: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.REMINDER_MINUTES) || '"30"');
-  },
-  saveReminderMinutes: (minutes: string) => {
-    localStorage.setItem(STORAGE_KEYS.REMINDER_MINUTES, JSON.stringify(minutes));
-  },
-  // Recurring Schedules
-  getRecurringSchedules: (): RecurringSchedule[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING_SCHEDULES) || '[]');
-  },
-  saveRecurringSchedules: (schedules: RecurringSchedule[]) => {
-    localStorage.setItem(STORAGE_KEYS.RECURRING_SCHEDULES, JSON.stringify(schedules));
-  },
-
-  // Mercado Pago
-  getMPAccessToken: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.MP_ACCESS_TOKEN) || '""');
-  },
-  saveMPAccessToken: (token: string) => {
-    localStorage.setItem(STORAGE_KEYS.MP_ACCESS_TOKEN, JSON.stringify(token));
-  },
-  getMPPublicKey: (): string => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.MP_PUBLIC_KEY) || '""');
-  },
-  saveMPPublicKey: (key: string) => {
-    localStorage.setItem(STORAGE_KEYS.MP_PUBLIC_KEY, JSON.stringify(key));
-  },
-
-  // Expenses
-  getExpenses: (): Expense[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSES) || '[]');
-  },
-  saveExpenses: (expenses: Expense[]) => {
-    localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
-  },
-
-  // Expense Categories
-  getExpenseCategories: (): string[] => {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.EXPENSE_CATEGORIES) || '[]');
-  },
-  saveExpenseCategories: (categories: string[]) => {
-    localStorage.setItem(STORAGE_KEYS.EXPENSE_CATEGORIES, JSON.stringify(categories));
+  getExpenseCategories: (): string[] => cache.expenseCategories,
+  async saveExpenseCategories(categories: string[]) {
+    cache.expenseCategories = categories;
+    await supabase.from('expense_categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('expense_categories').insert(categories.map(name => ({ name })));
   },
 };

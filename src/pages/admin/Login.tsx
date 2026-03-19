@@ -6,12 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
-import { Scissors } from 'lucide-react';
+import { Scissors, CheckCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +35,53 @@ const Login = () => {
       toast({
         title: 'Erro',
         description: 'E-mail ou senha incorretos',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleResetPassword = () => {
+    const users = storage.getUsers();
+    // Admins and Barbers have access here
+    const userFound = users.find(u => 
+      u.email?.toLowerCase() === resetEmail.toLowerCase() && 
+      (u.role === 'admin' || u.role === 'barber')
+    );
+
+    if (userFound) {
+      // Gerar um token aleatório simples
+      const token = Math.random().toString(36).substring(2, 15);
+      
+      // Salvar o token no usuário
+      const updatedUsers = users.map(u => 
+        u.id === userFound.id ? { ...u, resetToken: token } : u
+      );
+      storage.saveUsers(updatedUsers);
+
+      setEmailSent(true);
+      
+      // Simular o envio do e-mail com um link clicável no Toast
+      const resetLink = `${window.location.origin}/reset-password?token=${token}`;
+      
+      toast({
+          title: 'E-mail enviado!',
+          description: (
+              <div className="flex flex-col gap-2">
+                  <p>Um link de recuperação administrativa foi enviado para {resetEmail}.</p>
+                  <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary font-bold justify-start"
+                      onClick={() => navigate(`/reset-password?token=${token}`)}
+                  >
+                      [SIMULAR] Clique aqui para abrir o link do e-mail
+                  </Button>
+              </div>
+          ),
+      });
+    } else {
+      toast({
+        title: 'E-mail não encontrado',
+        description: 'Não encontramos nenhuma conta administrativa com este e-mail.',
         variant: 'destructive',
       });
     }
@@ -61,7 +112,16 @@ const Login = () => {
           </div>
 
           <div>
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="password">Senha</Label>
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(true)}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
             <Input
               id="password"
               type="password"
@@ -81,6 +141,62 @@ const Login = () => {
           </p>
         </form>
       </Card>
+
+      <Dialog open={isForgotOpen} onOpenChange={(open) => {
+        setIsForgotOpen(open);
+        if (!open) {
+          setEmailSent(false);
+          setResetEmail('');
+        }
+      }}>
+        <DialogContent className="max-w-md w-[95vw] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Recuperar Senha Admin</DialogTitle>
+            <DialogDescription>
+              {emailSent 
+                ? 'Verifique sua caixa de entrada para o link de recuperação.' 
+                : 'Insira o seu e-mail administrativo para receber o link de redefinição.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            {!emailSent ? (
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">E-mail</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="admin@barbershop.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center space-y-2">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                    <CheckCircle2 className="w-6 h-6 text-primary" />
+                </div>
+                <p className="font-medium text-lg">E-mail Enviado!</p>
+                <p className="text-sm text-muted-foreground">
+                  Enviamos as instruções administrativas para <strong>{resetEmail}</strong>.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            {!emailSent ? (
+              <>
+                <Button variant="ghost" onClick={() => setIsForgotOpen(false)}>Cancelar</Button>
+                <Button onClick={handleResetPassword}>Enviar Link</Button>
+              </>
+            ) : (
+              <Button className="w-full" onClick={() => setIsForgotOpen(false)}>Fechar</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

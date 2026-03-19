@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AdminMenu } from '@/components/admin/AdminMenu';
+import { CreateClientDialog } from '@/components/admin/CreateClientDialog';
+import { useSearchParams } from 'react-router-dom';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -25,6 +27,15 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [searchParams] = useSearchParams();
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new-client') {
+      setIsAddOpen(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [searchParams]);
 
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
@@ -99,7 +110,12 @@ const Clients = () => {
     <div className="min-h-screen bg-background">
       <AdminMenu />
       <div className="container mx-auto px-4 py-6 md:py-8 pb-32">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6">Gerenciar Clientes</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold">Gerenciar Clientes</h2>
+          <div className="w-full md:w-auto">
+            <CreateClientDialog />
+          </div>
+        </div>
 
         {/* Loyalty Plan Management Card */}
         <Card className="mb-6 p-4 md:p-6 border-border">

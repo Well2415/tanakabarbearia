@@ -55,7 +55,8 @@ export interface Appointment {
   guestPhone?: string;
 
   barberId: string;
-  serviceId: string;
+  serviceId: string; // Keep for compatibility (first service)
+  serviceIds?: string[]; // NEW: List of all services in this appointment
   date: string;
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'in_progress' | 'completed' | 'no_show';
@@ -69,12 +70,14 @@ export interface Appointment {
   servicePrice: number; // Price of the service at the time of booking
   extraCharges?: number; // New: For additional costs
   finalPrice?: number; // New: Final price after all adjustments
+  amountPaid?: number; // New: Amount already paid (e.g. deposit/signal)
 }
 export interface RecurringSchedule {
   id: string;
   userId: string;
   barberId: string;
-  serviceId: string;
+  serviceId: string; // Mantido para compatibilidade
+  serviceIds?: string[]; // Novo: Lista de múltiplos serviços
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
   time: string; // "HH:mm"
   active: boolean;

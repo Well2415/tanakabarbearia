@@ -48,7 +48,10 @@ export const ClientView = ({ user }: ClientViewProps) => {
     }
   };
 
-  const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'Serviço desconhecido';
+  const getServiceName = (id: string | string[]) => {
+    const ids = Array.isArray(id) ? id : [id];
+    return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'Serviço desconhecido';
+  };
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Barbeiro desconhecido';
 
   const loyaltyPoints = user.loyaltyPoints || 0;
@@ -68,7 +71,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
                   {appointments.map(app => (
                     <li key={app.id} className="p-4 border rounded-lg flex justify-between items-center">
                       <div>
-                        <p className="font-bold">{getServiceName(app.serviceId)}</p>
+                        <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                         <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
                         <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                       </div>

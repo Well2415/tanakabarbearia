@@ -33,6 +33,8 @@ const ClientPanel = () => {
   const [editProfileData, setEditProfileData] = useState({
     avatarUrl: '',
     stylePreferences: '',
+    newPassword: '',
+    confirmPassword: '',
   });
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -59,22 +61,36 @@ const ClientPanel = () => {
     return null;
   }
 
-  const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'Serviço desconhecido';
+  const getServiceName = (id: string | string[]) => {
+    const ids = Array.isArray(id) ? id : [id];
+    return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'Serviço desconhecido';
+  };
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Barbeiro desconhecido';
 
   const handleUpdateProfile = () => {
     if (!user) return;
+
+    if (editProfileData.newPassword && editProfileData.newPassword !== editProfileData.confirmPassword) {
+      toast({
+        title: 'Erro na senha',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     const updatedUsers = storage.getUsers().map(u =>
       u.id === user.id ? {
         ...u,
         avatarUrl: editProfileData.avatarUrl || undefined,
         stylePreferences: editProfileData.stylePreferences.split(',').map(p => p.trim()).filter(p => p !== '') || undefined,
+        password: editProfileData.newPassword || u.password,
       } : u
     );
     storage.saveUsers(updatedUsers);
     setUser(updatedUsers.find(u => u.id === user.id) || null);
     setIsEditProfileOpen(false);
+    setEditProfileData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
     toast({
       title: 'Perfil atualizado!',
       description: 'Seu perfil foi atualizado com sucesso.'
@@ -141,7 +157,7 @@ const ClientPanel = () => {
                       {appointments.map(app => (
                         <li key={app.id} className="p-4 border rounded-lg flex justify-between items-center">
                           <div>
-                            <p className="font-bold">{getServiceName(app.serviceId)}</p>
+                            <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                             <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
                             <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                           </div>
@@ -207,6 +223,29 @@ const ClientPanel = () => {
             <div>
               <Label htmlFor="edit-stylePreferences">Preferências de Estilo (separados por vírgula)</Label>
               <Textarea id="edit-stylePreferences" value={editProfileData.stylePreferences} onChange={(e) => setEditProfileData({ ...editProfileData, stylePreferences: e.target.value })} placeholder="Degradê, Barba Alinhada" />
+            </div>
+            <div className="pt-4 border-t border-border space-y-4">
+              <h4 className="font-semibold text-sm">Alterar Senha</h4>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nova Senha</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={editProfileData.newPassword}
+                  onChange={(e) => setEditProfileData({ ...editProfileData, newPassword: e.target.value })}
+                  placeholder="Deixe em branco para não alterar"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={editProfileData.confirmPassword}
+                  onChange={(e) => setEditProfileData({ ...editProfileData, confirmPassword: e.target.value })}
+                  placeholder="Repita a nova senha"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -31,10 +31,7 @@ const Dashboard = () => {
 
   const totalRevenue = appointments
     .filter(a => a.status === 'completed')
-    .reduce((sum, a) => {
-      const service = services.find(s => s.id === a.serviceId);
-      return sum + (service?.price || 0);
-    }, 0);
+    .reduce((sum, a) => sum + (a.servicePrice || 0), 0);
 
   return (
     <div className="min-h-screen bg-background">

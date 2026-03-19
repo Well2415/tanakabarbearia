@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, parseISO, isAfter } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
+import { AdminMenu } from '@/components/admin/AdminMenu';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -22,6 +24,28 @@ const MyAppointments = () => {
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
+  const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
+  const [isLoadingPix, setIsLoadingPix] = useState(false);
+  const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
+  const [isLoadingLink, setIsLoadingLink] = useState(false);
+ 
+   useEffect(() => {
+     let interval: NodeJS.Timeout;
+ 
+     if (showPaymentDialog && pixResponse) {
+       interval = setInterval(async () => {
+         const status = await checkPaymentStatus(pixResponse.id);
+         if (status === 'approved') {
+           handleCompleteService();
+           clearInterval(interval);
+         }
+       }, 5000);
+     }
+ 
+     return () => {
+       if (interval) clearInterval(interval);
+     };
+   }, [showPaymentDialog, pixResponse]);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
 
   useEffect(() => {
@@ -57,7 +81,10 @@ const MyAppointments = () => {
     const client = users.find(u => u.id === appointment.userId);
     return client?.fullName || 'Cliente desconhecido';
   };
-  const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'N/A';
+  const getServiceName = (id: string | string[]) => {
+    const ids = Array.isArray(id) ? id : [id];
+    return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'N/A';
+  };
 
   const updateAppointmentInStorage = (updatedAppointment: Appointment) => {
     const allAppointments = storage.getAppointments();
@@ -122,10 +149,46 @@ const MyAppointments = () => {
     }
 
     setShowPaymentDialog(false);
+    setPixResponse(null);
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
+  };
+
+  const handleGeneratePix = async () => {
+    if (!currentAppointmentToComplete) return;
+    
+    setIsLoadingPix(true);
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    
+    const response = await createPixPayment(finalPrice, description, clientEmail);
+    setPixResponse(response);
+    setIsLoadingPix(false);
+    
+    if (response) {
+      toast({ title: 'Pix Gerado', description: 'QR Code do Mercado Pago gerado com sucesso.' });
+    } else {
+      toast({ title: 'Erro ao gerar Pix', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
+    }
+  };
+
+  const handleGenerateLink = async () => {
+    if (!currentAppointmentToComplete) return;
+    setIsLoadingLink(true);
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    
+    const url = await createPreference(finalPrice, description, clientEmail);
+    setPreferenceUrl(url);
+    setIsLoadingLink(false);
+    
+    if (url) {
+      toast({ title: 'Link Gerado', description: 'Link de pagamento do Mercado Pago gerado com sucesso.' });
+    } else {
+      toast({ title: 'Erro ao gerar Link', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
+    }
   };
 
   const updateStatus = (id: string, status: 'confirmed' | 'cancelled') => {
@@ -162,14 +225,7 @@ const MyAppointments = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Link>
-          </Button>
-
-        </div>
-      </nav>
+      <AdminMenu />
 
       <div className="container mx-auto px-4 py-8">
         <h2 className="text-3xl font-bold mb-8">Meus Agendamentos</h2>
@@ -187,7 +243,7 @@ const MyAppointments = () => {
                       <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
                       {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                     </div>
-                    <p className="text-muted-foreground"><span className="font-medium">Serviço:</span> {getServiceName(appointment.serviceId)}</p>
+                    <p className="text-muted-foreground"><span className="font-medium">Serviço:</span> {getServiceName(appointment.serviceIds || appointment.serviceId)}</p>
                     <p className="text-muted-foreground"><span className="font-medium">Data:</span> {new Date(appointment.date).toLocaleDateString('pt-BR')} às {appointment.time}</p>
                     {appointment.startTime && <p className="text-muted-foreground"><span className="font-medium">Início:</span> {appointment.startTime}</p>}
                     {appointment.endTime && <p className="text-muted-foreground"><span className="font-medium">Fim:</span> {appointment.endTime}</p>}
@@ -254,10 +310,64 @@ const MyAppointments = () => {
               </Select>
             </div>
 
-            {paymentType === 'pix' && storage.getPixKey() && (
+            {paymentType === 'pix' && isMPConfigured() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                {!pixResponse ? (
+                  <>
+                    <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
+                    <p className="text-base font-bold text-foreground">Pix Dinâmico (Mercado Pago)</p>
+                    <p className="text-xs text-muted-foreground mb-4">Gere um QR Code exclusivo para este atendimento que confirma o pagamento automaticamente.</p>
+                    <Button 
+                      onClick={handleGeneratePix} 
+                      disabled={isLoadingPix || finalPrice <= 0}
+                      className="w-full h-11 bg-primary hover:bg-primary/90"
+                    >
+                      {isLoadingPix ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <QrCode className="w-4 h-4 mr-2" />}
+                      Gerar QR Code Mercado Pago
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-white p-2 rounded-xl mb-4 shadow-lg border-2 border-primary/20">
+                      <img 
+                        src={`data:image/png;base64,${pixResponse.qr_code_base64}`} 
+                        alt="QR Code Pix" 
+                        className="w-48 h-48"
+                      />
+                    </div>
+                    <p className="text-base font-bold text-foreground mb-1">Escaneie para Pagar</p>
+                    <p className="text-[10px] text-muted-foreground mb-4 max-w-[200px]">O status será atualizado assim que o pagamento for confirmado.</p>
+                    
+                    <div className="w-full space-y-2">
+                       <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full h-10 text-xs gap-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixResponse.qr_code);
+                          toast({ title: 'Código Copiado!', description: 'Código Pix Copia e Cola copiado.' });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" /> Copiar Código Pix
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full h-8 text-[10px] text-zinc-500"
+                        onClick={() => setPixResponse(null)}
+                      >
+                        Alterar valor ou forma de pagamento
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {paymentType === 'pix' && !isMPConfigured() && storage.getPixKey() && (
               <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
                 <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
-                <p className="text-base font-bold text-foreground">Receber via Pix</p>
+                <p className="text-base font-bold text-foreground">Receber via Pix (Chave)</p>
                 <p className="text-xs text-muted-foreground mb-4">Peça para o cliente inserir a chave abaixo no app do banco e conferir o valor de R$ {finalPrice.toFixed(2).replace('.', ',')}.</p>
                 
                 <div className="w-full relative">
@@ -279,8 +389,67 @@ const MyAppointments = () => {
               </div>
             )}
             
-            {paymentType === 'pix' && !storage.getPixKey() && (
-               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Nenhuma Chave PIX cadastrada. Acesse Configurações no painel Admin para definir.</p>
+            {paymentType === 'link' && isMPConfigured() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                {!preferenceUrl ? (
+                  <>
+                    <CreditCard className="w-10 h-10 text-primary mb-2 opacity-80" />
+                    <p className="text-base font-bold text-foreground">Link de Pagamento (Mercado Pago)</p>
+                    <p className="text-xs text-muted-foreground mb-4">Gere um link oficial para o cliente pagar com Cartão de Crédito com segurança.</p>
+                    <Button 
+                      onClick={handleGenerateLink} 
+                      disabled={isLoadingLink || finalPrice <= 0}
+                      className="w-full h-11 bg-primary hover:bg-primary/90"
+                    >
+                      {isLoadingLink ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                      Gerar Link Mercado Pago
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-background cursor-pointer hover:bg-accent/50 transition-colors p-4 rounded-xl mb-4 shadow-lg border-2 border-primary/20 w-full" onClick={() => window.open(preferenceUrl, '_blank')}>
+                       <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
+                       <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
+                    </div>
+                    <p className="text-base font-bold text-foreground mb-1">Link Gerado!</p>
+                    <p className="text-[10px] text-muted-foreground mb-4">Envie o link para o cliente ou abra agora.</p>
+                    
+                    <div className="w-full space-y-2">
+                       <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="w-full h-10 gap-2"
+                        onClick={() => window.open(preferenceUrl, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4" /> Abrir Checkout
+                      </Button>
+                       <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full h-10 text-xs gap-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(preferenceUrl);
+                          toast({ title: 'Link Copiado!', description: 'Link de pagamento copiado com sucesso.' });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" /> Copiar Link
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full h-8 text-[10px] text-zinc-500"
+                        onClick={() => setPreferenceUrl(null)}
+                      >
+                        Alterar forma de pagamento
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {paymentType === 'pix' && !isMPConfigured() && !storage.getPixKey() && (
+               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Nenhuma forma de Pix configurada. Verifique as credenciais do Mercado Pago ou a Chave Pix no painel Admin.</p>
             )}
             
           </div>

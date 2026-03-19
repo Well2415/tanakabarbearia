@@ -221,7 +221,7 @@ const Settings = () => {
                                     placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
                                     className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white"
                                 />
-                                <p className="text-xs text-zinc-500 italic mt-1 ml-1">Esta chave será exibida como um código para o cliente copiar e pagar ao escolher "Pix".</p>
+                                <p className="text-xs text-zinc-500 italic mt-1 ml-1">Esta chave será usada apenas como cópia e cola se o Mercado Pago não estiver configurado. Com o Mercado Pago ativo, os QR Codes são gerados automaticamente.</p>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/5">

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { CreateClientDialog } from './CreateClientDialog';
 import { useToast } from '@/hooks/use-toast';
 
 export const AdminMenu = () => {
@@ -39,7 +40,7 @@ export const AdminMenu = () => {
         });
     };
 
-    const navItems = [
+    const navItems = user?.role === 'admin' ? [
         { name: 'Início', path: '/admin/dashboard', icon: LayoutDashboard },
         {
             name: 'Agenda',
@@ -52,9 +53,13 @@ export const AdminMenu = () => {
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
+    ] : [
+        { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
+        { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
+        { name: 'Início', path: '/dashboard', icon: LayoutDashboard },
     ];
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'barber')) {
         return null;
     }
 
@@ -64,11 +69,11 @@ export const AdminMenu = () => {
             <nav className="hidden md:flex bg-card border-b border-border sticky top-0 z-50 shadow-sm w-full">
                 <div className="container mx-auto px-4 py-4 flex justify-between items-center w-full">
                     <div className="flex items-center gap-6">
-                        <Link to="/admin/dashboard" className="flex items-center gap-3 transition-colors">
+                        <Link to={user.role === 'admin' ? "/admin/dashboard" : "/dashboard"} className="flex items-center gap-3 transition-colors">
                             {shopLogo ? (
                                 <img src={shopLogo} alt={shopName} className="h-10 w-auto rounded-lg" />
                             ) : (
-                                <h1 className="text-xl font-bold font-display uppercase tracking-wider hidden lg:block mr-4 text-primary">Admin</h1>
+                                <h1 className="text-xl font-bold font-display uppercase tracking-wider hidden lg:block mr-4 text-primary">{user.role === 'admin' ? 'Admin' : 'Barbeiro'}</h1>
                             )}
                         </Link>
                         <div className="flex items-center gap-2">
@@ -149,13 +154,13 @@ export const AdminMenu = () => {
                     </Link>
                 </div>
             </nav>
-            <AdminQuickActions isHolidayMode={isHolidayMode} toggleHolidayMode={toggleHolidayMode} />
+            <AdminQuickActions isHolidayMode={isHolidayMode} toggleHolidayMode={toggleHolidayMode} role={user.role} />
         </>
     );
 };
 
 // Suggestion for a Quick Actions tool
-export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode }: { isHolidayMode: boolean, toggleHolidayMode: (checked: boolean) => void }) => {
+export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { isHolidayMode: boolean, toggleHolidayMode: (checked: boolean) => void, role: string }) => {
     const [position, setPosition] = useState({ x: 24, y: 96 }); // Default: right-6 (24px), bottom-24 (96px)
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -232,42 +237,52 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode }: { isHoli
                         <DialogTitle>Ações Rápidas</DialogTitle>
                     </DialogHeader>
                     <div className="grid grid-cols-1 gap-4 py-4">
-                        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${isHolidayMode ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                                    {isHolidayMode ? <UmbrellaOff className="w-5 h-5" /> : <Palmtree className="w-5 h-5" />}
+                        {role === 'admin' && (
+                            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${isHolidayMode ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                                        {isHolidayMode ? <UmbrellaOff className="w-5 h-5" /> : <Palmtree className="w-5 h-5" />}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm">Modo de Férias</p>
+                                        <p className="text-[10px] text-muted-foreground">{isHolidayMode ? 'Agenda Fechada' : 'Agenda Aberta'}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-sm">Modo de Férias</p>
-                                    <p className="text-[10px] text-muted-foreground">{isHolidayMode ? 'Agenda Fechada' : 'Agenda Aberta'}</p>
-                                </div>
+                                <Switch checked={isHolidayMode} onCheckedChange={toggleHolidayMode} />
                             </div>
-                            <Switch checked={isHolidayMode} onCheckedChange={toggleHolidayMode} />
-                        </div>
-                        <Link to="/admin/appointments?action=book">
+                        )}
+                        
+                        <CreateClientDialog />
+
+                        <Link to={role === 'admin' ? "/admin/appointments?action=book" : "/my-schedule?action=book"}>
                             <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
                                 <Calendar className="w-5 h-5 text-primary" />
                                 Marcar Horário (Manual)
                             </Button>
                         </Link>
-                        <Link to="/admin/services?action=new-service">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                <Scissors className="w-5 h-5 text-primary" />
-                                Novo Serviço
-                            </Button>
-                        </Link>
-                        <Link to="/admin/barbers?action=new-barber">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                <Users className="w-5 h-5 text-primary" />
-                                Novo Barbeiro
-                            </Button>
-                        </Link>
-                        <Link to="/admin/recurring-schedules">
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                <Clock className="w-5 h-5 text-primary" />
-                                Horários Fixos (VIP)
-                            </Button>
-                        </Link>
+
+                        {role === 'admin' && (
+                            <>
+                                <Link to="/admin/services?action=new-service">
+                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Scissors className="w-5 h-5 text-primary" />
+                                        Novo Serviço
+                                    </Button>
+                                </Link>
+                                <Link to="/admin/barbers?action=new-barber">
+                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Users className="w-5 h-5 text-primary" />
+                                        Novo Barbeiro
+                                    </Button>
+                                </Link>
+                                <Link to="/admin/recurring-schedules">
+                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Clock className="w-5 h-5 text-primary" />
+                                        Horários Fixos (VIP)
+                                    </Button>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>

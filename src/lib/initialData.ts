@@ -37,24 +37,8 @@ export const DEFAULT_BARBERS: Barber[] = [
 
 export const DEFAULT_USERS: User[] = [
     { id: 'admin', fullName: 'TANAKA', username: 'tanaka', password: '123', phone: '00000000000', role: 'admin', createdAt: new Date().toISOString(), avatarUrl: TanakaImg, cutsCount: 0, stylePreferences: [] },
-    { id: 'client1', fullName: 'Wellington (Cliente)', username: 'wellington', password: '12345', phone: '00000000000', role: 'client', loyaltyPoints: 5, createdAt: new Date().toISOString(), avatarUrl: 'https://i.pravatar.cc/150?img=12', cutsCount: 2, stylePreferences: ['Degradê Navalhado', 'Barba Alinhada'] },
-    { id: 'client2', fullName: 'Maria Cliente', username: 'maria', password: 'maria', phone: '00000000000', role: 'client', loyaltyPoints: 2, createdAt: new Date().toISOString(), avatarUrl: 'https://i.pravatar.cc/150?img=71', cutsCount: 1, stylePreferences: ['Corte Clássico'] },
 ];
 
-export const DEFAULT_APPOINTMENTS: Appointment[] = [
-    {
-        id: 'appt1',
-        userId: 'client1',
-        barberId: 'admin',
-        serviceId: '1',
-        date: format(tomorrow, 'yyyy-MM-dd'),
-        time: '10:00',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        servicePrice: 50,
-        extraCharges: 0,
-        finalPrice: 50,
-    }
-];
+export const DEFAULT_APPOINTMENTS: Appointment[] = [];
 
 export const LOYALTY_TARGET_DEFAULT = 10;

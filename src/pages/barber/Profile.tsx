@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, User as UserIcon, Lock, Image as ImageIcon } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { AdminMenu } from '@/components/admin/AdminMenu';
 
 const BarberProfile = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const BarberProfile = () => {
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     if (!user || user.role !== 'barber' && user.role !== 'admin') {
@@ -47,6 +49,15 @@ const BarberProfile = () => {
 
   const handleSave = () => {
     if (!user) return;
+
+    if (password && password !== confirmPassword) {
+      toast({
+        title: 'Erro na senha',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     // Save to User
     const users = storage.getUsers();
@@ -83,15 +94,7 @@ const BarberProfile = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <nav className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Link>
-          </Button>
-          <h1 className="font-bold text-lg">Meu Perfil Profissional</h1>
-          <div className="w-[88px]"></div>
-        </div>
-      </nav>
+      <AdminMenu />
 
       <main className="flex-grow pt-8 pb-20 px-4">
         <div className="container mx-auto max-w-2xl space-y-6">
@@ -142,9 +145,15 @@ const BarberProfile = () => {
               <CardDescription>Deixe em branco se não quiser alterar a senha.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="password">Nova Senha</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12" />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Nova Senha</Label>
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                  <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="h-12" />
+                </div>
               </div>
             </CardContent>
           </Card>

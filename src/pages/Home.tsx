@@ -89,21 +89,22 @@ const Home = () => {
               opts={{
                 loop: true,
                 align: "start",
-                dragFree: true,
+                dragFree: false,
                 containScroll: "trimSnaps",
+                duration: 60,
               }}
               plugins={[
                 Autoplay({
-                  delay: 2000,
-                  stopOnInteraction: true,
-                  stopOnMouseEnter: true,
+                  delay: 3500,
+                  stopOnInteraction: false,
+                  stopOnMouseEnter: false,
                 }),
               ]}
               className="w-full relative"
             >
               <CarouselContent className="-ml-4">
                 {storage.getShopGallery().map((src, index) => (
-                  <CarouselItem key={index} className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                  <CarouselItem key={index} className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/4">
                     <div className="p-1">
                       <Card className="overflow-hidden rounded-2xl border-white/5 shadow-2xl bg-black/60 hover:border-primary/50 hover:shadow-primary/20 transition-all duration-500 group cursor-grab active:cursor-grabbing">
                         <AspectRatio ratio={1} className="bg-muted relative overflow-hidden">

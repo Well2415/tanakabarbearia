@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
-import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { sendWhatsAppConfirmation, getWhatsAppManualLink, sendWhatsApp2HourReminder } from '@/lib/whatsapp';
+import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, parseISO, isAfter, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
+import { Loader2, QrCode, Copy, CreditCard, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
 import { AdminMenu } from '@/components/admin/AdminMenu';
@@ -20,7 +22,15 @@ import { formatCurrency, cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Check as CheckIcon, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 const Appointments = () => {
   const navigate = useNavigate();
@@ -35,6 +45,28 @@ const Appointments = () => {
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
+  const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
+  const [isLoadingPix, setIsLoadingPix] = useState(false);
+  const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
+  const [isLoadingLink, setIsLoadingLink] = useState(false);
+ 
+   useEffect(() => {
+     let interval: NodeJS.Timeout;
+ 
+     if (showPaymentDialog && pixResponse) {
+       interval = setInterval(async () => {
+         const status = await checkPaymentStatus(pixResponse.id);
+         if (status === 'approved') {
+           handleCompleteService();
+           clearInterval(interval);
+         }
+       }, 5000);
+     }
+ 
+     return () => {
+       if (interval) clearInterval(interval);
+     };
+   }, [showPaymentDialog, pixResponse]);
 
   const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
@@ -67,14 +99,24 @@ const Appointments = () => {
     serviceId: '',
     barberId: '',
     date: startOfDay(new Date()),
-    time: ''
+    time: '',
+    userId: null as string | null
   });
+
+  useEffect(() => {
+    const barbersList = storage.getBarbers();
+    if (barbersList.length === 1 && !newBookingData.barberId) {
+      setNewBookingData(prev => ({ ...prev, barberId: barbersList[0].id }));
+    }
+  }, [newBookingData.barberId]);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
   const [isManualCalendarOpen, setIsManualCalendarOpen] = useState(false);
   const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
   const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
   const [isEditPickerOpen, setIsEditPickerOpen] = useState(false);
+  const [isClientComboOpen, setIsClientComboOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [lastBarberDate, setLastBarberDate] = useState({ barberId: '', date: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
@@ -156,7 +198,7 @@ const Appointments = () => {
   }, []);
 
   const handleCreateManualAppointment = async () => {
-    const { clientName, clientPhone, serviceId, barberId, date, time } = newBookingData;
+    const { clientName, clientPhone, serviceId, barberId, date, time, userId } = newBookingData;
     if (!clientName || !serviceId || !barberId || !date || !time) {
       toast({ title: "Erro", description: "Preencha todos os campos.", variant: "destructive" });
       return;
@@ -167,10 +209,11 @@ const Appointments = () => {
 
     const newAppointment: Appointment = {
       id: Date.now().toString(),
-      userId: null,
-      guestName: clientName,
-      guestPhone: clientPhone,
+      userId: userId || null,
+      guestName: userId ? undefined : clientName,
+      guestPhone: userId ? undefined : clientPhone,
       serviceId,
+      serviceIds: [serviceId],
       servicePrice: service?.price || 0,
       barberId,
       date: format(date, 'yyyy-MM-dd'),
@@ -183,13 +226,14 @@ const Appointments = () => {
     storage.saveAppointments(updated);
     setAppointments(updated);
 
-    // Send WhatsApp notification
+    // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário)
     if (clientPhone && barber && service) {
-      await sendWhatsAppConfirmation(newAppointment, barber, service);
+      const link = getWhatsAppManualLink(newAppointment, barber, service);
+      if (link) window.open(link, '_blank');
     }
 
     setShowBookingDialog(false);
-    setNewBookingData({ clientName: '', clientPhone: '', serviceId: '', barberId: '', date: startOfDay(new Date()), time: '' });
+    setNewBookingData({ clientName: '', clientPhone: '', serviceId: '', barberId: '', date: startOfDay(new Date()), time: '', userId: null });
     toast({ title: "Agendamento Realizado", description: `Agendamento para ${clientName} marcado com sucesso.` });
   };
 
@@ -343,6 +387,52 @@ const Appointments = () => {
     }
   }, []);
 
+  // Lógica de Lembrete Automático (2 horas antes)
+  useEffect(() => {
+    const checkReminders = async () => {
+      const now = new Date();
+      const todayStr = format(now, 'yyyy-MM-dd');
+      
+      const upcoming = appointments.filter(app => {
+        // Apenas agendamentos confirmados hoje, sem lembrete enviado
+        if (app.status !== 'confirmed' || app.reminderSent || app.date !== todayStr) return false;
+        
+        try {
+          const [hours, minutes] = app.time.split(':').map(Number);
+          const appDate = new Date();
+          appDate.setHours(hours, minutes, 0, 0);
+          
+          const diffInMinutes = (appDate.getTime() - now.getTime()) / (1000 * 60);
+          
+          // Se falta entre 0 e 125 minutos (aprox 2 horas com uma margem)
+          return diffInMinutes > 0 && diffInMinutes <= 125;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      for (const app of upcoming) {
+        const barber = barbers.find(b => b.id === app.barberId);
+        const service = services.find(s => s.id === (app.serviceIds?.[0] || app.serviceId));
+        if (barber && service) {
+          console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
+          await sendWhatsApp2HourReminder(app, barber, service);
+          
+          // Marcar como enviado no storage
+          updateAppointmentInStorage({ ...app, reminderSent: true });
+        }
+      }
+    };
+
+    const interval = setInterval(checkReminders, 1000 * 60 * 10); // Check every 10 minutes
+    const timeout = setTimeout(checkReminders, 2000); // Check 2s after mount
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [appointments, barbers, services]);
+
 
 
 
@@ -356,7 +446,10 @@ const Appointments = () => {
     return client?.fullName || 'Cliente desconhecido';
   };
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'N/A';
-  const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'N/A';
+  const getServiceName = (id: string | string[]) => {
+    const ids = Array.isArray(id) ? id : [id];
+    return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'N/A';
+  };
 
   const filteredAppointments = appointments
     .filter(appt => {
@@ -464,17 +557,65 @@ const Appointments = () => {
     }
 
     setShowPaymentDialog(false);
+    setPixResponse(null);
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: ${formatCurrency(finalPrice)}.` });
   };
 
+  const handleGeneratePix = async () => {
+    if (!currentAppointmentToComplete) return;
+    
+    setIsLoadingPix(true);
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    
+    const response = await createPixPayment(finalPrice, description, clientEmail);
+    setPixResponse(response);
+    setIsLoadingPix(false);
+    
+    if (response) {
+      toast({ title: 'Pix Gerado', description: 'QR Code do Mercado Pago gerado com sucesso.' });
+    } else {
+      toast({ title: 'Erro ao gerar Pix', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
+    }
+  };
+
+  const handleGenerateLink = async () => {
+    if (!currentAppointmentToComplete) return;
+    setIsLoadingLink(true);
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    
+    const url = await createPreference(finalPrice, description, clientEmail);
+    setPreferenceUrl(url);
+    setIsLoadingLink(false);
+    
+    if (url) {
+      toast({ title: 'Link Gerado', description: 'Link de pagamento do Mercado Pago gerado com sucesso.' });
+    } else {
+      toast({ title: 'Erro ao gerar Link', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
+    }
+  };
+
   const updateStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
     const updatedAppointment = appointments.find(a => a.id === id);
     if (!updatedAppointment) return;
 
-    updateAppointmentInStorage({ ...updatedAppointment, status });
+    const newAppointment = { ...updatedAppointment, status };
+    updateAppointmentInStorage(newAppointment);
+    
+    if (status === 'confirmed') {
+      const barber = barbers.find(b => b.id === updatedAppointment.barberId);
+      const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
+      if (barber && service) {
+        // Envio MANUAL para economizar API nas confirmações por botão
+        const link = getWhatsAppManualLink(newAppointment, barber, service);
+        if (link) window.open(link, '_blank');
+      }
+    }
+
     toast({ title: 'Status atualizado', description: `O agendamento foi ${status === 'confirmed' ? 'confirmado' : 'cancelado'} com sucesso.` });
   };
 
@@ -500,15 +641,7 @@ const Appointments = () => {
     });
   };
 
-  const handleManualWhatsApp = async (appointment: Appointment) => {
-    const barber = barbers.find(b => b.id === appointment.barberId);
-    const service = services.find(s => s.id === appointment.serviceId);
-    if (barber && service) {
-      toast({ title: 'Enviando WhatsApp...', description: 'Tentando enviar mensagem manual via API.' });
-      await sendWhatsAppConfirmation(appointment, barber, service);
-      toast({ title: 'WhatsApp Enviado', description: 'Mensagem enviada com sucesso para o cliente.' });
-    }
-  };
+
 
   const statusColors = {
     pending: 'bg-yellow-500/10 text-yellow-500',
@@ -715,7 +848,7 @@ const Appointments = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 mt-2">
                         <p className="text-sm text-zinc-500 flex items-center gap-2">
                           <Scissors className="w-4 h-4 text-primary/70" />
-                          <span className="font-medium text-foreground">{getServiceName(appointment.serviceId)}</span>
+                          <span className="font-medium text-foreground">{getServiceName(appointment.serviceIds || appointment.serviceId)}</span>
                         </p>
                         <p className="text-sm text-zinc-500 flex items-center gap-2">
                           <UserCog className="w-4 h-4 text-primary/70" />
@@ -746,16 +879,21 @@ const Appointments = () => {
                             <DollarSign className="w-4 h-4 mr-2" /> Finalizar
                           </Button>
                         )}
-                        {appointment.status === 'confirmed' && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => handleManualWhatsApp(appointment)} 
+                            onClick={() => {
+                              const barber = barbers.find(b => b.id === appointment.barberId);
+                              const service = services.find(s => s.id === (appointment.serviceIds?.[0] || appointment.serviceId));
+                              if (barber && service) {
+                                const link = getWhatsAppManualLink(appointment, barber, service);
+                                if (link) window.open(link, '_blank');
+                              }
+                            }} 
                             className="h-9 px-4 border-green-600/30 text-green-600 bg-transparent hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium"
                           >
-                            <MessageSquare className="w-4 h-4 mr-2" /> Reenviar Whats
+                            <MessageCircle className="w-4 h-4 mr-2" /> Enviar Whats
                           </Button>
-                        )}
                         {appointment.status === 'pending' && (
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => updateStatus(appointment.id, 'confirmed')} className="bg-green-600/10 text-green-600 hover:bg-green-600 hover:text-white border-green-600/20">
@@ -838,10 +976,21 @@ const Appointments = () => {
         <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Finalizar agendamento de <span className="font-bold">{getClientName(currentAppointmentToComplete!)}</span>.<br />
-              Valor do Serviço: {formatCurrency(currentAppointmentToComplete?.servicePrice || 0)}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Finalizar agendamento de <span className="font-bold">{getClientName(currentAppointmentToComplete!)}</span>.
+              </p>
+              <div className="flex justify-between text-sm">
+                <span>Valor do Serviço:</span>
+                <span className="font-medium">{formatCurrency(currentAppointmentToComplete?.servicePrice || 0)}</span>
+              </div>
+              {(currentAppointmentToComplete?.amountPaid || 0) > 0 && (
+                <div className="flex justify-between text-sm text-green-600 font-bold">
+                  <span>Sinal Pago via Gateway:</span>
+                  <span>- {formatCurrency(currentAppointmentToComplete!.amountPaid!)}</span>
+                </div>
+              )}
+            </div>
 
             <div>
               <Label htmlFor="extraCharges">Encargos Extras (R$)</Label>
@@ -861,10 +1010,18 @@ const Appointments = () => {
               />
             </div>
 
-            <div>
-              <Label>Preço Final</Label>
-              <div className="h-11 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-bold text-primary flex items-center">
-                {formatCurrency(finalPrice)}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Total Geral</Label>
+                <div className="h-11 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm font-bold text-zinc-500 flex items-center">
+                  {formatCurrency(finalPrice)}
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase font-black text-primary">Saldo a Pagar</Label>
+                <div className="h-11 w-full rounded-md border-2 border-primary bg-primary/5 px-3 py-2 text-lg font-black text-primary flex items-center shadow-sm">
+                  {formatCurrency(Math.max(0, finalPrice - (currentAppointmentToComplete?.amountPaid || 0)))}
+                </div>
               </div>
             </div>
 
@@ -881,6 +1038,148 @@ const Appointments = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {paymentType === 'pix' && isMPConfigured() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                {!pixResponse ? (
+                  <>
+                    <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
+                    <p className="text-base font-bold text-foreground">Pix Dinâmico (Mercado Pago)</p>
+                    <p className="text-xs text-muted-foreground mb-4">Gere um QR Code exclusivo para este atendimento que confirma o pagamento automaticamente.</p>
+                    <Button 
+                      onClick={handleGeneratePix} 
+                      disabled={isLoadingPix || finalPrice <= 0}
+                      className="w-full h-11 bg-primary hover:bg-primary/90"
+                    >
+                      {isLoadingPix ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <QrCode className="w-4 h-4 mr-2" />}
+                      Gerar QR Code Mercado Pago
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-white p-2 rounded-xl mb-4 shadow-lg border-2 border-primary/20">
+                      <img 
+                        src={`data:image/png;base64,${pixResponse.qr_code_base64}`} 
+                        alt="QR Code Pix" 
+                        className="w-48 h-48"
+                      />
+                    </div>
+                    <p className="text-base font-bold text-foreground mb-1">Escaneie para Pagar</p>
+                    <p className="text-[10px] text-muted-foreground mb-4 max-w-[200px]">O status será atualizado assim que o pagamento for confirmado.</p>
+                    
+                    <div className="w-full space-y-2">
+                       <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full h-10 text-xs gap-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixResponse.qr_code);
+                          toast({ title: 'Código Copiado!', description: 'Código Pix Copia e Cola copiado.' });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" /> Copiar Código Pix
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full h-8 text-[10px] text-zinc-500"
+                        onClick={() => setPixResponse(null)}
+                      >
+                        Alterar valor ou forma de pagamento
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {paymentType === 'pix' && !isMPConfigured() && storage.getPixKey() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
+                <p className="text-base font-bold text-foreground">Receber via Pix (Chave)</p>
+                <p className="text-xs text-muted-foreground mb-4">Peça para o cliente inserir a chave abaixo no app do banco e conferir o valor de {formatCurrency(finalPrice)}.</p>
+                
+                <div className="w-full relative">
+                  <div className="bg-background border flex items-center justify-between border-primary/20 px-3 py-3 rounded-xl overflow-hidden shadow-sm">
+                    <span className="font-mono text-sm font-bold text-primary truncate mr-2">{storage.getPixKey()}</span>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(storage.getPixKey());
+                        toast({ title: 'Chave Copiada!', description: 'Chave Pix copiada com sucesso.' });
+                      }}
+                      className="shrink-0 rounded-lg h-8 px-3"
+                    >
+                      <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {paymentType === 'link' && isMPConfigured() && (
+              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
+                {!preferenceUrl ? (
+                  <>
+                    <CreditCard className="w-10 h-10 text-primary mb-2 opacity-80" />
+                    <p className="text-base font-bold text-foreground">Link de Pagamento (Mercado Pago)</p>
+                    <p className="text-xs text-muted-foreground mb-4">Gere um link oficial para o cliente pagar com Cartão de Crédito com segurança.</p>
+                    <Button 
+                      onClick={handleGenerateLink} 
+                      disabled={isLoadingLink || finalPrice <= 0}
+                      className="w-full h-11 bg-primary hover:bg-primary/90"
+                    >
+                      {isLoadingLink ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                      Gerar Link Mercado Pago
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-background cursor-pointer hover:bg-accent/50 transition-colors p-4 rounded-xl mb-4 shadow-lg border-2 border-primary/20 w-full" onClick={() => window.open(preferenceUrl, '_blank')}>
+                       <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
+                       <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
+                    </div>
+                    <p className="text-base font-bold text-foreground mb-1">Link Gerado!</p>
+                    <p className="text-[10px] text-muted-foreground mb-4">Envie o link para o cliente ou abra agora.</p>
+                    
+                    <div className="w-full space-y-2">
+                       <Button 
+                        variant="default" 
+                        size="sm" 
+                        className="w-full h-10 gap-2"
+                        onClick={() => window.open(preferenceUrl, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4" /> Abrir Checkout
+                      </Button>
+                       <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full h-10 text-xs gap-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(preferenceUrl);
+                          toast({ title: 'Link Copiado!', description: 'Link de pagamento copiado com sucesso.' });
+                        }}
+                      >
+                        <Copy className="w-4 h-4" /> Copiar Link
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full h-8 text-[10px] text-zinc-500"
+                        onClick={() => setPreferenceUrl(null)}
+                      >
+                        Alterar forma de pagamento
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {paymentType === 'pix' && !isMPConfigured() && !storage.getPixKey() && (
+               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Nenhuma forma de Pix configurada. Verifique as credenciais do Mercado Pago ou a Chave Pix no painel Admin.</p>
+            )}
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end mt-4 pb-4">
             <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0} className="w-full sm:w-auto h-11 md:h-10 order-first sm:order-last font-bold">Confirmar Pagamento</Button>
@@ -1013,7 +1312,7 @@ const Appointments = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-4 sm:p-6">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
           <div className="py-4">
             <p>Tem certeza que deseja excluir o agendamento de <span className="font-bold">{getClientName(appointmentToDelete!)}</span>?</p>
@@ -1028,34 +1327,125 @@ const Appointments = () => {
 
       {/* Manual Booking Dialog */}
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md p-6 outline-none pb-28 md:pb-6">
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-6 outline-none pb-28 md:pb-6 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Marcar Horário Manualmente</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
-              <Label htmlFor="clientName">Nome do Cliente</Label>
-              <Input
-                id="clientName"
-                placeholder="Ex: João Silva (Sem Internet)"
-                value={newBookingData.clientName}
-                onChange={(e) => setNewBookingData({ ...newBookingData, clientName: e.target.value })}
-              />
+              <Label htmlFor="selectClient">Selecionar Cliente Existente (Opcional)</Label>
+              <Popover open={isClientComboOpen} onOpenChange={setIsClientComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isClientComboOpen}
+                    className="w-full justify-between h-11 border-primary/20 bg-primary/5 hover:bg-primary/10 font-normal"
+                  >
+                    {newBookingData.userId 
+                      ? users.find((u) => u.id === newBookingData.userId)?.fullName 
+                      : "Buscar cliente..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Digite o nome do cliente..." 
+                      value={clientSearchQuery}
+                      onValueChange={setClientSearchQuery}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="guest"
+                          onSelect={() => {
+                            setNewBookingData({ ...newBookingData, userId: null, clientName: '', clientPhone: '' });
+                            setClientSearchQuery('');
+                            setIsClientComboOpen(false);
+                          }}
+                          className="font-bold text-primary"
+                        >
+                          <CheckIcon
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !newBookingData.userId ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          -- Novo Cliente / Convidado --
+                        </CommandItem>
+                        {users
+                          .filter(u => u.role === 'client' && 
+                            u.fullName.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+                          .sort((a, b) => a.fullName.localeCompare(b.fullName))
+                          .slice(0, 10) // Limit to 10 results for performance
+                          .map((client) => (
+                            <CommandItem
+                              key={client.id}
+                              value={client.id}
+                              onSelect={() => {
+                                setNewBookingData({ 
+                                  ...newBookingData, 
+                                  userId: client.id, 
+                                  clientName: client.fullName, 
+                                  clientPhone: client.phone || '' 
+                                });
+                                setClientSearchQuery('');
+                                setIsClientComboOpen(false);
+                              }}
+                            >
+                              <CheckIcon
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  newBookingData.userId === client.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {client.fullName}
+                            </CommandItem>
+                          ))}
+                        {users.filter(u => u.role === 'client' && 
+                          u.fullName.toLowerCase().includes(clientSearchQuery.toLowerCase())).length > 10 && (
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground italic border-t mt-1">
+                            Continue digitando para refinar a busca...
+                          </div>
+                        )}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
-            <div>
-              <Label htmlFor="clientPhone">Telefone do Cliente (WhatsApp)</Label>
-              <Input
-                id="clientPhone"
-                placeholder="Ex: 11999999999"
-                type="text"
-                inputMode="numeric"
-                value={newBookingData.clientPhone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  setNewBookingData({ ...newBookingData, clientPhone: val });
-                }}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="clientName">Nome do Cliente</Label>
+                <Input
+                  id="clientName"
+                  placeholder="Ex: João Silva"
+                  value={newBookingData.clientName}
+                  onChange={(e) => setNewBookingData({ ...newBookingData, clientName: e.target.value })}
+                  disabled={!!newBookingData.userId}
+                  className={newBookingData.userId ? "bg-muted cursor-not-allowed" : ""}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="clientPhone">Telefone</Label>
+                <Input
+                  id="clientPhone"
+                  placeholder="Ex: 11999999999"
+                  type="text"
+                  inputMode="numeric"
+                  value={newBookingData.clientPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setNewBookingData({ ...newBookingData, clientPhone: val });
+                  }}
+                  disabled={!!newBookingData.userId}
+                  className={newBookingData.userId ? "bg-muted cursor-not-allowed" : ""}
+                />
+              </div>
             </div>
 
             <div>
