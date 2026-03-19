@@ -2,8 +2,8 @@ import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
 // Usando caminhos estáticos relativos à pasta public/
-const TanakaImg = "/img/barbeiro/TANAKA.png";
-const LogoMenu = "/img/LOGO MENU.png";
+const TanakaImg = "/img/barbeiro/tanaka.png";
+const LogoMenu = "/img/logo-menu.png";
 
 // Cache interno para manter o funcionamento síncrono dos componentes
 let cache: {
@@ -105,8 +105,8 @@ export const storage = {
       { key: 'shop_instagram', value: JSON.stringify('https://instagram.com/') },
       { key: 'shop_opening_hours', value: JSON.stringify('Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00') },
       { key: 'shop_gallery', value: JSON.stringify([
-        "/img/CABELOS/BARBA 1.png", "/img/CABELOS/BARBA 2.png", "/img/CABELOS/cabelo 1.png",
-        "/img/CABELOS/cabelo 2.png", "/img/CABELOS/cabelo 3.png",
+        "/img/cabelos/barba_1.png", "/img/cabelos/barba_2.png", "/img/cabelos/cabelo_1.png",
+        "/img/cabelos/cabelo_2.png", "/img/cabelos/cabelo_3.png",
       ])},
       { key: 'pix_key', value: JSON.stringify('') },
       { key: 'mp_access_token', value: JSON.stringify('TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596') },
