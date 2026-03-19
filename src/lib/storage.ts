@@ -37,7 +37,7 @@ export const storage = {
       const { data: settingsData } = await supabase.from('shop_settings').select('*');
       const settingsMap: Record<string, any> = {};
       settingsData?.forEach(s => {
-        settingsMap[s.key] = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+        settingsMap[s.key] = s.value;
       });
       cache.settings = settingsMap;
 
@@ -181,7 +181,7 @@ export const storage = {
   },
   async saveSetting(key: string, value: any) {
     cache.settings[key] = value;
-    await supabase.from('shop_settings').upsert({ key, value: JSON.stringify(value) }, { onConflict: 'key' });
+    await supabase.from('shop_settings').upsert({ key, value }, { onConflict: 'key' });
   },
 
   getLoyaltyTarget: (): number => storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT),
