@@ -98,7 +98,7 @@ export const storage = {
       }
 
       isInitialized = true;
-      console.log('✅ Supabase Initialized & Cached', { 
+      console.log('✅ Supabase Initialized & Cached [v1.1.2]', { 
         settingsCount: Object.keys(cache.settings).length,
         servicesCount: cache.services.length,
         gallery: cache.settings.shop_gallery
@@ -207,9 +207,14 @@ export const storage = {
   },
 
   async saveSettings(settings: Record<string, any>) {
+    console.log('📡 [Storage] Iniciando Bulk Upsert...', Object.keys(settings));
     const upsertData = Object.entries(settings).map(([key, value]) => ({ key, value }));
     const { error } = await supabase.from('shop_settings').upsert(upsertData, { onConflict: 'key' });
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [Storage] Erro no Bulk Upsert:', error);
+      throw error;
+    }
+    console.log('✅ [Storage] Bulk Upsert concluído.');
     Object.assign(cache.settings, settings);
   },
 

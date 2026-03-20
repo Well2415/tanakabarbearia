@@ -47,6 +47,7 @@ const Settings = () => {
     
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+        console.log('💾 [Settings] Botão Salvar clicado');
         setIsSaving(true);
         try {
             await storage.saveSettings({
@@ -100,7 +101,10 @@ const Settings = () => {
                             <ArrowLeft className="w-6 h-6" />
                         </Button>
                     </Link>
-                    <h1 className="text-3xl font-bold tracking-tight text-white">Configurações</h1>
+                    <div className="flex flex-col">
+                        <h1 className="text-3xl font-bold tracking-tight text-white">Configurações</h1>
+                        <span className="text-[10px] text-zinc-500">Versão: 1.1.2 (Bulk Save Ativo)</span>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSave} className="space-y-6">
