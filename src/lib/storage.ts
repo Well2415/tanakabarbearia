@@ -26,6 +26,25 @@ let cache: {
   settings: {}
 };
 
+// Helper para normalizar caminhos de imagens legados ou com erro de digitação
+const normalizeImagePath = (src: string): string => {
+  if (!src) return src;
+  
+  // Se for um nome como "BARBA 1.png" ou "cabelo 1.png"
+  const fileName = src.split('/').pop() || "";
+  if (fileName.toUpperCase().includes('BARBA') || fileName.toLowerCase().includes('cabelo')) {
+    // Normaliza: Remove espaços, converte para minúsculo, usa underscore
+    let normalized = fileName.toLowerCase().replace(/\s+/g, '_');
+    
+    // Se não tiver o prefixo correto, adiciona
+    if (!src.startsWith('/img/cabelos/') && !src.startsWith('http')) {
+      return `/img/cabelos/${normalized}`;
+    }
+  }
+  
+  return src;
+};
+
 let isInitialized = false;
 
 export const storage = {
@@ -225,7 +244,10 @@ export const storage = {
   getShopMapsLink: (): string => storage.getSetting('shop_maps_link', ''),
   saveShopMapsLink: (link: string) => storage.saveSetting('shop_maps_link', link),
 
-  getShopGallery: (): string[] => storage.getSetting('shop_gallery', []),
+  getShopGallery: (): string[] => {
+    const gallery = storage.getSetting('shop_gallery', []);
+    return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
+  },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
 
   getPixKey: (): string => storage.getSetting('pix_key', ''),
