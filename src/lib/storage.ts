@@ -31,6 +31,14 @@ const normalizeImagePath = (src: string): string => {
   if (!src) return src;
   if (src.startsWith('http') || src.startsWith('data:')) return src;
 
+  // Força tudo para minúsculo e remove espaços
+  let normalized = src.toLowerCase().replace(/\s+/g, '_');
+
+  // Normalização específica para a foto do Tanaka (Legado e compatibilidade)
+  if (normalized.includes('tanaka')) {
+    return `/img/barbeiro/tanaka.png`;
+  }
+
   // Se já for um caminho absoluto ou relativo começando com /, retorna como está
   if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
   
@@ -196,6 +204,13 @@ export const storage = {
   async saveSetting(key: string, value: any) {
     cache.settings[key] = value;
     await supabase.from('shop_settings').upsert({ key, value }, { onConflict: 'key' });
+  },
+
+  async saveSettings(settings: Record<string, any>) {
+    const upsertData = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    const { error } = await supabase.from('shop_settings').upsert(upsertData, { onConflict: 'key' });
+    if (error) throw error;
+    Object.assign(cache.settings, settings);
   },
 
   getLoyaltyTarget: (): number => storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT),

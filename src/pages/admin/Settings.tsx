@@ -45,30 +45,31 @@ const Settings = () => {
 
     const [isSaving, setIsSaving] = useState(false);
     
-    const handleSave = async () => {
+    const handleSave = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setIsSaving(true);
         try {
-            await Promise.all([
-                storage.saveShopName(shopName),
-                storage.saveShopPhone(shopPhone),
-                storage.saveShopAddress(shopAddress),
-                storage.saveShopLogo(shopLogo),
-                storage.saveShopInstagram(shopInstagram),
-                storage.saveShopFacebook(shopFacebook),
-                storage.saveShopEmail(shopEmail),
-                storage.saveShopOpeningHours(shopOpeningHours),
-                storage.saveShopMapsLink(shopMapsLink),
-                storage.saveLoyaltyTarget(parseInt(loyaltyTarget) || 10),
-                storage.saveWhatsAppApiUrl(whatsappApiUrl),
-                storage.saveWhatsAppApiToken(whatsappApiToken),
-                storage.saveWhatsAppInstanceId(whatsappInstanceId),
-                storage.saveReminderMinutes(reminderMinutes),
-                storage.saveShopGallery(shopGallery),
-                storage.saveAutoReminders(autoReminders),
-                storage.savePixKey(pixKey),
-                storage.saveMPAccessToken(mpAccessToken),
-                storage.saveMPPublicKey(mpPublicKey)
-            ]);
+            await storage.saveSettings({
+                shop_name: shopName,
+                shop_phone: shopPhone,
+                shop_address: shopAddress,
+                shop_logo: shopLogo,
+                shop_instagram: shopInstagram,
+                shop_facebook: shopFacebook,
+                shop_email: shopEmail,
+                shop_opening_hours: shopOpeningHours,
+                shop_maps_link: shopMapsLink,
+                loyalty_target: parseInt(loyaltyTarget) || 10,
+                whatsapp_api_url: whatsappApiUrl,
+                whatsapp_api_token: whatsappApiToken,
+                whatsapp_instance_id: whatsappInstanceId,
+                reminder_minutes: reminderMinutes,
+                shop_gallery: shopGallery,
+                auto_reminders: autoReminders,
+                pix_key: pixKey,
+                mp_access_token: mpAccessToken,
+                mp_public_key: mpPublicKey
+            });
 
             toast({
                 title: "Configurações Salvas",
@@ -78,7 +79,7 @@ const Settings = () => {
             console.error('Erro ao salvar configurações:', error);
             toast({
                 title: "Erro ao Salvar",
-                description: "Ocorreu um erro ao tentar salvar as configurações no banco de dados. Verifique sua conexão.",
+                description: "Ocorreu um erro ao salvar no banco de dados. O tamanho das imagens ou sua conexão podem ser o problema.",
                 variant: "destructive"
             });
         } finally {
@@ -102,7 +103,7 @@ const Settings = () => {
                     <h1 className="text-3xl font-bold tracking-tight text-white">Configurações</h1>
                 </div>
 
-                <div className="space-y-6">
+                <form onSubmit={handleSave} className="space-y-6">
                     {/* Identidade da Loja */}
                     <Card className="border-white/5 bg-black/40 backdrop-blur-md shadow-2xl overflow-hidden rounded-3xl">
                         <CardHeader className="bg-white/5 border-b border-white/5">
@@ -452,7 +453,7 @@ const Settings = () => {
                     </Card>
 
                     <Button
-                        onClick={handleSave}
+                        type="submit"
                         disabled={isSaving}
                         className="w-full h-16 rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] transition-all duration-300 mb-10"
                     >
@@ -463,7 +464,7 @@ const Settings = () => {
                         )}
                         {isSaving ? "SALVANDO..." : "SALVAR TUDO"}
                     </Button>
-                </div>
+                </form>
             </div>
         </div>
     );

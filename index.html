@@ -6,8 +6,6 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TANAKA" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/logo-circle.png" />
     <meta name="theme-color" content="#09090b" />
     <meta name="description" content="Barbearia moderna com tradição e qualidade. Agende online seu corte de cabelo e barba com profissionais experientes." />
     <meta name="author" content="TANAKA BARBEARIA" />
@@ -23,14 +21,8 @@
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     <link rel="icon" type="image/png" href="/logo-circle.png" />
-    
-    <!-- PWA / App Instalável -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#09090b" />
     <link rel="apple-touch-icon" href="/logo-circle.png" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="TANAKA" />
+    <link rel="manifest" href="/manifest.json" />
   </head>
 
   <body>
@@ -53,9 +45,6 @@
             .catch(err => console.error('PWA erro no registro', err));
         });
       }
-      
-      // Limpeza de cache de storage para novos caminhos (opcional, mas seguro)
-      // localStorage.removeItem('shop_gallery'); 
     </script>
   </body>
 </html>
