@@ -29,20 +29,21 @@ let cache: {
 // Helper para normalizar caminhos de imagens legados ou com erro de digitação
 const normalizeImagePath = (src: string): string => {
   if (!src) return src;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+
+  // Força tudo para minúsculo e remove espaços (padrão Git)
+  let normalized = src.toLowerCase().replace(/\s+/g, '_');
   
-  // Se for um nome como "BARBA 1.png" ou "cabelo 1.png"
-  const fileName = src.split('/').pop() || "";
-  if (fileName.toUpperCase().includes('BARBA') || fileName.toLowerCase().includes('cabelo')) {
-    // Normaliza: Remove espaços, converte para minúsculo, usa underscore
-    let normalized = fileName.toLowerCase().replace(/\s+/g, '_');
-    
-    // Se não tiver o prefixo correto, adiciona
-    if (!src.startsWith('/img/cabelos/') && !src.startsWith('http')) {
-      return `/img/cabelos/${normalized}`;
-    }
+  // Se for uma das imagens de barba ou cabelo mas estiver com caminho errado (ex: /img/CABELOS)
+  if (normalized.includes('barba') || normalized.includes('cabelo')) {
+    const fileName = normalized.split('/').pop() || "";
+    return `/img/cabelos/${fileName}`;
   }
+
+  // Se não começar com /, garante que comece
+  if (!normalized.startsWith('/')) normalized = '/' + normalized;
   
-  return src;
+  return normalized;
 };
 
 let isInitialized = false;
