@@ -245,7 +245,17 @@ export const storage = {
   saveShopMapsLink: (link: string) => storage.saveSetting('shop_maps_link', link),
 
   getShopGallery: (): string[] => {
-    const gallery = storage.getSetting('shop_gallery', []);
+    let gallery = storage.getSetting('shop_gallery', []);
+    
+    // Fallback se vier como string (comum em bancos SQL que não suportam JSON nativo ou em erros de migração)
+    if (typeof gallery === 'string' && gallery.trim().startsWith('[')) {
+      try {
+        gallery = JSON.parse(gallery);
+      } catch (e) {
+        gallery = [];
+      }
+    }
+    
     return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
   },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
