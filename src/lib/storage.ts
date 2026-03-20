@@ -39,6 +39,13 @@ const normalizeImagePath = (src: string): string => {
     return `/img/barbeiro/tanaka.png`;
   }
 
+  // Normalização para as fotos da galeria legada (remover espaços e garantir pasta correta)
+  if (normalized.includes('barba') || normalized.includes('cabelo')) {
+    // Remove espaços e underscores para bater com os arquivos reais (barba1.png, cabelo1.png)
+    const fileName = normalized.replace(/[\s_]/g, '');
+    return `/img/cabelos/${fileName}`;
+  }
+
   // Se já for um caminho absoluto ou relativo começando com /, retorna como está
   if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
   
@@ -91,10 +98,9 @@ export const storage = {
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
 
-      // Se o banco estiver vazio ou sem configurações, inicializar com dados padrão
+      // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
       if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {
-        console.log('🔄 Banco parece vazio. Iniciando seeding automático...');
-        await this.seedDefaultData();
+        console.warn('⚠️ Banco de dados parece estar vazio ou inacessível.');
       }
 
       isInitialized = true;
