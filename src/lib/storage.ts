@@ -31,25 +31,11 @@ const normalizeImagePath = (src: string): string => {
   if (!src) return src;
   if (src.startsWith('http') || src.startsWith('data:')) return src;
 
-  // Força tudo para minúsculo e remove espaços (padrão Git + Linux Vercel)
-  let normalized = src.toLowerCase().replace(/\s+/g, '_');
+  // Se já for um caminho absoluto ou relativo começando com /, retorna como está
+  if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
   
-  // Normalização específica para a galeria (independente do que venha do banco)
-  if (normalized.includes('barba') || normalized.includes('cabelo')) {
-    const fileName = normalized.split('/').pop() || "";
-    // Garante que o diretório seja /img/cabelos/ em minúsculo
-    return `/img/cabelos/${fileName}`;
-  }
-
-  // Normalização específica para a foto do Tanaka
-  if (normalized.includes('tanaka')) {
-    return `/img/barbeiro/tanaka.png`;
-  }
-
-  // Se não começar com /, garante que comece
-  if (!normalized.startsWith('/')) normalized = '/' + normalized;
-  
-  return normalized;
+  // Caso contrário, assume que é um asset em /img/
+  return `/${src}`;
 };
 
 let isInitialized = false;
@@ -251,7 +237,7 @@ export const storage = {
   getShopGallery: (): string[] => {
     let gallery = storage.getSetting('shop_gallery', []);
     
-    // Fallback se vier como string JSON (erro de migração ou banco)
+    // Fallback se vier como string JSON
     if (typeof gallery === 'string' && gallery.trim().startsWith('[')) {
       try {
         gallery = JSON.parse(gallery);
@@ -260,16 +246,8 @@ export const storage = {
       }
     }
     
-    // Lista de imagens padrão antigas para filtrar/remover
-    const legacyDefaults = ["barba_1.png", "barba_2.png", "cabelo_1.png", "cabelo_2.png", "cabelo_3.png"];
-    
-    const filteredGallery = Array.isArray(gallery) ? gallery.filter(img => {
-      const fileName = img.split('/').pop()?.toLowerCase() || "";
-      return !legacyDefaults.includes(fileName);
-    }) : [];
-
-    const finalGallery = filteredGallery.length > 0 ? filteredGallery : [];
-    return finalGallery.map(normalizeImagePath);
+    // Retorna a galeria exatamente como está no banco, permitindo gestão total pelo usuário
+    return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
   },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
 

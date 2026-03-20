@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Save, Store, Phone, MapPin, Image as ImageIcon, Trophy, MessageSquare, QrCode } from 'lucide-react';
+import { ArrowLeft, Save, Store, Phone, MapPin, Image as ImageIcon, Trophy, MessageSquare, QrCode, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -43,38 +43,46 @@ const Settings = () => {
         }
     }, [user, navigate]);
 
-    const handleSave = () => {
+    const [isSaving, setIsSaving] = useState(false);
+    
+    const handleSave = async () => {
+        setIsSaving(true);
         try {
-            storage.saveShopName(shopName);
-            storage.saveShopPhone(shopPhone);
-            storage.saveShopAddress(shopAddress);
-            storage.saveShopLogo(shopLogo);
-            storage.saveShopInstagram(shopInstagram);
-            storage.saveShopFacebook(shopFacebook);
-            storage.saveShopEmail(shopEmail);
-            storage.saveShopOpeningHours(shopOpeningHours);
-            storage.saveShopMapsLink(shopMapsLink);
-            storage.saveLoyaltyTarget(parseInt(loyaltyTarget) || 10);
-            storage.saveWhatsAppApiUrl(whatsappApiUrl);
-            storage.saveWhatsAppApiToken(whatsappApiToken);
-            storage.saveWhatsAppInstanceId(whatsappInstanceId);
-            storage.saveReminderMinutes(reminderMinutes);
-            storage.saveShopGallery(shopGallery);
-            storage.saveAutoReminders(autoReminders);
-            storage.savePixKey(pixKey);
-            storage.saveMPAccessToken(mpAccessToken);
-            storage.saveMPPublicKey(mpPublicKey);
+            await Promise.all([
+                storage.saveShopName(shopName),
+                storage.saveShopPhone(shopPhone),
+                storage.saveShopAddress(shopAddress),
+                storage.saveShopLogo(shopLogo),
+                storage.saveShopInstagram(shopInstagram),
+                storage.saveShopFacebook(shopFacebook),
+                storage.saveShopEmail(shopEmail),
+                storage.saveShopOpeningHours(shopOpeningHours),
+                storage.saveShopMapsLink(shopMapsLink),
+                storage.saveLoyaltyTarget(parseInt(loyaltyTarget) || 10),
+                storage.saveWhatsAppApiUrl(whatsappApiUrl),
+                storage.saveWhatsAppApiToken(whatsappApiToken),
+                storage.saveWhatsAppInstanceId(whatsappInstanceId),
+                storage.saveReminderMinutes(reminderMinutes),
+                storage.saveShopGallery(shopGallery),
+                storage.saveAutoReminders(autoReminders),
+                storage.savePixKey(pixKey),
+                storage.saveMPAccessToken(mpAccessToken),
+                storage.saveMPPublicKey(mpPublicKey)
+            ]);
 
             toast({
                 title: "Configurações Salvas",
                 description: "As informações da barbearia foram atualizadas com sucesso.",
             });
         } catch (error) {
+            console.error('Erro ao salvar configurações:', error);
             toast({
                 title: "Erro ao Salvar",
-                description: "Ocorreu um erro ao tentar salvar as configurações.",
+                description: "Ocorreu um erro ao tentar salvar as configurações no banco de dados. Verifique sua conexão.",
                 variant: "destructive"
             });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -445,10 +453,15 @@ const Settings = () => {
 
                     <Button
                         onClick={handleSave}
+                        disabled={isSaving}
                         className="w-full h-16 rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] transition-all duration-300 mb-10"
                     >
-                        <Save className="w-6 h-6 mr-3" />
-                        SALVAR TUDO
+                        {isSaving ? (
+                            <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                        ) : (
+                            <Save className="w-6 h-6 mr-3" />
+                        )}
+                        {isSaving ? "SALVANDO..." : "SALVAR TUDO"}
                     </Button>
                 </div>
             </div>
