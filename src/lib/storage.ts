@@ -71,13 +71,18 @@ export const storage = {
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
 
-      // Se o banco estiver vazio, inicializar com dados padrão
-      if (cache.services.length === 0) {
+      // Se o banco estiver vazio ou sem configurações, inicializar com dados padrão
+      if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {
+        console.log('🔄 Banco parece vazio. Iniciando seeding automático...');
         await this.seedDefaultData();
       }
 
       isInitialized = true;
-      console.log('✅ Supabase Initialized & Cached');
+      console.log('✅ Supabase Initialized & Cached', { 
+        settingsCount: Object.keys(cache.settings).length,
+        servicesCount: cache.services.length,
+        gallery: cache.settings.shop_gallery
+      });
     } catch (error) {
       console.error('❌ Error initializing Supabase:', error);
       isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
@@ -99,29 +104,29 @@ export const storage = {
     await supabase.from('expense_categories').insert(defaultCategories.map(name => ({ name })));
 
     await supabase.from('shop_settings').upsert([
-      { key: 'loyalty_target', value: JSON.stringify(LOYALTY_TARGET_DEFAULT) },
-      { key: 'shop_name', value: JSON.stringify('TANAKA BARBEARIA') },
-      { key: 'shop_phone', value: JSON.stringify('5562985328737') },
-      { key: 'shop_address', value: JSON.stringify('Av. 01, Centro — Bonfinópolis, GO') },
-      { key: 'reminder_minutes', value: JSON.stringify('30') },
-      { key: 'shop_logo', value: JSON.stringify(LogoMenu) },
-      { key: 'shop_instagram', value: JSON.stringify('https://instagram.com/') },
-      { key: 'shop_opening_hours', value: JSON.stringify('Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00') },
-      { key: 'shop_gallery', value: JSON.stringify([
+      { key: 'loyalty_target', value: LOYALTY_TARGET_DEFAULT },
+      { key: 'shop_name', value: 'TANAKA BARBEARIA' },
+      { key: 'shop_phone', value: '5562985328737' },
+      { key: 'shop_address', value: 'Av. 01, Centro — Bonfinópolis, GO' },
+      { key: 'reminder_minutes', value: '30' },
+      { key: 'shop_logo', value: LogoMenu },
+      { key: 'shop_instagram', value: 'https://instagram.com/' },
+      { key: 'shop_opening_hours', value: 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00' },
+      { key: 'shop_gallery', value: [
         "/img/cabelos/barba_1.png", "/img/cabelos/barba_2.png", "/img/cabelos/cabelo_1.png",
         "/img/cabelos/cabelo_2.png", "/img/cabelos/cabelo_3.png",
-      ])},
-      { key: 'pix_key', value: JSON.stringify('') },
-      { key: 'mp_access_token', value: JSON.stringify('TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596') },
-      { key: 'mp_public_key', value: JSON.stringify('TEST-5f1446b5-2aa6-42e1-8e37-b4e9cb61dacd') },
-      { key: 'holiday_mode', value: JSON.stringify(false) },
-      { key: 'auto_reminders', value: JSON.stringify(false) },
-      { key: 'whatsapp_api_url', value: JSON.stringify('') },
-      { key: 'whatsapp_api_token', value: JSON.stringify('') },
-      { key: 'whatsapp_instance_id', value: JSON.stringify('') },
-      { key: 'shop_facebook', value: JSON.stringify('') },
-      { key: 'shop_email', value: JSON.stringify('tanakabnf@gmail.com') },
-      { key: 'shop_maps_link', value: JSON.stringify('') },
+      ]},
+      { key: 'pix_key', value: '' },
+      { key: 'mp_access_token', value: 'TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596' },
+      { key: 'mp_public_key', value: 'TEST-5f1446b5-2aa6-42e1-8e37-b4e9cb61dacd' },
+      { key: 'holiday_mode', value: false },
+      { key: 'auto_reminders', value: false },
+      { key: 'whatsapp_api_url', value: '' },
+      { key: 'whatsapp_api_token', value: '' },
+      { key: 'whatsapp_instance_id', value: '' },
+      { key: 'shop_facebook', value: '' },
+      { key: 'shop_email', value: 'tanakabnf@gmail.com' },
+      { key: 'shop_maps_link', value: '' },
     ]);
 
     isInitialized = false;
