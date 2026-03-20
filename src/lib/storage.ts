@@ -31,13 +31,19 @@ const normalizeImagePath = (src: string): string => {
   if (!src) return src;
   if (src.startsWith('http') || src.startsWith('data:')) return src;
 
-  // Força tudo para minúsculo e remove espaços (padrão Git)
+  // Força tudo para minúsculo e remove espaços (padrão Git + Linux Vercel)
   let normalized = src.toLowerCase().replace(/\s+/g, '_');
   
-  // Se for uma das imagens de barba ou cabelo mas estiver com caminho errado (ex: /img/CABELOS)
+  // Normalização específica para a galeria (independente do que venha do banco)
   if (normalized.includes('barba') || normalized.includes('cabelo')) {
     const fileName = normalized.split('/').pop() || "";
+    // Garante que o diretório seja /img/cabelos/ em minúsculo
     return `/img/cabelos/${fileName}`;
+  }
+
+  // Normalização específica para a foto do Tanaka
+  if (normalized.includes('tanaka')) {
+    return `/img/barbeiro/tanaka.png`;
   }
 
   // Se não começar com /, garante que comece
@@ -248,7 +254,7 @@ export const storage = {
   getShopGallery: (): string[] => {
     let gallery = storage.getSetting('shop_gallery', []);
     
-    // Fallback se vier como string (comum em bancos SQL que não suportam JSON nativo ou em erros de migração)
+    // Fallback se vier como string JSON (erro de migração ou banco)
     if (typeof gallery === 'string' && gallery.trim().startsWith('[')) {
       try {
         gallery = JSON.parse(gallery);
@@ -257,7 +263,14 @@ export const storage = {
       }
     }
     
-    return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
+    // Lista padrão de segurança para garantir que nunca fique vazio na UI
+    const defaultGallery = [
+      "/img/cabelos/barba_1.png", "/img/cabelos/barba_2.png", "/img/cabelos/cabelo_1.png",
+      "/img/cabelos/cabelo_2.png", "/img/cabelos/cabelo_3.png",
+    ];
+
+    const finalGallery = Array.isArray(gallery) && gallery.length > 0 ? gallery : defaultGallery;
+    return finalGallery.map(normalizeImagePath);
   },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
 
