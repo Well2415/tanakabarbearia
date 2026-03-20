@@ -7,8 +7,4 @@ self.addEventListener('activate', (e) => {
   return self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  // Faz nada especial, apenas passa a requisição pra frente (Network primeiro)
-  // Isso impede que o app quebre se fizermos atualizações drásticas, 
-  // e ainda satisfaz o Chrome for Android para mostrar o prompt de download.
-});
+// Removido fetch handler vazio para evitar overhead e avisos do browser

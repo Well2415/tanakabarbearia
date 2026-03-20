@@ -1,6 +1,6 @@
 import { Barber, Service, User, Appointment } from '@/types';
-// Usando caminhos estáticos para garantir compatibilidade com o deploy/public
-const TanakaImg = "/img/barbeiro/tanaka.png";
+// Usando import de assets para bundling seguro no Vercel
+import TanakaImg from '@/assets/img/tanaka.png';
 import { format } from 'date-fns';
 
 const today = new Date();

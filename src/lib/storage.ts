@@ -1,8 +1,8 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
-// Usando caminhos estáticos relativos à pasta public/
-const TanakaImg = "/img/barbeiro/tanaka.png";
+// Usando import direta para garantir que o Vite envie a imagem com hash no bundle
+import TanakaImg from '@/assets/img/tanaka.png';
 const LogoMenu = "/img/logo-menu.png";
 
 // Cache interno para manter o funcionamento síncrono dos componentes
@@ -138,10 +138,7 @@ export const storage = {
       { key: 'shop_logo', value: LogoMenu },
       { key: 'shop_instagram', value: 'https://instagram.com/' },
       { key: 'shop_opening_hours', value: 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00' },
-      { key: 'shop_gallery', value: [
-        "/img/cabelos/barba_1.png", "/img/cabelos/barba_2.png", "/img/cabelos/cabelo_1.png",
-        "/img/cabelos/cabelo_2.png", "/img/cabelos/cabelo_3.png",
-      ]},
+      { key: 'shop_gallery', value: [] },
       { key: 'pix_key', value: '' },
       { key: 'mp_access_token', value: 'TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596' },
       { key: 'mp_public_key', value: 'TEST-5f1446b5-2aa6-42e1-8e37-b4e9cb61dacd' },
@@ -263,13 +260,15 @@ export const storage = {
       }
     }
     
-    // Lista padrão de segurança para garantir que nunca fique vazio na UI
-    const defaultGallery = [
-      "/img/cabelos/barba_1.png", "/img/cabelos/barba_2.png", "/img/cabelos/cabelo_1.png",
-      "/img/cabelos/cabelo_2.png", "/img/cabelos/cabelo_3.png",
-    ];
+    // Lista de imagens padrão antigas para filtrar/remover
+    const legacyDefaults = ["barba_1.png", "barba_2.png", "cabelo_1.png", "cabelo_2.png", "cabelo_3.png"];
+    
+    const filteredGallery = Array.isArray(gallery) ? gallery.filter(img => {
+      const fileName = img.split('/').pop()?.toLowerCase() || "";
+      return !legacyDefaults.includes(fileName);
+    }) : [];
 
-    const finalGallery = Array.isArray(gallery) && gallery.length > 0 ? gallery : defaultGallery;
+    const finalGallery = filteredGallery.length > 0 ? filteredGallery : [];
     return finalGallery.map(normalizeImagePath);
   },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
