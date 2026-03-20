@@ -35,15 +35,27 @@
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx?v=1.0.1"></script>
     <script>
+      // Forçar limpeza de Service Worker antigo e cache para garantir a entrega do novo código
       if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('SW desativado para atualizar cache');
+          }
+        });
+        
+        // Registrar o novo SW
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(reg => console.log('PWA ServiceWorker registrado', reg))
+          navigator.serviceWorker.register('/sw.js?v=1.0.1', { scope: '/' })
+            .then(reg => console.log('PWA ServiceWorker atualizado', reg))
             .catch(err => console.error('PWA erro no registro', err));
         });
       }
+      
+      // Limpeza de cache de storage para novos caminhos (opcional, mas seguro)
+      // localStorage.removeItem('shop_gallery'); 
     </script>
   </body>
 </html>
