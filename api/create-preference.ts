@@ -36,15 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email: email || 'test_user_12345678@testuser.com'
         },
         binary_mode: false,
-        payment_methods: {
-          excluded_payment_methods: [{ id: 'ticket' }]
-        },
         back_urls: {
           success: finalBackUrl,
           failure: finalBackUrl,
           pending: finalBackUrl
-        }
-        // auto_return: 'approved'
+        },
+        auto_return: 'approved'
       })
     });
 

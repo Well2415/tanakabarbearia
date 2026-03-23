@@ -35,11 +35,8 @@ const GuestBooking = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
-  const [isLoadingPix, setIsLoadingPix] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
-  const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
-  const [isLoadingCard, setIsLoadingCard] = useState(false);
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   const services = storage.getServices();
   const barbers = storage.getBarbers();
@@ -189,41 +186,39 @@ const GuestBooking = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (showPaymentModal && pixResponse && !paymentSuccess) {
-      interval = setInterval(async () => {
-        const status = await checkPaymentStatus(pixResponse.id);
-        if (status === 'approved') saveAppointment(true, 'pix');
-      }, 5000);
-    }
-    return () => { if (interval) clearInterval(interval); };
-  }, [showPaymentModal, pixResponse, paymentSuccess]);
+  // Removido useEffect de verificação de status manual do Pix interno
 
-  const generatePix = async () => {
-    setIsLoadingPix(true);
-    const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-    const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Tanaka Barbearia (Convidado)`;
-    const response = await createPixPayment(depositValue, description, formData.email || 'contato@tanakabarbearia.com.br');
-    setPixResponse(response);
-    setIsLoadingPix(false);
-    if (!response) {
-      toast({ title: 'Erro', description: 'Não foi possível gerar o Pix.', variant: 'destructive' });
+  const handleCheckout = async () => {
+    setIsLoadingCheckout(true);
+    setShowPaymentModal(true); // Mostrar modal de "Redirecionando"
+    
+    try {
+      const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
+      const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Tanaka Barbearia (Convidado)`;
+      
+      // Salvar dados pendentes para quando o Mercado Pago retornar
+      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date?.toISOString() }));
+      
+      const url = await createPreference(depositValue, description, formData.email, window.location.href);
+      
+      if (url) {
+        setCheckoutUrl(url);
+        // Redirecionamento automático
+        window.location.href = url;
+      } else {
+        localStorage.removeItem('pending_guest_booking');
+        toast({ 
+          title: 'Erro no Checkout', 
+          description: 'Não foi possível iniciar o pagamento. Tente novamente.', 
+          variant: 'destructive' 
+        });
+        setShowPaymentModal(false);
+      }
+    } catch (error) {
+      console.error('Erro ao gerar checkout:', error);
       setShowPaymentModal(false);
-    }
-  };
-
-  const generateCardPayment = async () => {
-    setIsLoadingCard(true);
-    const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-    const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Tanaka Barbearia (Convidado)`;
-    localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date?.toISOString() }));
-    const url = await createPreference(depositValue, description, formData.email, window.location.href);
-    setPreferenceUrl(url);
-    setIsLoadingCard(false);
-    if (!url) {
-      localStorage.removeItem('pending_guest_booking');
-      toast({ title: 'Erro', description: 'Erro ao gerar checkout. Tente Pix.', variant: 'destructive' });
+    } finally {
+      setIsLoadingCheckout(false);
     }
   };
 
@@ -237,14 +232,13 @@ const GuestBooking = () => {
       toast({ title: 'Erro', description: 'Selecione um serviço', variant: 'destructive' });
       return;
     }
-    setShowPaymentModal(true);
-    if (paymentMethod === 'pix') generatePix();
-    else generateCardPayment();
+    
+    // Iniciar fluxo direto do Mercado Pago (que contém Pix e Cartão)
+    handleCheckout();
   };
 
   useEffect(() => {
-    setPixResponse(null);
-    setPreferenceUrl(null);
+    setCheckoutUrl(null);
   }, [formData.serviceIds, formData.barberId]);
 
   if (isHolidayMode) {
@@ -422,7 +416,7 @@ const GuestBooking = () => {
               <div className="bg-[#009EE3] p-8 text-white text-center relative overflow-hidden">
                 <div className="sr-only">
                   <DialogTitle>Finalizar Reserva</DialogTitle>
-                  <DialogDescription>Selecione o método de pagamento para garantir seu horário.</DialogDescription>
+                  <DialogDescription>Redirecionando para o pagamento seguro do Mercado Pago.</DialogDescription>
                 </div>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-12 -mb-12 blur-xl" />
@@ -435,187 +429,50 @@ const GuestBooking = () => {
                   />
                 </div>
                 
-                <h3 className="text-2xl font-black tracking-tight mb-1">Finalizar Reserva</h3>
-                <p className="text-[#E0F2FE] font-medium opacity-90 text-sm">Sinal de 50% para garantir seu horário</p>
+                <h3 className="text-2xl font-black tracking-tight mb-1">Redirecionando...</h3>
+                <p className="text-[#E0F2FE] font-medium opacity-90 text-sm">Garantindo seu horário com segurança</p>
                 
-                <div className="mt-6 inline-block bg-white dark:bg-zinc-900 px-6 py-3 rounded-[1.5rem] shadow-xl ring-1 ring-black/5">
-                  <span className="text-[10px] uppercase font-black text-zinc-500 block tracking-widest mb-0.5">Valor do Sinal</span>
-                  <span className="text-3xl font-black text-[#009EE3]">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
+                <div className="mt-8 flex justify-center">
+                   <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Meios de Pagamento */}
-                <div className="space-y-3">
-                  <Label className="text-[11px] font-black uppercase text-zinc-600 dark:text-zinc-400 ml-1 tracking-widest">Pagar com</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div 
-                      onClick={() => setPaymentMethod('pix')}
-                      className={cn(
-                        "p-4 rounded-3xl border-2 flex flex-col items-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all active:scale-95",
-                        paymentMethod === 'pix' ? "border-[#009EE3] bg-white dark:bg-zinc-900" : "border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 grayscale opacity-70"
-                      )}
-                    >
-                      <div className="p-2 bg-[#009EE3]/10 rounded-xl">
-                        <QrCode className="w-5 h-5 text-[#009EE3]" />
-                      </div>
-                      <span className="text-[11px] font-black text-zinc-800 dark:text-zinc-100 uppercase">PIX</span>
-                    </div>
-                    <div 
-                      onClick={() => {
-                        setPaymentMethod('card');
-                        if (!preferenceUrl) generateCardPayment();
-                      }}
-                      className={cn(
-                        "p-4 rounded-3xl border-2 flex flex-col items-center gap-2 cursor-pointer shadow-sm hover:shadow-md transition-all active:scale-95",
-                        paymentMethod === 'card' ? "border-[#009EE3] bg-white dark:bg-zinc-900" : "border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 grayscale opacity-70"
-                      )}
-                    >
-                      <div className="p-2 bg-[#009EE3]/10 rounded-xl">
-                        <CreditCard className="w-5 h-5 text-[#009EE3]" />
-                      </div>
-                      <span className="text-[11px] font-black text-zinc-800 dark:text-zinc-100 uppercase">Cartão</span>
-                    </div>
+              <div className="p-8 space-y-6 text-center">
+                <div className="space-y-4">
+                  <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                    <ShieldCheck className="w-12 h-12 text-[#009EE3] mx-auto mb-3" />
+                    <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-100 uppercase mb-1">Checkout Seguro</h4>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                      Você será levado ao Mercado Pago para escolher entre Cartão, Pix ou outros métodos.
+                    </p>
                   </div>
+
+                  {!checkoutUrl && (
+                    <p className="text-[10px] text-[#009EE3] font-black uppercase tracking-widest animate-pulse">
+                      Preparando gateway de pagamento...
+                    </p>
+                  )}
+
+                  {checkoutUrl && (
+                    <Button 
+                      className="w-full h-14 bg-[#009EE3] hover:bg-[#0086C3] text-white rounded-2xl text-base font-black shadow-lg shadow-[#009EE3]/20 transition-all hover:scale-[1.02]"
+                      onClick={() => window.location.href = checkoutUrl}
+                    >
+                      CLIQUE SE NÃO REDIRECIONAR
+                    </Button>
+                  )}
                 </div>
 
-                {/* Área do QR Code */}
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-8 text-center space-y-8 shadow-inner">
-                  <div className="flex flex-col items-center gap-4">
-                    {paymentMethod === 'pix' ? (
-                      <>
-                        {isLoadingPix ? (
-                           <div className="w-36 h-36 bg-zinc-200 dark:bg-zinc-800 rounded-[2rem] flex flex-col items-center justify-center gap-2">
-                            <Loader2 className="w-8 h-8 text-[#009EE3] animate-spin" />
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase">Gerando Pix...</span>
-                          </div>
-                        ) : pixResponse ? (
-                          <>
-                            <div className="bg-white p-4 rounded-[2rem] shadow-2xl ring-1 ring-black/5 relative group">
-                              <img 
-                                src={`data:image/png;base64,${pixResponse.qr_code_base64}`} 
-                                alt="QR Code PIX" 
-                                className="w-48 h-48 mx-auto" 
-                              />
-                            </div>
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest animate-pulse">
-                              Aponte a câmera para o QR Code acima
-                            </p>
-                            <div className="w-full space-y-3">
-                              <div className="flex flex-col gap-2">
-                                <span className="text-[10px] font-black uppercase text-zinc-600 tracking-wider">PIX Copia e Cola</span>
-                                <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 border-2 border-zinc-100 dark:border-zinc-700 p-2 pl-4 rounded-2xl w-full justify-between shadow-sm focus-within:border-[#009EE3] transition-colors">
-                                  <code className="text-[11px] font-mono font-bold text-zinc-700 dark:text-zinc-300 truncate pr-2">{pixResponse.qr_code}</code>
-                                  <Button 
-                                    variant="default" 
-                                    size="icon" 
-                                    className="h-10 w-10 shrink-0 rounded-xl bg-[#009EE3] text-white hover:bg-[#0086C3] transition-all shadow-md active:scale-90"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(pixResponse.qr_code);
-                                      toast({ title: 'Copiado!', description: 'Código Pix copiado com sucesso.' });
-                                    }}
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-36 h-36 bg-zinc-200 dark:bg-zinc-800 rounded-[2rem] flex items-center justify-center">
-                            <QrCode className="w-12 h-12 text-zinc-400 opacity-30" />
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {isLoadingCard ? (
-                          <div className="w-36 h-36 bg-zinc-200 dark:bg-zinc-800 rounded-[2rem] flex flex-col items-center justify-center gap-2">
-                            <Loader2 className="w-8 h-8 text-[#009EE3] animate-spin" />
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase">Gerando Link...</span>
-                          </div>
-                        ) : preferenceUrl ? (
-                          <div className="w-full space-y-4 py-4">
-                            <div className="bg-white dark:bg-zinc-800 p-6 rounded-[2rem] shadow-xl border border-zinc-100 dark:border-zinc-700">
-                              <CreditCard className="w-12 h-12 text-[#009EE3] mx-auto mb-3" />
-                              <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-100 uppercase mb-1">Pagamento via Cartão</h4>
-                              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Você será redirecionado para o checkout oficial e seguro do Mercado Pago.</p>
-                            </div>
-                            <Button 
-                              className="w-full h-14 bg-[#009EE3] hover:bg-[#0086C3] text-white rounded-2xl text-base font-black shadow-lg shadow-[#009EE3]/20 transition-all hover:scale-[1.02]"
-                              onClick={() => window.location.href = preferenceUrl}
-                            >
-                              ABRIR CHECKOUT SEGURO
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="w-36 h-36 bg-zinc-200 dark:bg-zinc-800 rounded-[2rem] flex items-center justify-center">
-                            <CreditCard className="w-12 h-12 text-zinc-400 opacity-30" />
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* O bloco abaixo (Pix Copia e Cola) deve estar dentro do check de pixResponse acima, 
-                        removi daqui para não duplicar ou aparecer no modo cartão */}
-                  </div>
-                </div>
-
-                {/* Resumo de Valores Moderno */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Total do Serviço</span>
-                    <span className="text-sm font-bold text-zinc-600 dark:text-zinc-300">R$ {totalValue.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Total Sinal</span>
+                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-50">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
                   </div>
-                  <div className="bg-[#009EE3]/5 p-4 rounded-2xl border border-[#009EE3]/20 shadow-sm">
-                    <span className="text-[10px] font-bold text-[#009EE3] uppercase block mb-1">Restante no Local</span>
-                    <span className="text-sm font-bold text-[#009EE3]">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
+                  <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Restante Local</span>
+                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-50">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
-
-                {paymentMethod === 'pix' && (
-                  <div className="space-y-3">
-                    <Button 
-                      onClick={async () => {
-                        if (!pixResponse) return;
-                        setIsProcessing(true);
-                        const status = await checkPaymentStatus(pixResponse.id);
-                        if (status === 'approved') {
-                          saveAppointment(true, 'pix');
-                        } else {
-                          toast({ title: 'Pagamento não identificado', description: 'O Pix ainda não foi aprovado pelo Mercado Pago.', variant: 'destructive' });
-                          setIsProcessing(false);
-                        }
-                      }}
-                      disabled={isProcessing || !pixResponse}
-                      className="w-full h-16 bg-[#009EE3] hover:bg-[#0086C3] text-white rounded-[1.5rem] text-lg font-black shadow-xl shadow-[#009EE3]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center gap-3">
-                           <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                           <span>Verificando...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-6 h-6" />
-                          <span>VERIFICAR PAGAMENTO</span>
-                        </div>
-                      )}
-                    </Button>
-                    
-                    <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-widest">
-                      <ShieldCheck className="w-3 h-3 text-green-500" />
-                      Transação segura via Mercado Pago
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === 'card' && (
-                   <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-widest pt-2">
-                    <ShieldCheck className="w-3 h-3 text-green-500" />
-                    Pagamento via Checkout Seguro Mercado Pago
-                  </div>
-                )}
               </div>
             </>
           ) : (
