@@ -51,8 +51,8 @@ const App = () => {
             <Loader2 className="w-24 h-24 text-primary animate-spin absolute top-0 left-0" />
           </div>
           <div className="text-center space-y-2">
-            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Tanaka Barbearia</h2>
-            <p className="text-xs font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando Dados...</p>
+            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Barbearia</h2>
+            <p className="text-xs font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando...</p>
           </div>
         </div>
       </div>

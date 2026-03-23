@@ -34,11 +34,6 @@ const normalizeImagePath = (src: string): string => {
   // Força tudo para minúsculo e remove espaços
   let normalized = src.toLowerCase().replace(/\s+/g, '_');
 
-  // Normalização específica para a foto do Tanaka (Legado e compatibilidade)
-  if (normalized.includes('tanaka')) {
-    return `/img/barbeiro/tanaka.png`;
-  }
-
   // Normalização para as fotos da galeria legada (remover espaços e garantir pasta correta)
   if (normalized.includes('barba') || normalized.includes('cabelo')) {
     // Remove espaços e underscores para bater com os arquivos reais (barba1.png, cabelo1.png)
@@ -140,15 +135,15 @@ export const storage = {
       { key: 'shop_opening_hours', value: 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00' },
       { key: 'shop_gallery', value: [] },
       { key: 'pix_key', value: '' },
-      { key: 'mp_access_token', value: 'TEST-8670819624140776-031814-1c0249b57c6fb0894f625f3c4732389e-274944596' },
-      { key: 'mp_public_key', value: 'TEST-5f1446b5-2aa6-42e1-8e37-b4e9cb61dacd' },
+      { key: 'mp_access_token', value: '' },
+      { key: 'mp_public_key', value: '' },
       { key: 'holiday_mode', value: false },
       { key: 'auto_reminders', value: false },
       { key: 'whatsapp_api_url', value: '' },
       { key: 'whatsapp_api_token', value: '' },
       { key: 'whatsapp_instance_id', value: '' },
       { key: 'shop_facebook', value: '' },
-      { key: 'shop_email', value: 'tanakabnf@gmail.com' },
+      { key: 'shop_email', value: '' },
       { key: 'shop_maps_link', value: '' },
     ]);
 
@@ -233,16 +228,16 @@ export const storage = {
   getAutoReminders: (): boolean => storage.getSetting('auto_reminders', false),
   saveAutoReminders: (isEnabled: boolean) => storage.saveSetting('auto_reminders', isEnabled),
 
-  getShopName: (): string => storage.getSetting('shop_name', 'TANAKA BARBEARIA'),
+  getShopName: (): string => storage.getSetting('shop_name', ''),
   saveShopName: (name: string) => storage.saveSetting('shop_name', name),
 
-  getShopPhone: (): string => storage.getSetting('shop_phone', '5562985328737'),
+  getShopPhone: (): string => storage.getSetting('shop_phone', ''),
   saveShopPhone: (phone: string) => storage.saveSetting('shop_phone', phone),
 
   getShopLogo: (): string => storage.getSetting('shop_logo', LogoMenu),
   saveShopLogo: (logoUrl: string) => storage.saveSetting('shop_logo', logoUrl),
 
-  getShopAddress: (): string => storage.getSetting('shop_address', 'Av. 01, Centro — Bonfinópolis, GO'),
+  getShopAddress: (): string => storage.getSetting('shop_address', ''),
   saveShopAddress: (address: string) => storage.saveSetting('shop_address', address),
 
   getShopInstagram: (): string => storage.getSetting('shop_instagram', 'https://instagram.com/'),
@@ -251,10 +246,10 @@ export const storage = {
   getShopFacebook: (): string => storage.getSetting('shop_facebook', ''),
   saveShopFacebook: (url: string) => storage.saveSetting('shop_facebook', url),
 
-  getShopEmail: (): string => storage.getSetting('shop_email', 'tanakabnf@gmail.com'),
+  getShopEmail: (): string => storage.getSetting('shop_email', ''),
   saveShopEmail: (email: string) => storage.saveSetting('shop_email', email),
 
-  getShopOpeningHours: (): string => storage.getSetting('shop_opening_hours', 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00'),
+  getShopOpeningHours: (): string => storage.getSetting('shop_opening_hours', ''),
   saveShopOpeningHours: (hours: string) => storage.saveSetting('shop_opening_hours', hours),
 
   getShopMapsLink: (): string => storage.getSetting('shop_maps_link', ''),
