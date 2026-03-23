@@ -22,7 +22,7 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
-  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
+  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
   const [isLoadingPix, setIsLoadingPix] = useState(false);
@@ -304,105 +304,26 @@ const MyAppointments = () => {
                   <SelectItem value="cash">Dinheiro</SelectItem>
                   <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                   <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                  <SelectItem value="pix">Pix (Chave)</SelectItem>
-                  <SelectItem value="link">Link de Pagamento</SelectItem>
+                  <SelectItem value="link">Mercado Pago (Pix/Cartão)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {paymentType === 'pix' && isMPConfigured() && (
-              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
-                {!pixResponse ? (
-                  <>
-                    <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
-                    <p className="text-base font-bold text-foreground">Pix Dinâmico (Mercado Pago)</p>
-                    <p className="text-xs text-muted-foreground mb-4">Gere um QR Code exclusivo para este atendimento que confirma o pagamento automaticamente.</p>
-                    <Button 
-                      onClick={handleGeneratePix} 
-                      disabled={isLoadingPix || finalPrice <= 0}
-                      className="w-full h-11 bg-primary hover:bg-primary/90"
-                    >
-                      {isLoadingPix ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <QrCode className="w-4 h-4 mr-2" />}
-                      Gerar QR Code Mercado Pago
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="bg-white p-2 rounded-xl mb-4 shadow-lg border-2 border-primary/20">
-                      <img 
-                        src={`data:image/png;base64,${pixResponse.qr_code_base64}`} 
-                        alt="QR Code Pix" 
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-base font-bold text-foreground mb-1">Escaneie para Pagar</p>
-                    <p className="text-[10px] text-muted-foreground mb-4 max-w-[200px]">O status será atualizado assim que o pagamento for confirmado.</p>
-                    
-                    <div className="w-full space-y-2">
-                       <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full h-10 text-xs gap-2"
-                        onClick={() => {
-                          navigator.clipboard.writeText(pixResponse.qr_code);
-                          toast({ title: 'Código Copiado!', description: 'Código Pix Copia e Cola copiado.' });
-                        }}
-                      >
-                        <Copy className="w-4 h-4" /> Copiar Código Pix
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full h-8 text-[10px] text-zinc-500"
-                        onClick={() => setPixResponse(null)}
-                      >
-                        Alterar valor ou forma de pagamento
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {paymentType === 'pix' && !isMPConfigured() && storage.getPixKey() && (
-              <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
-                <QrCode className="w-10 h-10 text-primary mb-2 opacity-80" />
-                <p className="text-base font-bold text-foreground">Receber via Pix (Chave)</p>
-                <p className="text-xs text-muted-foreground mb-4">Peça para o cliente inserir a chave abaixo no app do banco e conferir o valor de R$ {finalPrice.toFixed(2).replace('.', ',')}.</p>
-                
-                <div className="w-full relative">
-                  <div className="bg-background border flex items-center justify-between border-primary/20 px-3 py-3 rounded-xl overflow-hidden shadow-sm">
-                    <span className="font-mono text-sm font-bold text-primary truncate mr-2">{storage.getPixKey()}</span>
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      onClick={() => {
-                        navigator.clipboard.writeText(storage.getPixKey());
-                        toast({ title: 'Chave Copiada!', description: 'Chave Pix copiada com sucesso.' });
-                      }}
-                      className="shrink-0 rounded-lg h-8 px-3"
-                    >
-                      <Copy className="w-3.5 h-3.5 mr-1.5" /> Copiar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Seção de Pix removida para unificação com Mercado Pago */}
             
             {paymentType === 'link' && isMPConfigured() && (
               <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
                 {!preferenceUrl ? (
                   <>
                     <CreditCard className="w-10 h-10 text-primary mb-2 opacity-80" />
-                    <p className="text-base font-bold text-foreground">Link de Pagamento (Mercado Pago)</p>
-                    <p className="text-xs text-muted-foreground mb-4">Gere um link oficial para o cliente pagar com Cartão de Crédito com segurança.</p>
+                    <p className="text-base font-bold text-foreground">Mercado Pago (Pix/Cartão)</p>
                     <Button 
                       onClick={handleGenerateLink} 
                       disabled={isLoadingLink || finalPrice <= 0}
-                      className="w-full h-11 bg-primary hover:bg-primary/90"
+                      className="w-full h-11 bg-primary hover:bg-primary/90 mt-2"
                     >
                       {isLoadingLink ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                      Gerar Link Mercado Pago
+                      Gerar Pagamento
                     </Button>
                   </>
                 ) : (
@@ -448,8 +369,8 @@ const MyAppointments = () => {
               </div>
             )}
 
-            {paymentType === 'pix' && !isMPConfigured() && !storage.getPixKey() && (
-               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Nenhuma forma de Pix configurada. Verifique as credenciais do Mercado Pago ou a Chave Pix no painel Admin.</p>
+            {paymentType === 'link' && !isMPConfigured() && (
+               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Gateways de pagamento não configurados no painel Admin.</p>
             )}
             
           </div>

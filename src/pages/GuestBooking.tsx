@@ -8,35 +8,29 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { storage } from '@/lib/storage';
-import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
+import { createPreference, isMPConfigured } from '@/lib/mercadoPago';
 import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
 import { Appointment, Service } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { CalendarIcon, CreditCard, QrCode, ShieldCheck, CheckCircle2, Copy, Loader2, X } from 'lucide-react';
-import { format, parseISO, startOfDay } from 'date-fns';
+import { CalendarIcon, Palmtree } from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import LogoLoginImg from '../../img/LOGO LOGIN.png';
-
-import { Palmtree } from 'lucide-react';
 
 const GuestBooking = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isHolidayMode = storage.getHolidayMode();
   const [date, setDate] = useState<Date | undefined>(startOfDay(new Date()));
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false); // New state for calendar popover
-  const [formData, setFormData] = useState<{ name: string, email: string, phone: string, serviceIds: string[], barberId: string, time: string }>({ name: '', email: '', phone: '', serviceIds: [], barberId: '', time: '' });
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', serviceIds: [] as string[], barberId: '', time: '' });
   const [filteredTimes, setFilteredTimes] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
   const services = storage.getServices();
   const barbers = storage.getBarbers();
@@ -49,7 +43,6 @@ const GuestBooking = () => {
     }
   }, [barbers, formData.barberId]);
 
-
   useEffect(() => {
     if (date && formData.barberId) {
       const selectedBarber = barbers.find(b => b.id === formData.barberId);
@@ -57,7 +50,6 @@ const GuestBooking = () => {
 
       const masterHours = selectedBarber.availableHours;
       const formattedDate = format(date, 'yyyy-MM-dd');
-
       const allAppointments = storage.getAppointments();
       const recurringSchedules = storage.getRecurringSchedules();
       const dayOfWeek = date.getDay();
@@ -66,7 +58,6 @@ const GuestBooking = () => {
         .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
         .map(app => app.time);
 
-      // Add recurring schedules for this barber and day of week
       const recurringTimes = recurringSchedules
         .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
         .map(s => s.time);
@@ -74,7 +65,6 @@ const GuestBooking = () => {
       const available = masterHours.filter(hour => !bookedTimes.includes(hour) && !recurringTimes.includes(hour));
       setFilteredTimes(available);
 
-      // Only reset time if barber or date actually changed
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
         setFormData(current => ({ ...current, time: '' }));
         setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
@@ -87,7 +77,6 @@ const GuestBooking = () => {
       }
     }
   }, [date, formData.barberId, barbers, lastBarberDate]);
-
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
     const s = services.find(srv => srv.id === id);
@@ -128,11 +117,8 @@ const GuestBooking = () => {
 
       storage.saveAppointments([...storage.getAppointments(), newAppointment]);
 
-      // Notificação WhatsApp para agendamentos pagos
       if (isPaid) {
-        const barbers = storage.getBarbers();
         const selectedBarber = barbers.find(b => b.id === finalForm.barberId);
-        const services = storage.getServices();
         const service = services.find(s => s.id === finalForm.serviceIds[0]);
         if (selectedBarber && service) {
           await sendWhatsAppConfirmation(newAppointment, selectedBarber, service);
@@ -142,12 +128,10 @@ const GuestBooking = () => {
       toast({
         title: 'Agendamento Confirmado!',
         description: isPaid 
-          ? (method === 'pix' ? 'Pagamento via Pix aprovado. Seu horário está garantido!' : 'Pagamento via Cartão aprovado. Seu horário está garantido!')
+          ? 'Pagamento aprovado. Seu horário está garantido!' 
           : 'Seu agendamento foi registrado e aguarda confirmação.',
       });
       
-      setPaymentSuccess(true);
-      setShowPaymentModal(false);
       navigate('/');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -162,61 +146,36 @@ const GuestBooking = () => {
     const status = urlParams.get('status');
     const paymentId = urlParams.get('payment_id');
 
-    console.log('🔍 Retorno MP (Guest):', { status, paymentId });
-
     if (status === 'approved' && paymentId) {
-      console.log('✅ Pagamento aprovado (Guest)! Verificando dados pendentes...');
       const pendingJson = localStorage.getItem('pending_guest_booking');
-      console.log('📦 Dados recuperados (Guest):', pendingJson);
-
       if (pendingJson) {
         try {
           const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          console.log('🔄 Restaurando e salvando agendamento (Guest)...', { savedForm, savedDateStr });
           saveAppointment(true, 'card', savedForm, new Date(savedDateStr));
           localStorage.removeItem('pending_guest_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
-          console.error('❌ Erro no retorno MP (Guest):', err);
+          console.error('❌ Erro no retorno MP:', err);
         }
-      } else {
-        console.warn('⚠️ Nenhum agendamento pendente (Guest) encontrado no localStorage.');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Removido useEffect de verificação de status manual do Pix interno
 
   const handleCheckout = async () => {
     setIsLoadingCheckout(true);
-    setShowPaymentModal(true); // Mostrar modal de "Redirecionando"
-    
     try {
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
-      const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Tanaka Barbearia (Convidado)`;
-      
-      // Salvar dados pendentes para quando o Mercado Pago retornar
+      const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia (Convidado)`;
       localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date?.toISOString() }));
-      
       const url = await createPreference(depositValue, description, formData.email, window.location.href);
-      
       if (url) {
-        setCheckoutUrl(url);
-        // Redirecionamento automático
         window.location.href = url;
       } else {
         localStorage.removeItem('pending_guest_booking');
-        toast({ 
-          title: 'Erro no Checkout', 
-          description: 'Não foi possível iniciar o pagamento. Tente novamente.', 
-          variant: 'destructive' 
-        });
-        setShowPaymentModal(false);
+        toast({ title: 'Erro no Checkout', description: 'Não foi possível iniciar o pagamento. Tente novamente.', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Erro ao gerar checkout:', error);
-      setShowPaymentModal(false);
     } finally {
       setIsLoadingCheckout(false);
     }
@@ -232,14 +191,8 @@ const GuestBooking = () => {
       toast({ title: 'Erro', description: 'Selecione um serviço', variant: 'destructive' });
       return;
     }
-    
-    // Iniciar fluxo direto do Mercado Pago (que contém Pix e Cartão)
     handleCheckout();
   };
-
-  useEffect(() => {
-    setCheckoutUrl(null);
-  }, [formData.serviceIds, formData.barberId]);
 
   if (isHolidayMode) {
     return (
@@ -356,11 +309,8 @@ const GuestBooking = () => {
                         setIsCalendarOpen(false);
                       }}
                       disabled={(calendarDate) => {
-                        const today = startOfDay(new Date()); // Use startOfDay
-                        if (calendarDate < today) {
-                          return true; // Disable past dates
-                        }
-
+                        const today = startOfDay(new Date());
+                        if (calendarDate < today) return true;
                         if (formData.barberId) {
                           const selectedBarber = barbers.find(b => b.id === formData.barberId);
                           if (selectedBarber && selectedBarber.availableDates && selectedBarber.availableDates.length > 0) {
@@ -368,7 +318,7 @@ const GuestBooking = () => {
                             return !selectedBarber.availableDates.includes(formattedCalendarDate);
                           }
                         }
-                        return false; // Enable by default if no barber selected or no availableDates defined
+                        return false;
                       }} initialFocus locale={ptBR} /></PopoverContent>
                 </Popover>
               </div>
@@ -385,9 +335,9 @@ const GuestBooking = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" size="lg" disabled={isProcessing || formData.serviceIds.length === 0}>
-                {isProcessing
-                  ? "Processando Pagamento..."
+              <Button type="submit" className="w-full" size="lg" disabled={isProcessing || isLoadingCheckout || formData.serviceIds.length === 0}>
+                {isProcessing || isLoadingCheckout
+                  ? "Redirecionando..."
                   : `Pagar Sinal 50% (R$ ${depositValue.toFixed(2).replace('.', ',')})`
                 }
               </Button>
@@ -396,110 +346,6 @@ const GuestBooking = () => {
         </div>
       </div>
       <Footer />
-
-      {/* Mercado Pago Payment Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={(open) => !isProcessing && !paymentSuccess && setShowPaymentModal(open)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[450px] p-0 border-none bg-white dark:bg-zinc-950 rounded-[2rem] shadow-2xl max-h-[92vh] flex flex-col overflow-hidden [&>button]:hidden">
-          <div className="overflow-y-auto flex-grow scrollbar-none pb-6 relative">
-            {/* Custom Close Button for visibility */}
-            <div className="absolute top-4 right-4 z-[60]">
-              <button 
-                onClick={() => setShowPaymentModal(false)}
-                className="p-2 bg-black/20 backdrop-blur-md hover:bg-black/30 text-white rounded-full transition-all shadow-lg border border-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-          {!paymentSuccess ? (
-            <>
-              <div className="bg-[#009EE3] p-8 text-white text-center relative overflow-hidden">
-                <div className="sr-only">
-                  <DialogTitle>Finalizar Reserva</DialogTitle>
-                  <DialogDescription>Redirecionando para o pagamento seguro do Mercado Pago.</DialogDescription>
-                </div>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-12 -mb-12 blur-xl" />
-                
-                <div className="flex justify-center mb-4">
-                  <img 
-                    src={storage.getShopLogo()} 
-                    alt="Logo" 
-                    className="w-32 h-32 object-contain drop-shadow-2xl"
-                  />
-                </div>
-                
-                <h3 className="text-2xl font-black tracking-tight mb-1">Redirecionando...</h3>
-                <p className="text-[#E0F2FE] font-medium opacity-90 text-sm">Garantindo seu horário com segurança</p>
-                
-                <div className="mt-8 flex justify-center">
-                   <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                </div>
-              </div>
-
-              <div className="p-8 space-y-6 text-center">
-                <div className="space-y-4">
-                  <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-800">
-                    <ShieldCheck className="w-12 h-12 text-[#009EE3] mx-auto mb-3" />
-                    <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-100 uppercase mb-1">Checkout Seguro</h4>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                      Você será levado ao Mercado Pago para escolher entre Cartão, Pix ou outros métodos.
-                    </p>
-                  </div>
-
-                  {!checkoutUrl && (
-                    <p className="text-[10px] text-[#009EE3] font-black uppercase tracking-widest animate-pulse">
-                      Preparando gateway de pagamento...
-                    </p>
-                  )}
-
-                  {checkoutUrl && (
-                    <Button 
-                      className="w-full h-14 bg-[#009EE3] hover:bg-[#0086C3] text-white rounded-2xl text-base font-black shadow-lg shadow-[#009EE3]/20 transition-all hover:scale-[1.02]"
-                      onClick={() => window.location.href = checkoutUrl}
-                    >
-                      CLIQUE SE NÃO REDIRECIONAR
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Total Sinal</span>
-                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-50">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Restante Local</span>
-                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-50">R$ {depositValue.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="p-12 text-center space-y-8 animate-in fade-in zoom-in-95 duration-500">
-              <div className="relative mx-auto w-32 h-32">
-                <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping duration-[2s]" />
-                <div className="relative w-32 h-32 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40">
-                  <CheckCircle2 className="w-16 h-16 text-white animate-in zoom-in-50 duration-500" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">Sucesso Total!</h3>
-                <p className="text-zinc-500 dark:text-zinc-400 font-medium">Seu pagamento de 50% foi identificado e o horário está garantido na agenda.</p>
-              </div>
-
-              <div className="pt-4 space-y-3">
-                <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
-                  <div className="h-full bg-green-500 animate-[progress_2s_linear_forwards]" />
-                </div>
-                <p className="text-[10px] text-zinc-400 uppercase font-black tracking-widest animate-pulse">Retornando ao painel em instantes...</p>
-              </div>
-            </div>
-          )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
