@@ -1,10 +1,15 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
-// Fallback genérico para logo caso não esteja no Supabase
+
+// Fallback genérico para a logo caso não esteja configurada no banco de dados.
 const LogoMenu = "/img/logo-menu.png";
 
-// Cache interno para manter o funcionamento síncrono dos componentes
+/**
+ * CACHE GLOBAL DO APLICATIVO
+ * Armazena os dados em memória para acesso instantâneo pelos componentes React.
+ * É sincronizado com o Supabase na inicialização do app.
+ */
 let cache: {
   barbers: Barber[];
   services: Service[];
@@ -35,9 +40,18 @@ const normalizeImagePath = (src: string): string => {
   return `/${src}`;
 };
 
+// Variável de controle para evitar inicializações duplicadas.
 let isInitialized = false;
 
+/**
+ * MOTOR DE ARMAZENAMENTO (STORAGE)
+ * Objeto principal que gerencia toda a leitura e escrita de dados da Barbearia.
+ */
 export const storage = {
+  /**
+   * Conecta ao Supabase e carrega todos os dados necessários para o cache.
+   * Deve ser chamado uma única vez no início do carregamento do App.
+   */
   async initialize() {
     if (isInitialized) return;
 
@@ -138,7 +152,7 @@ export const storage = {
     await this.initialize();
   },
 
-  // Barbers
+  // --- GERENCIAMENTO DE BARBEIROS ---
   getBarbers: (): Barber[] => cache.barbers,
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
@@ -146,7 +160,7 @@ export const storage = {
     await supabase.from('barbers').insert(barbers);
   },
 
-  // Services
+  // --- GERENCIAMENTO DE SERVIÇOS ---
   getServices: (): Service[] => cache.services,
   async saveServices(services: Service[]) {
     cache.services = services;
@@ -154,7 +168,7 @@ export const storage = {
     await supabase.from('services').insert(services);
   },
 
-  // Appointments
+  // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
   async saveAppointments(appointments: Appointment[]) {
     cache.appointments = appointments;
@@ -185,10 +199,13 @@ export const storage = {
     return user || null;
   },
 
-  // Settings helpers
+  // --- CONFIGURAÇÕES DA BARBEARIA (SHOP SETTINGS) ---
   getSetting: (key: string, defaultValue: any) => {
     return cache.settings[key] !== undefined ? cache.settings[key] : defaultValue;
   },
+  /**
+   * Salva uma configuração individual por chave.
+   */
   async saveSetting(key: string, value: any) {
     cache.settings[key] = value;
     await supabase.from('shop_settings').upsert({ key, value }, { onConflict: 'key' });

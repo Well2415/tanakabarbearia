@@ -1,73 +1,38 @@
-# Welcome to your Lovable project
+# Sistema de Agendamento - Barbearia Moderna
 
-## Project info
+Este é um projeto profissional de agendamento online para barbearias, desenvolvido com tecnologias modernas e focado em alta performance e facilidade de manutenção manual.
 
-**URL**: https://lovable.dev/projects/3729c7a7-7d0c-44c3-b760-63c6c6bf97c6
+## 🚀 Tecnologias Utilizadas
 
-## How can I edit this code?
+- **Frontend**: React.js com TypeScript
+- **Estilização**: Tailwind CSS e Shadcn/UI
+- **Banco de Dados**: Supabase (PostgreSQL)
+- **Pagamentos**: Mercado Pago (Pix e Cartão)
+- **Notificações**: Integração com API de WhatsApp
+- **Hospedagem**: Vercel
 
-There are several ways of editing your application.
+## 📂 Estrutura do Projeto
 
-**Use Lovable**
+O código está organizado de forma modular para facilitar a manutenção:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3729c7a7-7d0c-44c3-b760-63c6c6bf97c6) and start prompting.
+- `src/lib/`: Contém a lógica de comunicação com serviços externos.
+  - `storage.ts`: O "motor" do app. Gerencia o cache e sincroniza com o banco de dados.
+  - `supabase.ts`: Configuração da conexão com o banco de dados.
+  - `mercadoPago.ts`: Lógica de geração de pagamentos e verificação de status.
+  - `whatsapp.ts`: Envio de mensagens automáticas e manuais.
+- `src/pages/`: Telas principais do sistema (Agendamento, Admin, Barbeiro).
+- `src/components/`: Componentes visuais reutilizáveis.
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Como dar manutenção manual
 
-**Use your preferred IDE**
+O código possui comentários detalhados em português em seus arquivos principais (`src/lib/`). Para realizar alterações:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Instalação**: Execute `npm install` para baixar as dependências.
+2. **Desenvolvimento**: Use `npm run dev` para rodar o projeto localmente.
+3. **Produção**: Para enviar alterações ao ar, basta realizar o `git push` para o repositório principal no GitHub, e a Vercel fará o deploy automático.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Configurações de Banco de Dados
+Certifique-se de que as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` estão configuradas corretamente no seu ambiente de hospedagem (Vercel).
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/3729c7a7-7d0c-44c3-b760-63c6c6bf97c6) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+*Este projeto foi limpo e organizado para suporte manual definitivo.*

@@ -1,3 +1,8 @@
+/**
+ * INTEGRAÇÃO MERCADO PAGO
+ * Este módulo gerencia a comunicação com as APIs do Mercado Pago através de rotas Proxy.
+ * O fluxo de pagamento pode ser via Pix (QR Code) ou Link de Pagamento (Checkout Pro).
+ */
 import { storage } from './storage';
 
 export interface PixPaymentResponse {
@@ -8,6 +13,10 @@ export interface PixPaymentResponse {
   ticket_url: string;
 }
 
+/**
+ * Cria um pagamento via Pix.
+ * Retorna os dados do QR Code e o ID da transação para monitoramento de status.
+ */
 export const createPixPayment = async (amount: number, description: string, email: string): Promise<PixPaymentResponse | null> => {
   const accessToken = storage.getMPAccessToken();
   if (!accessToken) {
@@ -43,6 +52,9 @@ export const createPixPayment = async (amount: number, description: string, emai
   }
 };
 
+/**
+ * Verifica o status atual de um pagamento (ex: 'approved', 'pending', 'cancelled').
+ */
 export const checkPaymentStatus = async (paymentId: number): Promise<string | null> => {
   const accessToken = storage.getMPAccessToken();
   if (!accessToken) return null;
@@ -63,6 +75,10 @@ export const checkPaymentStatus = async (paymentId: number): Promise<string | nu
   }
 };
 
+/**
+ * Cria uma preferência de pagamento (Link de Checkout).
+ * Redireciona o usuário para a página oficial do Mercado Pago para pagar com Cartão ou Pix.
+ */
 export const createPreference = async (amount: number, description: string, email: string, backUrl?: string) => {
   const accessToken = storage.getMPAccessToken();
   if (!accessToken) return null;
@@ -81,7 +97,7 @@ export const createPreference = async (amount: number, description: string, emai
     }
     
     const data = await response.json();
-    // Prioriza sandbox para tokens TEST
+    // Prioriza sandbox para tokens de teste (TEST-...)
     if (accessToken.startsWith('TEST-')) {
       return data.sandbox_init_point || data.init_point;
     }
@@ -92,6 +108,9 @@ export const createPreference = async (amount: number, description: string, emai
   }
 };
 
+/**
+ * Verifica se as credenciais do Mercado Pago foram preenchidas no painel Admin.
+ */
 export const isMPConfigured = (): boolean => {
   return !!storage.getMPAccessToken() && !!storage.getMPPublicKey();
 };

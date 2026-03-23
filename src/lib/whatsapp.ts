@@ -1,9 +1,17 @@
+/**
+ * MÓDULO DE NOTIFICAÇÕES WHATSAPP
+ * Gerencia o envio de mensagens de confirmação e lembretes para os clientes.
+ * Compatível com APIs como Z-API, Evolution, entre outras (baseadas em POST).
+ */
 import { Appointment, Barber, Service } from '../types';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { storage } from './storage';
 
-// Helper to call generic/paid WhatsApp API
+/**
+ * Função interna para disparar a requisição POST para a API de WhatsApp configurada.
+ * Lê a URL, Token e InstanceID das configurações salvas no banco de dados.
+ */
 const callApiSendMessage = async (phone: string, message: string) => {
     const apiUrl = storage.getWhatsAppApiUrl();
     const apiToken = storage.getWhatsAppApiToken();
@@ -15,15 +23,15 @@ const callApiSendMessage = async (phone: string, message: string) => {
     }
 
     try {
-        // Generic implementation (Adaptable for Z-API, Evolution, etc.)
-        // Usually POST { number: "...", message: "..." } with headers
+        // Implementação genérica de POST enviando JSON.
+        // Adaptável para Evolution API ou Z-API através dos headers.
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiToken}`,
-                'apikey': apiToken, // Common in Evolution API
-                'Client-Token': apiToken // Common in Z-API
+                'apikey': apiToken, 
+                'Client-Token': apiToken 
             },
             body: JSON.stringify({
                 instanceId: instanceId,
@@ -37,10 +45,12 @@ const callApiSendMessage = async (phone: string, message: string) => {
         }
     } catch (error) {
         console.error('Erro na chamada da API de WhatsApp:', error);
-        // Potential fallback to manual on error?
     }
 };
 
+/**
+ * Envia uma mensagem de BOAS-VINDAS / CONFIRMAÇÃO quando um agendamento é criado.
+ */
 export const sendWhatsAppConfirmation = async (
     appointment: Appointment,
     barber: Barber,
@@ -49,7 +59,7 @@ export const sendWhatsAppConfirmation = async (
     let phone = appointment.guestPhone || '';
     let guestName = appointment.guestName || '';
 
-    // If it's a registered user's appointment and phone is missing, fetch from storage
+    // Busca o telefone do usuário se não for um convidado direto.
     if (!phone && appointment.userId) {
         const user = storage.getUsers().find(u => u.id === appointment.userId);
         if (user) {
@@ -60,7 +70,7 @@ export const sendWhatsAppConfirmation = async (
 
     if (!phone) return;
 
-    // Format date for the message
+    // Formatação amigável da data para a mensagem.
     const dateObj = typeof appointment.date === 'string' ? parseISO(appointment.date) : appointment.date;
     const formattedDate = format(dateObj, "EEEE, dd 'de' MMMM", { locale: ptBR });
     const shopName = storage.getShopName();
@@ -70,6 +80,9 @@ export const sendWhatsAppConfirmation = async (
     await callApiSendMessage(phone, message);
 };
 
+/**
+ * Gera um link de "wa.me" para envio MANAL caso a API automática falhe ou não esteja configurada.
+ */
 export const getWhatsAppManualLink = (
     appointment: Appointment,
     barber: Barber,
@@ -97,6 +110,9 @@ export const getWhatsAppManualLink = (
     return `https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
 };
 
+/**
+ * Envia um lembrete automático 2 horas antes do horário marcado.
+ */
 export const sendWhatsApp2HourReminder = async (
     appointment: Appointment,
     barber: Barber,
