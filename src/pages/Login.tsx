@@ -10,7 +10,7 @@ import { storage } from '@/lib/storage';
 import { Scissors, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import LogoLoginImg from '../../img/LOGO LOGIN.png';
+const LogoLoginImg = "/img/LOGO LOGIN.png";
 
 const Login = () => {
   const navigate = useNavigate();

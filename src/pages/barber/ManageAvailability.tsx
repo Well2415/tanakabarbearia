@@ -201,6 +201,12 @@ const ManageAvailability = () => {
                 )}
                 <Button className="mt-4" onClick={() => setShowAddHourDialog(true)}>Adicionar Horário</Button>
               </div>
+
+              <div className="pt-6 border-t border-border">
+                <Button onClick={handleSubmit} className="w-full h-14 text-lg font-bold">
+                  Salvar Alterações
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

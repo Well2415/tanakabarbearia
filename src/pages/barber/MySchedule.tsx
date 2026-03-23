@@ -92,7 +92,7 @@ const MyAppointments = () => {
       a.id === updatedAppointment.id ? updatedAppointment : a
     );
     storage.saveAppointments(updatedAppointments);
-    const barberProfile = storage.getBarbers().find(b => b.name === user.fullName);
+    const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
     if (barberProfile) {
       const barberAppointments = updatedAppointments.filter(appt => appt.barberId === barberProfile.id);
       setAppointments(barberAppointments);

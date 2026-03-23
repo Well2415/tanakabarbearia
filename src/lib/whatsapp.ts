@@ -35,7 +35,7 @@ const callApiSendMessage = async (phone: string, message: string) => {
             },
             body: JSON.stringify({
                 instanceId: instanceId,
-                number: `55${phone.replace(/\D/g, '')}`,
+                number: phone.replace(/\D/g, '').startsWith('55') ? phone.replace(/\D/g, '') : `55${phone.replace(/\D/g, '')}`,
                 message: message
             })
         });
@@ -107,7 +107,9 @@ export const getWhatsAppManualLink = (
 
     const message = `Olá ${guestName || 'Cliente'}! 👋\n\nSeu agendamento na *${shopName}* foi confirmado com sucesso! ✅\n\n📍 *Detalhes:*\n✂️ *Serviço:* ${service.name}\n👤 *Barbeiro:* ${barber.name}\n📆 *Data:* ${formattedDate}\n⏰ *Horário:* ${appointment.time}\n💰 *Valor:* R$ ${service.price.toFixed(2).replace('.', ',')}\n\nEstamos te esperando! ⚡`;
     
-    return `https://wa.me/55${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    const cleanPhone = phone.replace(/\D/g, '');
+    const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
 };
 
 /**
