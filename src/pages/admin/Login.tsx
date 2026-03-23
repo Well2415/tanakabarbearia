@@ -94,7 +94,7 @@ const Login = () => {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Scissors className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">TANAKA BARBEARIA</h1>
+          <h1 className="text-2xl font-bold uppercase">{storage.getShopName() || 'Barbearia'}</h1>
           <p className="text-muted-foreground">Painel Administrativo</p>
         </div>
 

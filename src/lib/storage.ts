@@ -1,8 +1,7 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
-// Usando import direta para garantir que o Vite envie a imagem com hash no bundle
-import TanakaImg from '@/assets/img/tanaka.png';
+// Fallback genérico para logo caso não esteja no Supabase
 const LogoMenu = "/img/logo-menu.png";
 
 // Cache interno para manter o funcionamento síncrono dos componentes
@@ -26,25 +25,13 @@ let cache: {
   settings: {}
 };
 
-// Helper para normalizar caminhos de imagens legados ou com erro de digitação
+// Helper simples para caminhos de imagem
 const normalizeImagePath = (src: string): string => {
   if (!src) return src;
   if (src.startsWith('http') || src.startsWith('data:')) return src;
-
-  // Força tudo para minúsculo e remove espaços
-  let normalized = src.toLowerCase().replace(/\s+/g, '_');
-
-  // Normalização para as fotos da galeria legada (remover espaços e garantir pasta correta)
-  if (normalized.includes('barba') || normalized.includes('cabelo')) {
-    // Remove espaços e underscores para bater com os arquivos reais (barba1.png, cabelo1.png)
-    const fileName = normalized.replace(/[\s_]/g, '');
-    return `/img/cabelos/${fileName}`;
-  }
-
-  // Se já for um caminho absoluto ou relativo começando com /, retorna como está
-  if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
   
-  // Caso contrário, assume que é um asset em /img/
+  // Apenas garante que se for um caminho local, comece com /
+  if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
   return `/${src}`;
 };
 
@@ -126,13 +113,13 @@ export const storage = {
 
     await supabase.from('shop_settings').upsert([
       { key: 'loyalty_target', value: LOYALTY_TARGET_DEFAULT },
-      { key: 'shop_name', value: 'TANAKA BARBEARIA' },
-      { key: 'shop_phone', value: '5562985328737' },
-      { key: 'shop_address', value: 'Av. 01, Centro — Bonfinópolis, GO' },
+      { key: 'shop_name', value: '' },
+      { key: 'shop_phone', value: '' },
+      { key: 'shop_address', value: '' },
       { key: 'reminder_minutes', value: '30' },
       { key: 'shop_logo', value: LogoMenu },
-      { key: 'shop_instagram', value: 'https://instagram.com/' },
-      { key: 'shop_opening_hours', value: 'Seg à Sex: 08:00 - 19:00 | Sáb: 08:00 - 17:00' },
+      { key: 'shop_instagram', value: '' },
+      { key: 'shop_opening_hours', value: '' },
       { key: 'shop_gallery', value: [] },
       { key: 'pix_key', value: '' },
       { key: 'mp_access_token', value: '' },
@@ -240,7 +227,7 @@ export const storage = {
   getShopAddress: (): string => storage.getSetting('shop_address', ''),
   saveShopAddress: (address: string) => storage.saveSetting('shop_address', address),
 
-  getShopInstagram: (): string => storage.getSetting('shop_instagram', 'https://instagram.com/'),
+  getShopInstagram: (): string => storage.getSetting('shop_instagram', ''),
   saveShopInstagram: (url: string) => storage.saveSetting('shop_instagram', url),
 
   getShopFacebook: (): string => storage.getSetting('shop_facebook', ''),

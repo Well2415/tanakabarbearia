@@ -128,7 +128,7 @@ const Settings = () => {
                                     id="shopName"
                                     value={shopName}
                                     onChange={(e) => setShopName(e.target.value)}
-                                    placeholder="Ex: Tanaka Barbearia"
+                                    placeholder="Ex: Minha Barbearia"
                                     className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg"
                                 />
                             </div>
@@ -286,7 +286,7 @@ const Settings = () => {
                                     id="shopAddress"
                                     value={shopAddress}
                                     onChange={(e) => setShopAddress(e.target.value)}
-                                    placeholder="Av. 01, Centro — Bonfinópolis, GO"
+                                    placeholder="Rua Exemplo, 123 — Centro"
                                     className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white"
                                 />
                             </div>

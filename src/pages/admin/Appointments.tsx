@@ -568,8 +568,8 @@ const Appointments = () => {
     if (!currentAppointmentToComplete) return;
     
     setIsLoadingPix(true);
-    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
-    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
     
     const response = await createPixPayment(finalPrice, description, clientEmail);
     setPixResponse(response);
@@ -585,8 +585,8 @@ const Appointments = () => {
   const handleGenerateLink = async () => {
     if (!currentAppointmentToComplete) return;
     setIsLoadingLink(true);
-    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - Tanaka Barbearia`;
-    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || 'contato@tanakabarbearia.com.br';
+    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
+    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
     
     const url = await createPreference(finalPrice, description, clientEmail);
     setPreferenceUrl(url);
