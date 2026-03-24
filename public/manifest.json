@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo-circle.png",
+      "src": "/img/logo-pwa-black.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo-circle.png",
+      "src": "/img/logo-pwa-black.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
