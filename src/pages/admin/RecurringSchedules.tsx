@@ -185,7 +185,7 @@ const RecurringSchedules = () => {
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                         {barbers.map(b => (
-                                            <SelectItem key={b.id} value={b.id} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{b.name}</SelectItem>
+                                            <SelectItem key={b.id} value={b.id} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{b.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -257,7 +257,7 @@ const RecurringSchedules = () => {
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                             {DAYS_OF_WEEK.map(d => (
-                                                <SelectItem key={d.id} value={d.id.toString()} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{d.name}</SelectItem>
+                                                <SelectItem key={d.id} value={d.id.toString()} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{d.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
