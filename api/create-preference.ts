@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const amountValue = Number(parseFloat(String(amount)).toFixed(2));
-    let origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : 'https://tanaka-barbearia.vercel.app');
+    let origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : 'https://tanakabarbearia.vercel.app');
     if (origin.endsWith('/')) origin = origin.slice(0, -1);
     const finalBackUrl = backUrl || origin;
 
