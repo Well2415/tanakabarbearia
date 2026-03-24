@@ -10,11 +10,87 @@ import { formatCurrency } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Input } from '@/components/ui/input';
 
+const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product) => void }) => {
+  const [activeImage, setActiveImage] = useState(product.image);
+
+  return (
+    <Card className="overflow-hidden border-border bg-card/50 flex flex-col group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
+      <div className="relative">
+        <AspectRatio ratio={1}>
+          {activeImage ? (
+            <img 
+              src={activeImage} 
+              alt={product.name} 
+              className="w-full h-full object-cover transition-transform duration-500" 
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <ShoppingBag className="w-16 h-16 text-muted-foreground/10" />
+            </div>
+          )}
+        </AspectRatio>
+        
+        <div className="absolute top-4 left-4">
+          <span className="bg-primary/90 backdrop-blur-sm text-primary-foreground text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
+            {product.category || 'Destaque'}
+          </span>
+        </div>
+      </div>
+      
+      {/* Thumbnails if 2 images exist */}
+      {product.image && product.image2 && (
+        <div className="flex gap-2 px-4 mt-2">
+          <button 
+            onClick={() => setActiveImage(product.image)}
+            className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
+          >
+            <img src={product.image} className="w-full h-full object-cover" alt="Vista 1" />
+          </button>
+          <button 
+            onClick={() => setActiveImage(product.image2)}
+            className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image2 ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
+          >
+            <img src={product.image2} className="w-full h-full object-cover" alt="Vista 2" />
+          </button>
+        </div>
+      )}
+      
+      <div className="p-6 flex flex-col flex-grow">
+        <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
+        <p className="text-muted-foreground text-sm line-clamp-3 mb-6 flex-grow leading-relaxed">
+          {product.description}
+        </p>
+        
+        <div className="flex items-center justify-between mb-6 pt-4 border-t border-border/50">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Preço</span>
+            <span className="text-2xl font-black text-primary">{formatCurrency(product.price)}</span>
+          </div>
+          {product.stock !== undefined && (
+            <div className="text-right">
+               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
+               <span className="text-sm font-bold text-foreground">{product.stock} unids</span>
+            </div>
+          )}
+        </div>
+
+        <Button 
+          className="w-full h-14 bg-green-600 hover:bg-green-700 text-white rounded-xl gap-3 shadow-lg shadow-green-900/10 active:scale-[0.98] transition-all"
+          onClick={() => onBuy(product)}
+        >
+          <MessageSquare className="w-5 h-5 fill-current" />
+          Pedir pelo WhatsApp
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
 const Products = () => {
   const [products] = useState<Product[]>(storage.getProducts().filter(p => p.active));
   const [searchTerm, setSearchTerm] = useState('');
   
-  const shopPhone = storage.getShopPhone() || '5501199999999'; // Fallback
+  const shopPhone = storage.getShopPhone() || '5501199999999';
   const shopName = storage.getShopName() || 'Barbearia Tanaka';
 
   const handleWhatsAppBuy = (product: Product) => {
@@ -57,7 +133,7 @@ const Products = () => {
           </div>
 
           {!filteredProducts.length ? (
-            <div className="text-center py-20 bg-card/30 rounded-3xl border border-dashed border-border py-20">
+            <div className="text-center py-20 bg-card/30 rounded-3xl border border-dashed border-border">
               <Package className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <p className="text-xl font-bold text-muted-foreground">Ops! Nenhum produto encontrado.</p>
               <Button variant="link" onClick={() => setSearchTerm('')} className="text-primary mt-2">Limpar busca</Button>
@@ -65,76 +141,7 @@ const Products = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {filteredProducts.map((product) => (
-                <Card key={product.id} className="overflow-hidden border-border bg-card/50 flex flex-col group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
-                  <div className="relative">
-                    <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
-                      <div className="flex-none w-full snap-start">
-                        <AspectRatio ratio={1}>
-                          {product.image ? (
-                            <img 
-                              src={product.image} 
-                              alt={product.name} 
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                              <ShoppingBag className="w-16 h-16 text-muted-foreground/10" />
-                            </div>
-                          )}
-                        </AspectRatio>
-                      </div>
-                      {product.image2 && (
-                        <div className="flex-none w-full snap-start border-l border-white/5">
-                          <AspectRatio ratio={1}>
-                            <img 
-                              src={product.image2} 
-                              alt={`${product.name} - Vista 2`} 
-                              className="w-full h-full object-cover" 
-                            />
-                          </AspectRatio>
-                        </div>
-                      )}
-                    </div>
-                    {product.image2 && (
-                      <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm text-[8px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-widest pointer-events-none">
-                        Arraste para o lado →
-                      </div>
-                    )}
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-primary/90 backdrop-blur-sm text-primary-foreground text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-                        {product.category || 'Destaque'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6 flex flex-col flex-grow">
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
-                    <p className="text-muted-foreground text-sm line-clamp-3 mb-6 flex-grow leading-relaxed">
-                      {product.description}
-                    </p>
-                    
-                    <div className="flex items-center justify-between mb-6 pt-4 border-t border-border/50">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Preço</span>
-                        <span className="text-2xl font-black text-primary">{formatCurrency(product.price)}</span>
-                      </div>
-                      {product.stock !== undefined && (
-                        <div className="text-right">
-                           <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
-                           <span className="text-sm font-bold text-foreground">{product.stock} unids</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <Button 
-                      className="w-full h-14 bg-green-600 hover:bg-green-700 text-white rounded-xl gap-3 shadow-lg shadow-green-900/10 active:scale-[0.98] transition-all"
-                      onClick={() => handleWhatsAppBuy(product)}
-                    >
-                      <MessageSquare className="w-5 h-5 fill-current" />
-                      Pedir pelo WhatsApp
-                    </Button>
-                  </div>
-                </Card>
+                <ProductCard key={product.id} product={product} onBuy={handleWhatsAppBuy} />
               ))}
             </div>
           )}
