@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Save, Store, Phone, MapPin, Image as ImageIcon, Trophy, MessageSquare, QrCode, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Store, Phone, MapPin, Image as ImageIcon, Trophy, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -33,7 +33,6 @@ const Settings = () => {
     const [reminderMinutes, setReminderMinutes] = useState(storage.getReminderMinutes());
     const [shopGallery, setShopGallery] = useState(storage.getShopGallery());
     const [autoReminders, setAutoReminders] = useState(storage.getAutoReminders());
-    const [pixKey, setPixKey] = useState(storage.getPixKey());
     const [mpAccessToken, setMpAccessToken] = useState(storage.getMPAccessToken());
     const [mpPublicKey, setMpPublicKey] = useState(storage.getMPPublicKey());
 
@@ -67,7 +66,6 @@ const Settings = () => {
                 reminder_minutes: reminderMinutes,
                 shop_gallery: shopGallery,
                 auto_reminders: autoReminders,
-                pix_key: pixKey,
                 mp_access_token: mpAccessToken,
                 mp_public_key: mpPublicKey
             });
@@ -211,33 +209,21 @@ const Settings = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Dados de Pagamento */}
+                    {/* Configurações de Pagamento (Mercado Pago) */}
                     <Card className="border-white/5 bg-black/40 backdrop-blur-md shadow-2xl overflow-hidden rounded-3xl">
                         <CardHeader className="bg-white/5 border-b border-white/5">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-primary/20 rounded-xl">
-                                    <QrCode className="w-5 h-5 text-primary" />
+                                    <CreditCard className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-lg text-white font-bold">Dados de Pagamento</CardTitle>
-                                    <CardDescription className="text-zinc-400">Chave PIX e dados bancários para recebimento.</CardDescription>
+                                    <CardTitle className="text-lg text-white font-bold">Pagamento Online</CardTitle>
+                                    <CardDescription className="text-zinc-400">Configuração das chaves do Mercado Pago (Pix e Cartão).</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="pixKey" className="text-zinc-300 font-medium ml-1">Sua Chave PIX</Label>
-                                <Input
-                                    id="pixKey"
-                                    value={pixKey}
-                                    onChange={(e) => setPixKey(e.target.value)}
-                                    placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
-                                    className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white"
-                                />
-                                <p className="text-xs text-zinc-500 italic mt-1 ml-1">Esta chave será usada apenas como cópia e cola se o Mercado Pago não estiver configurado. Com o Mercado Pago ativo, os QR Codes são gerados automaticamente.</p>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="mpPublicKey" className="text-zinc-300 font-medium ml-1 text-xs">Mercado Pago: Public Key</Label>
                                     <Input
@@ -261,7 +247,7 @@ const Settings = () => {
                                 </div>
                             </div>
                             <p className="text-[10px] text-zinc-500 leading-tight">
-                                <span className="text-yellow-500/80 font-bold">IMPORTANTE:</span> Use suas chaves do Mercado Pago para gerar o QR Code Pix real e validar pagamentos. O Access Token deve ser mantido em sigilo.
+                                <span className="text-primary font-bold">INFO:</span> O sistema utiliza o Mercado Pago para processar tanto Pix quanto Cartão de Crédito/Débito. Certifique-se de que suas chaves de produção estão corretas.
                             </p>
                         </CardContent>
                     </Card>

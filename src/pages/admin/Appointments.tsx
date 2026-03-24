@@ -45,38 +45,18 @@ const Appointments = () => {
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
-  const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
-  const [isLoadingPix, setIsLoadingPix] = useState(false);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
  
-   useEffect(() => {
-     let interval: NodeJS.Timeout;
- 
-     if (showPaymentDialog && pixResponse) {
-       interval = setInterval(async () => {
-         const status = await checkPaymentStatus(pixResponse.id);
-         if (status === 'approved') {
-           handleCompleteService();
-           clearInterval(interval);
-         }
-       }, 5000);
-     }
- 
-     return () => {
-       if (interval) clearInterval(interval);
-     };
-   }, [showPaymentDialog, pixResponse]);
 
   const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState<'all' | 'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('all');
   const [filteredPaymentsReport, setFilteredPaymentsReport] = useState<{
     totalRevenue: number;
     cash: number;
     credit_card: number;
     debit_card: number;
-    pix: number;
     link: number;
   } | null>(null);
 
@@ -89,7 +69,7 @@ const Appointments = () => {
   const [editedTime, setEditedTime] = useState('');
   const [editedServiceId, setEditedServiceId] = useState('');
   const [editedBarberId, setEditedBarberId] = useState('');
-  const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
+  const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [editedExtraCharges, setEditedExtraCharges] = useState(0);
 
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -285,7 +265,6 @@ const Appointments = () => {
     let cash = 0;
     let credit_card = 0;
     let debit_card = 0;
-    let pix = 0;
     let link = 0;
 
     filtered.forEach(appt => {
@@ -301,9 +280,6 @@ const Appointments = () => {
           case 'debit_card':
             debit_card += appt.finalPrice;
             break;
-          case 'pix':
-            pix += appt.finalPrice;
-            break;
           case 'link':
             link += appt.finalPrice;
             break;
@@ -316,7 +292,6 @@ const Appointments = () => {
       cash,
       credit_card,
       debit_card,
-      pix,
       link,
     });
   };
@@ -347,7 +322,7 @@ const Appointments = () => {
       const finalPrice = servicePrice + extraCharges;
       const statusOptions: Appointment['status'][] = ['pending', 'confirmed', 'in_progress', 'completed'];
       const randomStatus = statusOptions[Math.floor(Math.random() * statusOptions.length)];
-      const paymentTypeOptions: Appointment['paymentType'][] = ['cash', 'credit_card', 'debit_card', 'pix', 'link'];
+      const paymentTypeOptions: Appointment['paymentType'][] = ['cash', 'credit_card', 'debit_card', 'link'];
       const randomPaymentType = paymentTypeOptions[Math.floor(Math.random() * paymentTypeOptions.length)];
 
       newAppointments.push({
@@ -557,29 +532,10 @@ const Appointments = () => {
     }
 
     setShowPaymentDialog(false);
-    setPixResponse(null);
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: ${formatCurrency(finalPrice)}.` });
-  };
-
-  const handleGeneratePix = async () => {
-    if (!currentAppointmentToComplete) return;
-    
-    setIsLoadingPix(true);
-    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
-    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
-    
-    const response = await createPixPayment(finalPrice, description, clientEmail);
-    setPixResponse(response);
-    setIsLoadingPix(false);
-    
-    if (response) {
-      toast({ title: 'Pix Gerado', description: 'QR Code do Mercado Pago gerado com sucesso.' });
-    } else {
-      toast({ title: 'Erro ao gerar Pix', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
-    }
   };
 
   const handleGenerateLink = async () => {
@@ -665,7 +621,6 @@ const Appointments = () => {
     cash: 'Dinheiro',
     credit_card: 'Cartão de Crédito',
     debit_card: 'Cartão de Débito',
-    pix: 'Pix',
     link: 'Link de Pagamento',
   };
 
@@ -742,14 +697,13 @@ const Appointments = () => {
             </div>
             <div>
               <Label htmlFor="paymentTypeFilter">Tipo de Pagamento</Label>
-              <Select value={paymentTypeFilter} onValueChange={(value: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link') => setPaymentTypeFilter(value)}>
+              <Select value={paymentTypeFilter} onValueChange={(value: 'all' | 'cash' | 'credit_card' | 'debit_card' | 'link') => setPaymentTypeFilter(value)}>
                 <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="cash">Dinheiro</SelectItem>
                   <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                   <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                  <SelectItem value="pix">Pix</SelectItem>
                   <SelectItem value="link">Link de Pagamento</SelectItem>
                 </SelectContent>
               </Select>
@@ -765,8 +719,7 @@ const Appointments = () => {
               <p>Dinheiro: {formatCurrency(filteredPaymentsReport.cash)}</p>
               <p>Cartão de Crédito: {formatCurrency(filteredPaymentsReport.credit_card)}</p>
               <p>Cartão de Débito: {formatCurrency(filteredPaymentsReport.debit_card)}</p>
-              <p>Pix: {formatCurrency(filteredPaymentsReport.pix)}</p>
-              <p>Link de Pagamento: {formatCurrency(filteredPaymentsReport.link)}</p>
+              <p>Botão de Link (Mercado Pago): {formatCurrency(filteredPaymentsReport.link)}</p>
             </div>
           )}
         </Card>
@@ -1204,13 +1157,12 @@ const Appointments = () => {
                 </div>
                 <div>
                   <Label htmlFor="editPaymentType">Tipo de Pagamento</Label>
-                  <Select value={editedPaymentType} onValueChange={(value: 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | '') => setEditedPaymentType(value)}>
+                  <Select value={editedPaymentType} onValueChange={(value: 'cash' | 'credit_card' | 'debit_card' | 'link' | '') => setEditedPaymentType(value)}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Tipo de Pagamento" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cash">Dinheiro</SelectItem>
                       <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                       <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                      <SelectItem value="pix">Pix</SelectItem>
                       <SelectItem value="link">Link de Pagamento</SelectItem>
                     </SelectContent>
                   </Select>

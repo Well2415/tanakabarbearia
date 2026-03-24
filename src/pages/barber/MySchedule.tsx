@@ -24,28 +24,9 @@ const MyAppointments = () => {
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
-  const [pixResponse, setPixResponse] = useState<PixPaymentResponse | null>(null);
-  const [isLoadingPix, setIsLoadingPix] = useState(false);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
  
-   useEffect(() => {
-     let interval: NodeJS.Timeout;
- 
-     if (showPaymentDialog && pixResponse) {
-       interval = setInterval(async () => {
-         const status = await checkPaymentStatus(pixResponse.id);
-         if (status === 'approved') {
-           handleCompleteService();
-           clearInterval(interval);
-         }
-       }, 5000);
-     }
- 
-     return () => {
-       if (interval) clearInterval(interval);
-     };
-   }, [showPaymentDialog, pixResponse]);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
 
   useEffect(() => {
@@ -148,30 +129,11 @@ const MyAppointments = () => {
       }
     }
 
-    setShowPaymentDialog(false);
-    setPixResponse(null);
+    setPreferenceUrl(null);
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
-  };
-
-  const handleGeneratePix = async () => {
-    if (!currentAppointmentToComplete) return;
-    
-    setIsLoadingPix(true);
-    const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
-    const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
-    
-    const response = await createPixPayment(finalPrice, description, clientEmail);
-    setPixResponse(response);
-    setIsLoadingPix(false);
-    
-    if (response) {
-      toast({ title: 'Pix Gerado', description: 'QR Code do Mercado Pago gerado com sucesso.' });
-    } else {
-      toast({ title: 'Erro ao gerar Pix', description: 'Verifique suas credenciais do Mercado Pago.', variant: 'destructive' });
-    }
   };
 
   const handleGenerateLink = async () => {
@@ -219,7 +181,6 @@ const MyAppointments = () => {
     cash: 'Dinheiro',
     credit_card: 'Cartão de Crédito',
     debit_card: 'Cartão de Débito',
-    pix: 'Pix',
     link: 'Link de Pagamento',
   };
 

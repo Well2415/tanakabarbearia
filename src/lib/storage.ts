@@ -135,7 +135,6 @@ export const storage = {
       { key: 'shop_instagram', value: '' },
       { key: 'shop_opening_hours', value: '' },
       { key: 'shop_gallery', value: [] },
-      { key: 'pix_key', value: '' },
       { key: 'mp_access_token', value: '' },
       { key: 'mp_public_key', value: '' },
       { key: 'holiday_mode', value: false },
@@ -276,8 +275,6 @@ export const storage = {
   },
   saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
 
-  getPixKey: (): string => storage.getSetting('pix_key', ''),
-  savePixKey: (key: string) => storage.saveSetting('pix_key', key),
 
   getWhatsAppApiUrl: (): string => storage.getSetting('whatsapp_api_url', ''),
   saveWhatsAppApiUrl: (url: string) => storage.saveSetting('whatsapp_api_url', url),
