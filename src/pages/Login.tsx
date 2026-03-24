@@ -59,40 +59,37 @@ const Login = () => {
 
       // --- CONFIGURAÇÃO EMAILJS ---
       // Caso o usuário queira configurar o EmailJS real, basta preencher essas chaves
-      // Por padrão, mantemos a simulação ativa para testes imediatos.
-      const serviceId = 'service_default'; // Ex: service_xxxxx
-      const templateId = 'template_reset'; // Ex: template_xxxxx
-      const publicKey = 'YOUR_PUBLIC_KEY'; // Sua chave pública do EmailJS
+      const serviceId = 'service_e4x7fpt'; 
+      const templateId = 'template_1iiwjpo'; 
+      const publicKey = 'M-pKH1rG1vhPTLUvw'; 
       
       const resetLink = `${window.location.origin}/reset-password?token=${token}`;
 
       try {
-        if (publicKey !== 'YOUR_PUBLIC_KEY') {
-          await emailjs.send(
-            serviceId, 
-            templateId, 
-            {
-              to_name: userFound.fullName,
-              to_email: resetEmail,
-              reset_link: resetLink,
-              shop_name: storage.getShopName()
-            }, 
-            publicKey
-          );
-        }
+        await emailjs.send(
+          serviceId, 
+          templateId, 
+          {
+            to_name: userFound.fullName,
+            to_email: resetEmail,
+            reset_link: resetLink,
+            shop_name: storage.getShopName()
+          }, 
+          publicKey
+        );
         
         setEmailSent(true);
         toast({
-          title: 'Ação solicitada!',
+          title: 'E-mail enviado!',
           description: (
             <div className="flex flex-col gap-2">
-              <p>Instruções enviadas para {resetEmail}.</p>
+              <p>Instruções enviadas para {resetEmail}. Verifique sua caixa de entrada.</p>
               <Button 
                 variant="link" 
                 className="p-0 h-auto text-primary font-bold justify-start"
                 onClick={() => navigate(`/reset-password?token=${token}`)}
               >
-                [DEBUG] Clique aqui para abrir o link de teste
+                [DEBUG] Abrir link agora
               </Button>
             </div>
           ),
