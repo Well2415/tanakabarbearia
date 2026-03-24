@@ -30,7 +30,9 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const handleCancelAppointment = (appId: string) => {
     if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
       const allAppts = storage.getAppointments();
-      const updated = allAppts.filter(a => a.id !== appId);
+      const updated = allAppts.map(a => 
+        a.id === appId ? { ...a, status: 'cancelled' as const } : a
+      );
       storage.saveAppointments(updated);
       setAppointments(updated.filter(a => a.userId === user.id));
       toast({ title: 'Agendamento Cancelado', description: 'Seu horário foi liberado com sucesso.' });
@@ -57,6 +59,24 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const loyaltyPoints = user.loyaltyPoints || 0;
   const pointsToFreeHaircut = 10; // Example value
 
+  const statusColors = {
+    pending: 'bg-yellow-500/10 text-yellow-600',
+    confirmed: 'bg-blue-500/10 text-blue-600',
+    cancelled: 'bg-red-500/10 text-red-600',
+    in_progress: 'bg-purple-500/10 text-purple-600',
+    completed: 'bg-green-500/10 text-green-600',
+    no_show: 'bg-orange-500/10 text-orange-600',
+  };
+
+  const statusLabels = {
+    pending: 'Pendente',
+    confirmed: 'Confirmado',
+    cancelled: 'Cancelado',
+    in_progress: 'Em Progresso',
+    completed: 'Concluído',
+    no_show: 'Não Compareceu',
+  };
+
   return (
     <>
 
@@ -76,8 +96,8 @@ export const ClientView = ({ user }: ClientViewProps) => {
                         <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${app.status === 'pending' ? 'bg-yellow-500/20 text-yellow-700' : 'bg-green-500/20 text-green-700'}`}>
-                          {app.status === 'pending' ? 'Pendente' : 'Concluído'}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>
+                          {statusLabels[app.status] || app.status}
                         </span>
                         
                         {app.status === 'pending' && (
