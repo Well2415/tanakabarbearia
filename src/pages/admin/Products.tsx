@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const AdminProducts = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const user = storage.getCurrentUser();
   const [products, setProducts] = useState<Product[]>(storage.getProducts());
@@ -35,12 +36,12 @@ const AdminProducts = () => {
   });
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('action') === 'new-product') {
       setIsOpen(true);
-      window.history.replaceState({}, '', window.location.pathname);
+      navigate(location.pathname, { replace: true });
     }
-  }, []);
+  }, [location.search, navigate, location.pathname]);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {

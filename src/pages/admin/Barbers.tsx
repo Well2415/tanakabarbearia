@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -28,6 +28,7 @@ const COMMON_HOURS = [
 
 const Barbers = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const user = storage.getCurrentUser();
   const [barbers, setBarbers] = useState(storage.getBarbers());
@@ -49,12 +50,12 @@ const Barbers = () => {
   }, [user, navigate, toast]);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('action') === 'new-barber') {
       setIsAddOpen(true);
-      window.history.replaceState({}, '', window.location.pathname);
+      navigate(location.pathname, { replace: true });
     }
-  }, []);
+  }, [location.search, navigate, location.pathname]);
 
   useEffect(() => {
     if (editingBarber) {

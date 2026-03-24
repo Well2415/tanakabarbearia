@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ const defaultServiceImages = [serviceHaircut, serviceBeard, serviceStyling];
 
 const Services = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const user = storage.getCurrentUser();
   const [services, setServices] = useState(storage.getServices());
@@ -39,12 +40,12 @@ const Services = () => {
   });
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('action') === 'new-service') {
       setIsOpen(true);
-      window.history.replaceState({}, '', window.location.pathname);
+      navigate(location.pathname, { replace: true });
     }
-  }, []);
+  }, [location.search, navigate, location.pathname]);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
