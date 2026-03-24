@@ -55,7 +55,7 @@ const Login = () => {
       const updatedUsers = users.map(u => 
         u.id === userFound.id ? { ...u, resetToken: token } : u
       );
-      storage.saveUsers(updatedUsers);
+      await storage.saveUsers(updatedUsers);
 
       // --- CONFIGURAÇÃO EMAILJS ---
       // Caso o usuário queira configurar o EmailJS real, basta preencher essas chaves
