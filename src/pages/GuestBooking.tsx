@@ -19,7 +19,7 @@ import { CalendarIcon, Palmtree } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-const LogoLoginImg = "/img/LOGO LOGIN.png";
+const LogoLoginImg = "/img/logo-tanaka.png";
 
 const GuestBooking = () => {
   const navigate = useNavigate();

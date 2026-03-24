@@ -4,7 +4,7 @@ import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS,
 import { sortTimes } from './timeUtils';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
-const LogoMenu = "/img/logo-menu.png";
+const LogoMenu = "/img/logo-tanaka.png";
 
 /**
  * CACHE GLOBAL DO APLICATIVO

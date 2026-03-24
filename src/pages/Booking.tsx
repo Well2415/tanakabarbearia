@@ -3,7 +3,7 @@ import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-const LogoLoginImg = "/img/LOGO LOGIN.png";
+const LogoLoginImg = "/img/logo-tanaka.png";
 import { storage } from '@/lib/storage';
 
 const Booking = () => {
