@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    {
+    mode === 'development' && {
       name: 'vercel-api-simulator',
       configureServer(server: any) {
         server.middlewares.use(async (req: any, res: any, next: any) => {
