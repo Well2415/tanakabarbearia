@@ -33,11 +33,21 @@ let cache: {
 // Helper simples para caminhos de imagem
 const normalizeImagePath = (src: string): string => {
   if (!src) return src;
-  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  
+  // Remove aspas extras que podem vir do banco de dados (erro comum de stringify)
+  let cleanSrc = src.trim();
+  if (cleanSrc.startsWith('"') && cleanSrc.endsWith('"')) {
+    cleanSrc = cleanSrc.substring(1, cleanSrc.length - 1);
+  }
+  if (cleanSrc.startsWith('%22') && cleanSrc.endsWith('%22')) {
+    cleanSrc = cleanSrc.substring(3, cleanSrc.length - 3);
+  }
+  
+  if (cleanSrc.startsWith('http') || cleanSrc.startsWith('data:')) return cleanSrc;
   
   // Apenas garante que se for um caminho local, comece com /
-  if (src.startsWith('/') || src.startsWith('./') || src.startsWith('../')) return src;
-  return `/${src}`;
+  if (cleanSrc.startsWith('/') || cleanSrc.startsWith('./') || cleanSrc.startsWith('../')) return cleanSrc;
+  return `/${cleanSrc}`;
 };
 
 // Variável de controle para evitar inicializações duplicadas.
@@ -86,8 +96,8 @@ export const storage = {
       if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
       if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
 
-      cache.barbers = barbersRes.data || [];
-      cache.services = servicesRes.data || [];
+      cache.barbers = (barbersRes.data || []).map(b => ({ ...b, photo: normalizeImagePath(b.photo) }));
+      cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
       cache.users = usersRes.data || [];
       cache.appointments = appointmentsRes.data || [];
       cache.recurringSchedules = recurringRes.data || [];
@@ -237,7 +247,7 @@ export const storage = {
   getShopPhone: (): string => storage.getSetting('shop_phone', ''),
   saveShopPhone: (phone: string) => storage.saveSetting('shop_phone', phone),
 
-  getShopLogo: (): string => storage.getSetting('shop_logo', LogoMenu),
+  getShopLogo: (): string => normalizeImagePath(storage.getSetting('shop_logo', LogoMenu)),
   saveShopLogo: (logoUrl: string) => storage.saveSetting('shop_logo', logoUrl),
 
   getShopAddress: (): string => storage.getSetting('shop_address', ''),
