@@ -44,23 +44,6 @@ const App = () => {
     storage.initialize().then(() => setIsReady(true));
   }, []);
 
-  if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0F172A]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="relative">
-            <div className="w-24 h-24 border-4 border-primary/20 rounded-full animate-pulse" />
-            <Loader2 className="w-24 h-24 text-primary animate-spin absolute top-0 left-0" />
-          </div>
-          <div className="text-center space-y-2">
-            <h2 className="text-xl font-black text-white uppercase tracking-tighter">Barbearia</h2>
-            <p className="text-xs font-bold text-primary animate-pulse uppercase tracking-widest">Sincronizando...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -68,38 +51,40 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/booking" element={<Booking />} />
-            <Route path="/guest-booking" element={<GuestBooking />} />
-            <Route path="/login" element={<ClientLogin />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/register" element={<Register />} />
+          <div key={isReady ? "ready" : "syncing"}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/booking" element={<Booking />} />
+              <Route path="/guest-booking" element={<GuestBooking />} />
+              <Route path="/login" element={<ClientLogin />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/register" element={<Register />} />
 
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/new-appointment" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/new-appointment" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
 
-            <Route path="/my-schedule" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><MyAppointments /></ProtectedRoute>} />
-            <Route path="/barber/availability" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><ManageAvailability /></ProtectedRoute>} />
-            <Route path="/barber/finance" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><Finance /></ProtectedRoute>} />
-            <Route path="/barber/profile" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><BarberProfile /></ProtectedRoute>} />
+              <Route path="/my-schedule" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><MyAppointments /></ProtectedRoute>} />
+              <Route path="/barber/availability" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><ManageAvailability /></ProtectedRoute>} />
+              <Route path="/barber/finance" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><Finance /></ProtectedRoute>} />
+              <Route path="/barber/profile" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><BarberProfile /></ProtectedRoute>} />
 
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminAppointments /></ProtectedRoute>} />
-            <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
-            <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
-            <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
-            <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
-            <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminAppointments /></ProtectedRoute>} />
+              <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
+              <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
+              <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
+              <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
+              <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

@@ -11,26 +11,32 @@ const LogoMenu = "/img/logo-menu.png";
  * Armazena os dados em memória para acesso instantâneo pelos componentes React.
  * É sincronizado com o Supabase na inicialização do app.
  */
-let cache: {
-  barbers: Barber[];
-  services: Service[];
-  appointments: Appointment[];
-  users: User[];
-  recurringSchedules: RecurringSchedule[];
-  expenses: Expense[];
-  expenseCategories: string[];
-  settings: Record<string, any>;
-  products: Product[];
-} = {
-  barbers: [],
-  services: [],
-  appointments: [],
-  users: [],
-  recurringSchedules: [],
-  expenses: [],
-  expenseCategories: [],
-  settings: {},
-  products: []
+const getInitialCache = () => {
+  const saved = localStorage.getItem('barbershop_cache');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved cache:', e);
+    }
+  }
+  return {
+    barbers: [],
+    services: [],
+    appointments: [],
+    users: [],
+    recurringSchedules: [],
+    expenses: [],
+    expenseCategories: [],
+    settings: {},
+    products: []
+  };
+};
+
+let cache = getInitialCache();
+
+const saveCacheToLocal = () => {
+  localStorage.setItem('barbershop_cache', JSON.stringify(cache));
 };
 
 // Helper simples para caminhos de imagem
@@ -127,6 +133,7 @@ export const storage = {
       }
 
       isInitialized = true;
+      saveCacheToLocal();
       console.log('✅ Supabase Initialized & Cached [v1.1.2]', { 
         settingsCount: Object.keys(cache.settings).length,
         servicesCount: cache.services.length,
