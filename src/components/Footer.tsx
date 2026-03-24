@@ -97,7 +97,10 @@ export const Footer = () => {
             <div className="space-y-4 flex flex-col items-start">
               <div className="flex items-start justify-start gap-3 text-zinc-300">
                 <MapPin className="w-6 h-6 mt-1 text-primary shrink-0" />
-                <span className="text-lg font-light leading-snug">{shopAddress}</span>
+                {/* Pointer-events regularizados para evitar auto-link em celulares mas permitir seleção */}
+                <span className="text-lg font-light leading-snug select-text pointer-events-none sm:pointer-events-auto bg-transparent">
+                  {shopAddress}
+                </span>
               </div>
               {shopMapsLink && (
                 <a
