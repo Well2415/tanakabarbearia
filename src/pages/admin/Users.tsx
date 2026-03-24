@@ -84,7 +84,7 @@ const Users = () => {
       return u;
     });
 
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
     setUsers(updatedUsers);
     setEditingUser(null);
     setPassword('');
@@ -99,7 +99,7 @@ const Users = () => {
       return;
     }
     const updatedUsers = users.filter(u => u.id !== userId);
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
     setUsers(updatedUsers);
     toast({ title: 'Usuário removido', description: 'A conta de usuário foi removida com sucesso.' });
   };
