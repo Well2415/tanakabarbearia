@@ -56,7 +56,7 @@ const Users = () => {
     setSelectedBarber(user.barberId || (barbers.length > 0 ? barbers[0].id : undefined));
   };
 
-  const handleUserUpdate = () => {
+  const handleUserUpdate = async () => {
     if (!editingUser || !newRole) return;
 
     if (password && password !== confirmPassword) {
@@ -93,7 +93,7 @@ const Users = () => {
     toast({ title: 'Usuário atualizado!', description: `As informações de ${editingUser.fullName} foram salvas.` });
   };
 
-  const handleDelete = (userId: string) => {
+  const handleDelete = async (userId: string) => {
     if (userId === loggedInUser?.id) {
       toast({ title: 'Ação inválida', description: 'Você não pode remover sua própria conta.', variant: 'destructive' });
       return;
