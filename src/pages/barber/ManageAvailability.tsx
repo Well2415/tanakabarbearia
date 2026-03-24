@@ -10,6 +10,7 @@ import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Barber } from '@/types';
 import { format } from 'date-fns';
+import { sortTimes } from '@/lib/timeUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 const ManageAvailability = () => {
@@ -57,7 +58,7 @@ const ManageAvailability = () => {
     const hoursToAdd = newHour.split(',').map(h => h.trim()).filter(h => h !== '');
     const uniqueNewHours = hoursToAdd.filter(h => !availableHours.includes(h));
     if (uniqueNewHours.length > 0) {
-      setAvailableHours([...availableHours, ...uniqueNewHours].sort());
+      setAvailableHours(sortTimes([...availableHours, ...uniqueNewHours]));
       setNewHour('');
       setShowAddHourDialog(false);
       toast({ title: `${uniqueNewHours.length} horário(s) adicionado(s)!` });
@@ -89,7 +90,7 @@ const ManageAvailability = () => {
     if (editingHourIndex !== null && editingHour) {
       const updatedHours = [...availableHours];
       updatedHours[editingHourIndex] = editingHour;
-      setAvailableHours(updatedHours.sort());
+      setAvailableHours(sortTimes(updatedHours));
       setEditingHour('');
       setEditingHourIndex(null);
       setShowEditHourDialog(false);

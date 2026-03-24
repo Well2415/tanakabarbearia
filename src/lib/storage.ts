@@ -1,6 +1,7 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
+import { sortTimes } from './timeUtils';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
 const LogoMenu = "/img/logo-menu.png";
@@ -96,7 +97,11 @@ export const storage = {
       if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
       if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
 
-      cache.barbers = (barbersRes.data || []).map(b => ({ ...b, photo: normalizeImagePath(b.photo) }));
+      cache.barbers = (barbersRes.data || []).map(b => ({ 
+        ...b, 
+        photo: normalizeImagePath(b.photo),
+        availableHours: sortTimes(b.availableHours || [])
+      }));
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
       cache.users = usersRes.data || [];
       cache.appointments = appointmentsRes.data || [];

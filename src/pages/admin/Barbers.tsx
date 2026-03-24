@@ -18,6 +18,7 @@ import { ptBR } from 'date-fns/locale';
 import { Barber } from '@/types';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { sortTimes } from '@/lib/timeUtils';
 
 const COMMON_HOURS = [
   '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -82,7 +83,7 @@ const Barbers = () => {
       yearsOfExperience: parseInt(newBarberData.yearsOfExperience) || undefined,
       description: newBarberData.description || undefined,
       specialties: newBarberData.specialties.split(',').map(s => s.trim()),
-      availableHours: [...newBarberData.availableHours, ...newBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')].sort(),
+      availableHours: sortTimes([...newBarberData.availableHours, ...newBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')]),
       availableDates: newBarberData.availableDates,
     };
     const updated = [...barbers, newBarber];
@@ -104,7 +105,7 @@ const Barbers = () => {
           yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
           description: editBarberData.description || undefined,
           specialties: editBarberData.specialties.split(',').map(s => s.trim()),
-          availableHours: [...editBarberData.availableHours, ...editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')].sort(),
+          availableHours: sortTimes([...editBarberData.availableHours, ...editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')]),
           availableDates: editBarberData.availableDates, // availableDates is already an array
         }
         : b
