@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
 import { Product } from '@/types';
 import { Navigation } from '@/components/Navigation';
@@ -87,8 +87,12 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product)
 };
 
 const Products = () => {
-  const [products] = useState<Product[]>(storage.getProducts().filter(p => p.active));
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    setProducts(storage.getProducts().filter(p => p.active));
+  }, []);
   
   const shopPhone = storage.getShopPhone() || '5501199999999';
   const shopName = storage.getShopName() || 'Barbearia Tanaka';
@@ -96,7 +100,10 @@ const Products = () => {
   const handleWhatsAppBuy = (product: Product) => {
     const message = `Olá! Tenho interesse no produto: *${product.name}* (${formatCurrency(product.price)}). Ainda está disponível no estoque?`;
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${shopPhone}?text=${encodedMessage}`, '_blank');
+    const whatsappUrl = `https://wa.me/${shopPhone}?text=${encodedMessage}`;
+    
+    // Usar location.href para redirecionamento mais robusto no mobile/PWA
+    window.location.href = whatsappUrl;
   };
 
   const filteredProducts = products.filter(p => 
