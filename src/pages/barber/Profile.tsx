@@ -47,7 +47,7 @@ const BarberProfile = () => {
     }
   }, [user, navigate]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) return;
 
     if (password && password !== confirmPassword) {
@@ -72,7 +72,7 @@ const BarberProfile = () => {
       }
       return u;
     });
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
 
     // Save to Barber
     if (barberData) {
@@ -83,7 +83,7 @@ const BarberProfile = () => {
         }
         return b;
       });
-      storage.saveBarbers(updatedBarbers);
+      await storage.saveBarbers(updatedBarbers);
     }
 
     toast({ title: 'Perfil Atualizado', description: 'Suas informações foram salvas com sucesso!' });

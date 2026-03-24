@@ -80,7 +80,7 @@ const NewAppointment = () => {
         createdAt: new Date().toISOString()
       };
 
-      storage.saveAppointments([...storage.getAppointments(), newAppointment]);
+      await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
 
       if (isPaid) {
         const barber = barbers.find(b => b.id === finalForm.barberId);

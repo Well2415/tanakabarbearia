@@ -42,7 +42,7 @@ const ResetPassword = () => {
         setIsLoading(false);
     }, [token]);
 
-    const handleReset = (e: React.FormEvent) => {
+    const handleReset = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (newPassword !== confirmPassword) {
@@ -72,7 +72,7 @@ const ResetPassword = () => {
             return u;
         });
 
-        storage.saveUsers(updatedUsers);
+        await storage.saveUsers(updatedUsers);
         setStatus('success');
         toast({
             title: 'Senha redefinida!',

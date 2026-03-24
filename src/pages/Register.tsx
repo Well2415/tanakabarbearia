@@ -22,7 +22,7 @@ const Register = () => {
     phone: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const users = storage.getUsers();
@@ -37,7 +37,7 @@ const Register = () => {
       return;
     }
 
-    const newUser = {
+    const newUser: any = {
       id: Date.now().toString(),
       fullName: formData.fullName,
       username: formData.username,
@@ -46,11 +46,11 @@ const Register = () => {
       phone: formData.phone,
       loyaltyPoints: 0,
       createdAt: new Date().toISOString(),
-      role: 'client' as 'client' | 'admin' | 'barber', // Default role for new registrations
+      role: 'client', // Default role for new registrations
     };
 
     const updatedUsers = [...users, newUser];
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
     storage.loginUser(newUser.id);
 
     toast({

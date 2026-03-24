@@ -75,7 +75,7 @@ const Barbers = () => {
 
   if (!user || user.role !== 'admin') return null;
 
-  const handleAddNewBarber = (e: React.FormEvent) => {
+  const handleAddNewBarber = async (e: React.FormEvent) => {
     e.preventDefault();
     const newBarber: Barber = {
       id: Date.now().toString(),
@@ -95,7 +95,7 @@ const Barbers = () => {
     toast({ title: 'Barbeiro adicionado', description: 'O barbeiro foi cadastrado com sucesso' });
   };
 
-  const handleUpdateBarber = (e: React.FormEvent) => {
+  const handleUpdateBarber = async (e: React.FormEvent) => {
     e.preventDefault();
     const updatedBarbers = barbers.map(b =>
       b.id === editingBarber?.id
@@ -111,15 +111,15 @@ const Barbers = () => {
         }
         : b
     );
-    storage.saveBarbers(updatedBarbers);
+    await storage.saveBarbers(updatedBarbers);
     setBarbers(updatedBarbers);
     setEditingBarber(null);
     toast({ title: 'Barbeiro atualizado', description: 'Os dados do barbeiro foram atualizados.' });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const updated = barbers.filter(b => b.id !== id);
-    storage.saveBarbers(updated);
+    await storage.saveBarbers(updated);
     setBarbers(updated);
     toast({ title: 'Barbeiro removido', description: 'O barbeiro foi removido com sucesso' });
   };

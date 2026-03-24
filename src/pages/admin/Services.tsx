@@ -56,7 +56,7 @@ const Services = () => {
 
   if (!user || user.role !== 'admin') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingService) {
@@ -115,9 +115,9 @@ const Services = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const updated = services.filter(s => s.id !== id);
-    storage.saveServices(updated);
+    await storage.saveServices(updated);
     setServices(updated);
     toast({
       title: 'Serviço removido',

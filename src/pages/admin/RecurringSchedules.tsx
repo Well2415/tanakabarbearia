@@ -62,7 +62,7 @@ const RecurringSchedules = () => {
         }
     }, [navigate, formData.barberId]);
 
-    const handleCreateSchedule = () => {
+    const handleCreateSchedule = async () => {
         if (!formData.userId || !formData.barberId || formData.serviceIds.length === 0 || !formData.time) {
             toast({ title: 'Erro', description: 'Preencha todos os campos.', variant: 'destructive' });
             return;
@@ -81,16 +81,16 @@ const RecurringSchedules = () => {
         };
 
         const updated = [...schedules, newSchedule];
-        storage.saveRecurringSchedules(updated);
+        await storage.saveRecurringSchedules(updated);
         setSchedules(updated);
         setIsDialogOpen(false);
         setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '' });
         toast({ title: 'Sucesso', description: 'Horário fixo cadastrado com sucesso.' });
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         const updated = schedules.filter(s => s.id !== id);
-        storage.saveRecurringSchedules(updated);
+        await storage.saveRecurringSchedules(updated);
         setSchedules(updated);
         toast({ title: 'Removido', description: 'Horário fixo removido.' });
     };

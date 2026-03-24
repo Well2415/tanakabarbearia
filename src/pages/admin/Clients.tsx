@@ -86,8 +86,8 @@ const Clients = () => {
   if (!user || user.role !== 'admin') return null;
 
   // New function to handle saving loyalty target
-  const handleSaveLoyaltyTarget = () => {
-    storage.saveLoyaltyTarget(newLoyaltyTarget);
+  const handleSaveLoyaltyTarget = async () => {
+    await storage.saveLoyaltyTarget(newLoyaltyTarget);
     setLoyaltyTarget(newLoyaltyTarget);
     toast({ title: 'Meta de Fidelidade Atualizada', description: `A nova meta de pontos de fidelidade é ${newLoyaltyTarget}.` });
   };
@@ -96,20 +96,20 @@ const Clients = () => {
     return appointments.filter(a => a.userId === userId).length;
   };
 
-  const handlePointsChange = () => {
+  const handlePointsChange = async () => {
     if (!editingClient) return;
 
     const allUsers = storage.getUsers();
     const updatedUsers = allUsers.map(u =>
       u.id === editingClient.id ? { ...u, loyaltyPoints: newPoints } : u
     );
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
     setClients(updatedUsers.filter(u => u.role === 'client'));
     setEditingClient(null);
     toast({ title: 'Pontos atualizados!', description: `Os pontos de ${editingClient.fullName} foram definidos para ${newPoints}.` });
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (!editingClient) return;
     if (!password) {
       toast({ title: 'Erro', description: 'Por favor, insira uma nova senha.', variant: 'destructive' });
@@ -124,7 +124,7 @@ const Clients = () => {
     const updatedUsers = allUsers.map(u =>
       u.id === editingClient.id ? { ...u, password: password } : u
     );
-    storage.saveUsers(updatedUsers);
+    await storage.saveUsers(updatedUsers);
     setClients(updatedUsers.filter(u => u.role === 'client'));
     setEditingClient(null);
     setIsChangingPassword(false);

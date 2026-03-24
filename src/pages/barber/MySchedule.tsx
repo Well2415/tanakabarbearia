@@ -67,12 +67,12 @@ const MyAppointments = () => {
     return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'N/A';
   };
 
-  const updateAppointmentInStorage = (updatedAppointment: Appointment) => {
+  const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
     const allAppointments = storage.getAppointments();
     const updatedAppointments = allAppointments.map(a =>
       a.id === updatedAppointment.id ? updatedAppointment : a
     );
-    storage.saveAppointments(updatedAppointments);
+    await storage.saveAppointments(updatedAppointments);
     const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
     if (barberProfile) {
       const barberAppointments = updatedAppointments.filter(appt => appt.barberId === barberProfile.id);
@@ -95,7 +95,7 @@ const MyAppointments = () => {
     toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
   };
 
-  const handleCompleteService = () => {
+  const handleCompleteService = async () => {
     if (!currentAppointmentToComplete || !paymentType) return;
 
     const now = new Date();
@@ -107,7 +107,7 @@ const MyAppointments = () => {
       finalPrice: finalPrice,
       status: 'completed' as const,
     };
-    updateAppointmentInStorage(updatedAppointment);
+    await updateAppointmentInStorage(updatedAppointment);
 
     if (currentAppointmentToComplete.userId) {
       const allUsers = storage.getUsers();
@@ -125,7 +125,7 @@ const MyAppointments = () => {
         }
 
         const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
-        storage.saveUsers(finalUsers);
+        await storage.saveUsers(finalUsers);
       }
     }
 
@@ -153,11 +153,11 @@ const MyAppointments = () => {
     }
   };
 
-  const updateStatus = (id: string, status: 'confirmed' | 'cancelled') => {
+  const updateStatus = async (id: string, status: 'confirmed' | 'cancelled') => {
     const appointmentToUpdate = appointments.find(a => a.id === id);
     if (!appointmentToUpdate) return;
 
-    updateAppointmentInStorage({ ...appointmentToUpdate, status });
+    await updateAppointmentInStorage({ ...appointmentToUpdate, status });
     toast({ title: 'Status atualizado', description: 'O agendamento foi atualizado com sucesso' });
   };
 

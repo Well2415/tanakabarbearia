@@ -120,7 +120,7 @@ const ManageAvailability = () => {
     }
   }, [navigate, toast]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!barberProfile) return;
 
@@ -135,7 +135,7 @@ const ManageAvailability = () => {
         : b
     );
 
-    storage.saveBarbers(updatedBarbers);
+    await storage.saveBarbers(updatedBarbers);
     toast({ title: 'Horários e Datas Atualizados!', description: 'Sua lista de horários e datas de trabalho foi salva.' });
     navigate('/dashboard');
   };

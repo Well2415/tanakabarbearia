@@ -183,7 +183,7 @@ const Finance = () => {
   const maxRevenue = Math.max(...weeklyRevenueData.map(d => d.revenue), 100);
 
   // --- ACTIONS ---
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!newExpense.description || !newExpense.amount || !newExpense.date || !newExpense.category) {
       toast({ title: 'Atenção', description: 'Preencha todos os campos obrigatórios.', variant: 'destructive' });
       return;
@@ -206,7 +206,7 @@ const Finance = () => {
     };
 
     const updatedExpenses = [...storage.getExpenses(), expenseToAdd];
-    storage.saveExpenses(updatedExpenses);
+    await storage.saveExpenses(updatedExpenses);
 
     const targetBarberId = user?.role === 'admin' ? null : (user?.barberId || user?.id);
     setExpenses(targetBarberId ? updatedExpenses.filter(e => e.barberId === targetBarberId) : updatedExpenses);
@@ -216,22 +216,22 @@ const Finance = () => {
     toast({ title: 'Sucesso', description: 'Despesa registrada com sucesso.' });
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
     if (categories.includes(newCategoryName.trim())) {
       toast({ title: 'Atenção', description: 'Esta classificação já existe.', variant: 'destructive' });
       return;
     }
     const updatedCategories = [...categories, newCategoryName.trim()];
-    storage.saveExpenseCategories(updatedCategories);
+    await storage.saveExpenseCategories(updatedCategories);
     setCategories(updatedCategories);
     setNewCategoryName('');
     toast({ title: 'Classificação Adicionada', description: `A classificação "${newCategoryName.trim()}" foi criada.` });
   };
 
-  const handleDeleteCategory = (catToRemove: string) => {
+  const handleDeleteCategory = async (catToRemove: string) => {
     const updatedCategories = categories.filter(c => c !== catToRemove);
-    storage.saveExpenseCategories(updatedCategories);
+    await storage.saveExpenseCategories(updatedCategories);
     setCategories(updatedCategories);
     toast({ title: 'Classificação Removida', description: `A classificação "${catToRemove}" foi excluída.` });
   };

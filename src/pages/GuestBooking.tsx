@@ -115,7 +115,7 @@ const GuestBooking = () => {
         createdAt: new Date().toISOString()
       };
 
-      storage.saveAppointments([...storage.getAppointments(), newAppointment]);
+      await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
 
       if (isPaid) {
         const selectedBarber = barbers.find(b => b.id === finalForm.barberId);

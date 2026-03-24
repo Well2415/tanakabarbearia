@@ -253,40 +253,40 @@ export const storage = {
   },
 
   getLoyaltyTarget: (): number => storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT),
-  saveLoyaltyTarget: (target: number) => storage.saveSetting('loyalty_target', target),
+  saveLoyaltyTarget: async (target: number) => await storage.saveSetting('loyalty_target', target),
 
   getHolidayMode: (): boolean => storage.getSetting('holiday_mode', false),
-  saveHolidayMode: (isActive: boolean) => storage.saveSetting('holiday_mode', isActive),
+  saveHolidayMode: async (isActive: boolean) => await storage.saveSetting('holiday_mode', isActive),
 
   getAutoReminders: (): boolean => storage.getSetting('auto_reminders', false),
-  saveAutoReminders: (isEnabled: boolean) => storage.saveSetting('auto_reminders', isEnabled),
+  saveAutoReminders: async (isEnabled: boolean) => await storage.saveSetting('auto_reminders', isEnabled),
 
   getShopName: (): string => storage.getSetting('shop_name', ''),
-  saveShopName: (name: string) => storage.saveSetting('shop_name', name),
+  saveShopName: async (name: string) => await storage.saveSetting('shop_name', name),
 
   getShopPhone: (): string => storage.getSetting('shop_phone', ''),
-  saveShopPhone: (phone: string) => storage.saveSetting('shop_phone', phone),
+  saveShopPhone: async (phone: string) => await storage.saveSetting('shop_phone', phone),
 
   getShopLogo: (): string => normalizeImagePath(storage.getSetting('shop_logo', LogoMenu)),
-  saveShopLogo: (logoUrl: string) => storage.saveSetting('shop_logo', logoUrl),
+  saveShopLogo: async (logoUrl: string) => await storage.saveSetting('shop_logo', logoUrl),
 
   getShopAddress: (): string => storage.getSetting('shop_address', ''),
-  saveShopAddress: (address: string) => storage.saveSetting('shop_address', address),
+  saveShopAddress: async (address: string) => await storage.saveSetting('shop_address', address),
 
   getShopInstagram: (): string => storage.getSetting('shop_instagram', ''),
-  saveShopInstagram: (url: string) => storage.saveSetting('shop_instagram', url),
+  saveShopInstagram: async (url: string) => await storage.saveSetting('shop_instagram', url),
 
   getShopFacebook: (): string => storage.getSetting('shop_facebook', ''),
-  saveShopFacebook: (url: string) => storage.saveSetting('shop_facebook', url),
+  saveShopFacebook: async (url: string) => await storage.saveSetting('shop_facebook', url),
 
   getShopEmail: (): string => storage.getSetting('shop_email', ''),
-  saveShopEmail: (email: string) => storage.saveSetting('shop_email', email),
+  saveShopEmail: async (email: string) => await storage.saveSetting('shop_email', email),
 
   getShopOpeningHours: (): string => storage.getSetting('shop_opening_hours', ''),
-  saveShopOpeningHours: (hours: string) => storage.saveSetting('shop_opening_hours', hours),
+  saveShopOpeningHours: async (hours: string) => await storage.saveSetting('shop_opening_hours', hours),
 
   getShopMapsLink: (): string => storage.getSetting('shop_maps_link', ''),
-  saveShopMapsLink: (link: string) => storage.saveSetting('shop_maps_link', link),
+  saveShopMapsLink: async (link: string) => await storage.saveSetting('shop_maps_link', link),
 
   getShopGallery: (): string[] => {
     let gallery = storage.getSetting('shop_gallery', []);
@@ -303,20 +303,20 @@ export const storage = {
     // Retorna a galeria exatamente como está no banco, permitindo gestão total pelo usuário
     return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
   },
-  saveShopGallery: (images: string[]) => storage.saveSetting('shop_gallery', images),
+  saveShopGallery: async (images: string[]) => await storage.saveSetting('shop_gallery', images),
 
 
   getWhatsAppApiUrl: (): string => storage.getSetting('whatsapp_api_url', ''),
-  saveWhatsAppApiUrl: (url: string) => storage.saveSetting('whatsapp_api_url', url),
+  saveWhatsAppApiUrl: async (url: string) => await storage.saveSetting('whatsapp_api_url', url),
 
   getWhatsAppApiToken: (): string => storage.getSetting('whatsapp_api_token', ''),
-  saveWhatsAppApiToken: (token: string) => storage.saveSetting('whatsapp_api_token', token),
+  saveWhatsAppApiToken: async (token: string) => await storage.saveSetting('whatsapp_api_token', token),
 
   getWhatsAppInstanceId: (): string => storage.getSetting('whatsapp_instance_id', ''),
-  saveWhatsAppInstanceId: (id: string) => storage.saveSetting('whatsapp_instance_id', id),
+  saveWhatsAppInstanceId: async (id: string) => await storage.saveSetting('whatsapp_instance_id', id),
 
   getReminderMinutes: (): string => storage.getSetting('reminder_minutes', '30'),
-  saveReminderMinutes: (minutes: string) => storage.saveSetting('reminder_minutes', minutes),
+  saveReminderMinutes: async (minutes: string) => await storage.saveSetting('reminder_minutes', minutes),
 
   getRecurringSchedules: (): RecurringSchedule[] => cache.recurringSchedules,
   async saveRecurringSchedules(schedules: RecurringSchedule[]) {
@@ -325,10 +325,10 @@ export const storage = {
   },
 
   getMPAccessToken: (): string => storage.getSetting('mp_access_token', ''),
-  saveMPAccessToken: (token: string) => storage.saveSetting('mp_access_token', token),
+  saveMPAccessToken: async (token: string) => await storage.saveSetting('mp_access_token', token),
 
   getMPPublicKey: (): string => storage.getSetting('mp_public_key', ''),
-  saveMPPublicKey: (key: string) => storage.saveSetting('mp_public_key', key),
+  saveMPPublicKey: async (key: string) => await storage.saveSetting('mp_public_key', key),
 
   getExpenses: (): Expense[] => cache.expenses,
   async saveExpenses(expenses: Expense[]) {

@@ -42,7 +42,7 @@ const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
-  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
+  const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
@@ -69,7 +69,7 @@ const Appointments = () => {
   const [editedTime, setEditedTime] = useState('');
   const [editedServiceId, setEditedServiceId] = useState('');
   const [editedBarberId, setEditedBarberId] = useState('');
-  const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
+  const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [editedExtraCharges, setEditedExtraCharges] = useState(0);
 
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -203,7 +203,7 @@ const Appointments = () => {
     };
 
     const updated = [...appointments, newAppointment];
-    storage.saveAppointments(updated);
+    await storage.saveAppointments(updated);
     setAppointments(updated);
 
     // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário)
@@ -217,10 +217,10 @@ const Appointments = () => {
     toast({ title: "Agendamento Realizado", description: `Agendamento para ${clientName} marcado com sucesso.` });
   };
 
-  const handleDeleteAppointment = () => {
+  const handleDeleteAppointment = async () => {
     if (appointmentToDelete) {
       const updatedAppointments = appointments.filter(appt => appt.id !== appointmentToDelete.id);
-      storage.saveAppointments(updatedAppointments);
+      await storage.saveAppointments(updatedAppointments);
       setAppointments(updatedAppointments);
       toast({ title: "Agendamento Excluído", description: "O agendamento foi removido com sucesso." });
       setShowDeleteDialog(false);
@@ -228,7 +228,7 @@ const Appointments = () => {
     }
   };
 
-  const handleUpdateAppointment = () => {
+  const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
       const updatedAppointment = {
         ...appointmentToEdit,
@@ -240,7 +240,7 @@ const Appointments = () => {
         extraCharges: editedExtraCharges,
         finalPrice: (appointmentToEdit.servicePrice || 0) + editedExtraCharges,
       };
-      updateAppointmentInStorage(updatedAppointment);
+      await updateAppointmentInStorage(updatedAppointment);
       toast({ title: "Agendamento Atualizado", description: "O agendamento foi atualizado com sucesso." });
       setShowEditDialog(false);
       setAppointmentToEdit(null);
@@ -297,7 +297,7 @@ const Appointments = () => {
   };
 
   // Função para gerar agendamentos de teste
-  const generateTestAppointments = (count: number = 5) => {
+  const generateTestAppointments = async (count: number = 5) => {
     const existingAppointments = storage.getAppointments();
 
     const testBarbers = storage.getBarbers();
@@ -343,7 +343,7 @@ const Appointments = () => {
       });
     }
 
-    storage.saveAppointments([...existingAppointments, ...newAppointments]);
+    await storage.saveAppointments([...existingAppointments, ...newAppointments]);
     setAppointments(storage.getAppointments());
     toast({ title: "Agendamentos de teste gerados!", description: "5 agendamentos de teste foram adicionados." });
   };
@@ -394,7 +394,7 @@ const Appointments = () => {
           await sendWhatsApp2HourReminder(app, barber, service);
           
           // Marcar como enviado no storage
-          updateAppointmentInStorage({ ...app, reminderSent: true });
+          await updateAppointmentInStorage({ ...app, reminderSent: true });
         }
       }
     };
@@ -474,15 +474,15 @@ const Appointments = () => {
     }
   };
 
-  const updateAppointmentInStorage = (updatedAppointment: Appointment) => {
+  const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
     const updatedAppointments = appointments.map(a =>
       a.id === updatedAppointment.id ? updatedAppointment : a
     );
-    storage.saveAppointments(updatedAppointments);
+    await storage.saveAppointments(updatedAppointments);
     setAppointments(updatedAppointments);
   };
 
-  const handleStartService = (appointment: Appointment) => {
+  const handleStartService = async (appointment: Appointment) => {
     const now = new Date();
     const scheduledDateTime = parseISO(`${appointment.date}T${appointment.time}:00`);
     const isDelayed = isAfter(now, scheduledDateTime);
@@ -493,11 +493,11 @@ const Appointments = () => {
       isDelayed: isDelayed,
       status: 'in_progress' as const,
     };
-    updateAppointmentInStorage(updatedAppointment);
+    await updateAppointmentInStorage(updatedAppointment);
     toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
   };
 
-  const handleCompleteService = () => {
+  const handleCompleteService = async () => {
     if (!currentAppointmentToComplete || !paymentType) return;
 
     const now = new Date();
@@ -509,7 +509,7 @@ const Appointments = () => {
       finalPrice: finalPrice, // Usar o finalPrice calculado
       status: 'completed' as const,
     };
-    updateAppointmentInStorage(updatedAppointment);
+    await updateAppointmentInStorage(updatedAppointment);
 
     // Update user's cutsCount and stylePreferences
     if (currentAppointmentToComplete.userId) {
@@ -527,7 +527,7 @@ const Appointments = () => {
         }
 
         const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
-        storage.saveUsers(finalUsers);
+        await storage.saveUsers(finalUsers);
       }
     }
 
@@ -560,7 +560,7 @@ const Appointments = () => {
     if (!updatedAppointment) return;
 
     const newAppointment = { ...updatedAppointment, status };
-    updateAppointmentInStorage(newAppointment);
+    await updateAppointmentInStorage(newAppointment);
     
     if (status === 'confirmed') {
       const barber = barbers.find(b => b.id === updatedAppointment.barberId);
@@ -575,7 +575,7 @@ const Appointments = () => {
     toast({ title: 'Status atualizado', description: `O agendamento foi ${status === 'confirmed' ? 'confirmado' : 'cancelado'} com sucesso.` });
   };
 
-  const handleNoShow = (appointment: Appointment) => {
+  const handleNoShow = async (appointment: Appointment) => {
     if (appointment.userId) {
       const allUsers = storage.getUsers();
       const userToUpdate = allUsers.find(u => u.id === appointment.userId);
@@ -585,11 +585,11 @@ const Appointments = () => {
           noShowCount: (userToUpdate.noShowCount || 0) + 1 
         };
         const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
-        storage.saveUsers(finalUsers);
+        await storage.saveUsers(finalUsers);
       }
     }
     
-    updateAppointmentInStorage({ ...appointment, status: 'no_show' });
+    await updateAppointmentInStorage({ ...appointment, status: 'no_show' });
     toast({ 
       title: 'Não Comparecimento', 
       description: `O cliente foi sinalizado por não comparecer ao horário marcado.`,

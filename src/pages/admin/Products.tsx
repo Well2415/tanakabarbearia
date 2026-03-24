@@ -53,7 +53,7 @@ const AdminProducts = () => {
 
   if (!user || user.role !== 'admin') return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const productData: Product = {
@@ -77,7 +77,7 @@ const AdminProducts = () => {
       toast({ title: 'Produto adicionado' });
     }
 
-    storage.saveProducts(updatedProducts);
+    await storage.saveProducts(updatedProducts);
     setProducts(updatedProducts);
     handleClose();
   };
@@ -97,9 +97,9 @@ const AdminProducts = () => {
     setIsOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const updated = products.filter(p => p.id !== id);
-    storage.saveProducts(updated);
+    await storage.saveProducts(updated);
     setProducts(updated);
     toast({ title: 'Produto removido' });
   };
