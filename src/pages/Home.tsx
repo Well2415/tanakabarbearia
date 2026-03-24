@@ -248,7 +248,6 @@ const Home = () => {
                 opts={{
                   align: "center",
                   loop: true,
-                  skipSnaps: false,
                 }}
                 plugins={[
                   Autoplay({
@@ -259,9 +258,9 @@ const Home = () => {
                 ]}
                 className="w-full"
               >
-                <CarouselContent className="-ml-4">
+                <CarouselContent className="ml-0">
                   {products.map((product) => (
-                    <CarouselItem key={product.id} className="pl-4 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                    <CarouselItem key={product.id} className="pl-0 basis-[80%] px-2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                       <Link to="/products">
                         <Card className="overflow-hidden border-border/50 bg-card hover:border-primary/50 transition-all duration-300 rounded-3xl group h-full shadow-lg">
                           <div className="relative aspect-square overflow-hidden bg-muted">
