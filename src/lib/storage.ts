@@ -100,6 +100,9 @@ export const storage = {
 
       if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
       if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
+      if (productsRes.error && productsRes.error.code !== 'PGRST116') {
+        console.error('Error fetching products (Table might be missing):', productsRes.error);
+      }
 
       cache.barbers = (barbersRes.data || []).map(b => ({ 
         ...b, 
