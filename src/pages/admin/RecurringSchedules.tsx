@@ -120,31 +120,35 @@ const RecurringSchedules = () => {
                             <Plus className="w-4 h-4" /> Novo Horário Fixo
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
-                        <DialogHeader>
-                            <DialogTitle>Cadastrar Horário Fixo</DialogTitle>
+                    <DialogContent className="max-w-md w-[95vw] h-auto max-h-[96dvh] overflow-hidden flex flex-col p-0 rounded-3xl border-white/10 bg-zinc-950 shadow-2xl">
+                        <DialogHeader className="p-6 pb-0 text-left">
+                            <DialogTitle className="text-2xl font-bold text-white">Cadastrar Horário Fixo</DialogTitle>
+                            <DialogDescription className="text-zinc-400">
+                                Configure um agendamento recorrente para este cliente.
+                            </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label>Cliente</Label>
+
+                        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                            <div className="space-y-3">
+                                <Label className="text-zinc-300 font-medium ml-1">Cliente</Label>
                                 <Popover open={isComboboxOpen} onOpenChange={setIsComboboxOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant="outline"
                                             role="combobox"
                                             aria-expanded={isComboboxOpen}
-                                            className="w-full justify-between font-normal"
+                                            className="w-full justify-between h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg font-normal px-4"
                                         >
                                             {formData.userId
                                                 ? users.find((user) => user.id === formData.userId)?.fullName
                                                 : "Pesquisar cliente..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            <ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
-                                        <Command>
-                                            <CommandInput placeholder="Digite o nome..." />
-                                            <CommandList>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl z-[100]">
+                                        <Command className="bg-transparent">
+                                            <CommandInput placeholder="Digite o nome..." className="h-12" />
+                                            <CommandList className="max-h-[300px]">
                                                 <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                                                 <CommandGroup>
                                                     {users.map((user) => (
@@ -155,7 +159,7 @@ const RecurringSchedules = () => {
                                                                 setFormData(prev => ({ ...prev, userId: user.id }));
                                                                 setIsComboboxOpen(false);
                                                             }}
-                                                            className="data-[selected='true']:bg-primary data-[selected='true']:text-primary-foreground cursor-pointer"
+                                                            className="data-[selected='true']:bg-primary data-[selected='true']:text-primary-foreground cursor-pointer px-4 py-3 rounded-xl m-1"
                                                         >
                                                             <Check
                                                                 className={cn(
@@ -173,41 +177,43 @@ const RecurringSchedules = () => {
                                 </Popover>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Barbeiro</Label>
+                            <div className="space-y-3">
+                                <Label className="text-zinc-300 font-medium ml-1">Barbeiro</Label>
                                 <Select value={formData.barberId} onValueChange={(v) => setFormData({ ...formData, barberId: v })}>
-                                    <SelectTrigger><SelectValue placeholder="Selecione o barbeiro" /></SelectTrigger>
-                                    <SelectContent>
+                                    <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg">
+                                        <SelectValue placeholder="Selecione o barbeiro" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                         {barbers.map(b => (
-                                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                            <SelectItem key={b.id} value={b.id} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{b.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Serviços</Label>
+                            <div className="space-y-3">
+                                <Label className="text-zinc-300 font-medium ml-1">Serviços</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full justify-between font-normal h-auto min-h-[44px]">
-                                            <div className="flex flex-wrap gap-1 items-center text-left">
+                                        <Button variant="outline" className="w-full justify-between h-auto min-h-[56px] bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg font-normal px-4 py-3">
+                                            <div className="flex flex-wrap gap-2 items-center text-left">
                                                 {formData.serviceIds.length > 0 ? (
                                                     formData.serviceIds.map(id => (
-                                                        <Badge key={id} variant="secondary" className="font-normal text-[10px] py-0 px-1">
+                                                        <Badge key={id} variant="secondary" className="bg-primary/20 text-primary border-none font-bold py-1 px-3">
                                                             {services.find(s => s.id === id)?.name}
                                                         </Badge>
                                                     ))
                                                 ) : (
-                                                    <span className="text-muted-foreground">Selecione os serviços</span>
+                                                    <span className="text-zinc-500">Selecione os serviços</span>
                                                 )}
                                             </div>
-                                            <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
+                                            <ChevronsUpDown className="h-5 w-5 opacity-50 shrink-0 ml-2" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Pesquisar serviço..." />
-                                            <CommandList>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl z-[100]" align="start">
+                                        <Command className="bg-transparent">
+                                            <CommandInput placeholder="Pesquisar serviço..." className="h-12" />
+                                            <CommandList className="max-h-[300px]">
                                                 <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
                                                 <CommandGroup>
                                                     {services.map((service) => (
@@ -221,18 +227,18 @@ const RecurringSchedules = () => {
                                                                     : [...current, service.id];
                                                                 setFormData(prev => ({ ...prev, serviceIds: next }));
                                                             }}
-                                                            className="cursor-pointer"
+                                                            className="cursor-pointer px-4 py-3 rounded-xl m-1"
                                                         >
                                                             <div className={cn(
-                                                                "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                                                "mr-3 flex h-5 w-5 items-center justify-center rounded-md border-2 border-primary",
                                                                 formData.serviceIds.includes(service.id)
-                                                                    ? "bg-primary text-primary-foreground"
-                                                                    : "opacity-50 [&_svg]:invisible"
+                                                                    ? "bg-primary text-primary-foreground border-primary"
+                                                                    : "border-white/20"
                                                             )}>
-                                                                <Check className="h-4 w-4" />
+                                                                {formData.serviceIds.includes(service.id) && <Check className="h-3.5 w-3.5" />}
                                                             </div>
-                                                            <span>{service.name}</span>
-                                                            <span className="ml-auto text-xs text-muted-foreground">R$ {service.price}</span>
+                                                            <span className="flex-1 text-white font-medium">{service.name}</span>
+                                                            <span className="text-primary font-bold ml-2">R$ {service.price}</span>
                                                         </CommandItem>
                                                     ))}
                                                 </CommandGroup>
@@ -243,32 +249,39 @@ const RecurringSchedules = () => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Dia da Semana</Label>
+                                <div className="space-y-3">
+                                    <Label className="text-zinc-300 font-medium ml-1">Dia da Semana</Label>
                                     <Select value={formData.dayOfWeek} onValueChange={(v) => setFormData({ ...formData, dayOfWeek: v })}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                             {DAYS_OF_WEEK.map(d => (
-                                                <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>
+                                                <SelectItem key={d.id} value={d.id.toString()} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{d.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Horário</Label>
+                                <div className="space-y-3">
+                                    <Label className="text-zinc-300 font-medium ml-1">Horário</Label>
                                     <Select value={formData.time} onValueChange={(v) => setFormData({ ...formData, time: v })}>
-                                        <SelectTrigger><SelectValue placeholder="HH:mm" /></SelectTrigger>
-                                        <SelectContent>
+                                        <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg text-center font-bold">
+                                            <SelectValue placeholder="HH:mm" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                             {barbers.find(b => b.id === formData.barberId)?.availableHours.map(h => (
-                                                <SelectItem key={h} value={h}>{h}</SelectItem>
+                                                <SelectItem key={h} value={h} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1 font-bold text-center">{h}</SelectItem>
                                             )) || <SelectItem value="0" disabled>Selecione um barbeiro</SelectItem>}
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button onClick={handleCreateSchedule} className="w-full">Salvar Horário Fixo</Button>
+
+                        <DialogFooter className="p-6 border-t border-white/5">
+                            <Button onClick={handleCreateSchedule} className="w-full h-16 rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] transition-all duration-300">
+                                Salvar Horário Fixo
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
