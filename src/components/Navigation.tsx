@@ -47,24 +47,27 @@ export const Navigation = () => {
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${scrolled ? 'bg-background/95 backdrop-blur-md shadow-md border-b border-border' : 'bg-transparent'}`}>
 
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-24">
-          <Link to="/" className="flex items-center gap-3 transition-colors" onClick={handleHomeClick}>
-            {shopLogo ? (
-              <img src={shopLogo} alt={shopName} className="h-16 w-auto drop-shadow-md transition-opacity hover:opacity-80" />
-            ) : (
-              <div className="flex flex-col items-center">
-                <span className="text-xl font-black text-primary drop-shadow-md leading-tight uppercase tracking-tighter italic">
-                  {shopName.split(' ')[0]}
-                </span>
-                <span className="text-[10px] font-bold text-foreground/80 tracking-[0.2em] uppercase -mt-1">
-                  {shopName.split(' ').slice(1).join(' ')}
-                </span>
-              </div>
-            )}
-          </Link>
+        <div className="flex items-center justify-between h-24 relative">
+          {/* Logo - Centered on mobile, Left on desktop */}
+          <div className="flex md:flex-none md:static absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 items-center justify-center">
+            <Link to="/" className="flex items-center gap-3 transition-colors" onClick={handleHomeClick}>
+              {shopLogo ? (
+                <img src={shopLogo} alt={shopName} className="h-14 md:h-16 w-auto drop-shadow-md transition-opacity hover:opacity-80" />
+              ) : (
+                <div className="flex flex-col items-center">
+                  <span className="text-xl font-black text-primary drop-shadow-md leading-tight uppercase tracking-tighter italic">
+                    {shopName.split(' ')[0]}
+                  </span>
+                  <span className="text-[10px] font-bold text-foreground/80 tracking-[0.2em] uppercase -mt-1">
+                    {shopName.split(' ').slice(1).join(' ')}
+                  </span>
+                </div>
+              )}
+            </Link>
+          </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-8 font-medium">
+          <div className="hidden md:flex items-center gap-8 font-medium ml-auto">
             <Link to="/" className="text-foreground hover:text-primary transition-colors" onClick={handleHomeClick}>Início</Link>
             <Link to="/services" className="text-foreground hover:text-primary transition-colors">Serviços</Link>
             <Link to="/products" className="text-foreground hover:text-primary transition-colors">Produtos</Link>
@@ -93,8 +96,8 @@ export const Navigation = () => {
             )}
           </div>
 
-          {/* Mobile Menu */}
-          <div className="md:hidden">
+          {/* Mobile Menu Trigger */}
+          <div className="md:hidden ml-auto">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="hover:bg-primary/20">
@@ -144,14 +147,13 @@ export const Navigation = () => {
                       </Link>
                       <Link to={agendarLink} onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-12 rounded-xl shadow-md shadow-primary/20 transition-colors">
                         Agendar Agora
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
               </SheetContent>
             </Sheet>
           </div>
-
         </div>
       </div>
     </nav>
