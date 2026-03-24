@@ -33,14 +33,12 @@
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) {
             registration.unregister();
-            console.log('SW desativado para atualizar cache');
           }
         });
         
         // Registrar o novo SW
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js?v=1.0.1', { scope: '/' })
-            .then(reg => console.log('PWA ServiceWorker atualizado', reg))
             .catch(err => console.error('PWA erro no registro', err));
         });
       }

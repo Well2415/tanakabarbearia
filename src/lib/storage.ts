@@ -134,11 +134,6 @@ export const storage = {
 
       isInitialized = true;
       saveCacheToLocal();
-      console.log('✅ Supabase Initialized & Cached [v1.1.2]', { 
-        settingsCount: Object.keys(cache.settings).length,
-        servicesCount: cache.services.length,
-        gallery: cache.settings.shop_gallery
-      });
     } catch (error) {
       console.error('❌ Error initializing Supabase:', error);
       isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
