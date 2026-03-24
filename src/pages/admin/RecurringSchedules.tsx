@@ -145,7 +145,7 @@ const RecurringSchedules = () => {
                                             <ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl z-[200]">
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl">
                                         <Command className="bg-transparent">
                                             <CommandInput placeholder="Digite o nome..." className="h-12" />
                                             <CommandList className="max-h-[300px]">
@@ -210,7 +210,7 @@ const RecurringSchedules = () => {
                                             <ChevronsUpDown className="h-5 w-5 opacity-50 shrink-0 ml-2" />
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl z-[200]" align="start">
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl" align="start">
                                         <Command className="bg-transparent">
                                             <CommandInput placeholder="Pesquisar serviço..." className="h-12" />
                                             <CommandList className="max-h-[300px]">
