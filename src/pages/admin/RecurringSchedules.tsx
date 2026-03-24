@@ -8,7 +8,7 @@ import { AdminMenu } from '@/components/admin/AdminMenu';
 import { Plus, Trash2, Calendar, Clock, User, Scissors, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RecurringSchedule, User as UserType, Barber, Service } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
