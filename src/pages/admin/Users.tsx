@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { Lock } from 'lucide-react';
 
 const Users = () => {
   const navigate = useNavigate();
