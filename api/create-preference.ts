@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         ],
         payer: {
-          email: email || 'test_user_12345678@testuser.com'
+          email: email || 'cliente@tanakabarbearia.com.br'
         },
         binary_mode: false,
         back_urls: {

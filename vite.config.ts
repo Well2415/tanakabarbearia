@@ -93,7 +93,7 @@ export default defineConfig(({ mode }) => ({
                     unit_price: amount,
                     currency_id: 'BRL'
                   }],
-                  payer: { email: parsedBody.email || 'test_user_12345678@testuser.com' },
+                  payer: { email: parsedBody.email || 'cliente@tanakabarbearia.com.br' },
                   binary_mode: false,
                   payment_methods: {
                     excluded_payment_methods: [{ id: 'ticket' }]
