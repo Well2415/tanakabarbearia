@@ -1,6 +1,6 @@
-import { Barber, Service, Appointment, User, RecurringSchedule, Expense } from '@/types';
+import { Barber, Service, Appointment, User, RecurringSchedule, Expense, Product } from '@/types';
 import { supabase } from './supabase';
-import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT } from './initialData';
+import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT, DEFAULT_PRODUCTS } from './initialData';
 import { sortTimes } from './timeUtils';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
@@ -20,6 +20,7 @@ let cache: {
   expenses: Expense[];
   expenseCategories: string[];
   settings: Record<string, any>;
+  products: Product[];
 } = {
   barbers: [],
   services: [],
@@ -28,7 +29,8 @@ let cache: {
   recurringSchedules: [],
   expenses: [],
   expenseCategories: [],
-  settings: {}
+  settings: {},
+  products: []
 };
 
 // Helper simples para caminhos de imagem
@@ -83,7 +85,8 @@ export const storage = {
         appointmentsRes,
         recurringRes,
         expensesRes,
-        expenseCategoriesRes
+        expenseCategoriesRes,
+        productsRes
       ] = await Promise.all([
         supabase.from('barbers').select('*'),
         supabase.from('services').select('*'),
@@ -91,7 +94,8 @@ export const storage = {
         supabase.from('appointments').select('*'),
         supabase.from('recurring_schedules').select('*'),
         supabase.from('expenses').select('*'),
-        supabase.from('expense_categories').select('*')
+        supabase.from('expense_categories').select('*'),
+        supabase.from('products').select('*')
       ]);
 
       if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
@@ -108,6 +112,7 @@ export const storage = {
       cache.recurringSchedules = recurringRes.data || [];
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
+      cache.products = (productsRes.data || []).map(p => ({ ...p, image: normalizeImagePath(p.image) }));
 
       // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
       if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {
@@ -132,6 +137,7 @@ export const storage = {
     await supabase.from('barbers').insert(DEFAULT_BARBERS);
     await supabase.from('users').insert(DEFAULT_USERS);
     await supabase.from('appointments').insert(DEFAULT_APPOINTMENTS);
+    await supabase.from('products').insert(DEFAULT_PRODUCTS);
 
     const defaultCategories = [
       'Aluguel', 'Energia/Luz', 'Água', 'Produtos e Materiais', 'Marketing e Anúncios',
@@ -326,5 +332,13 @@ export const storage = {
     cache.expenseCategories = categories;
     await supabase.from('expense_categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('expense_categories').insert(categories.map(name => ({ name })));
+  },
+
+  // --- GERENCIAMENTO DE PRODUTOS ---
+  getProducts: (): Product[] => cache.products,
+  async saveProducts(products: Product[]) {
+    cache.products = products;
+    await supabase.from('products').delete().neq('id', '_none_');
+    await supabase.from('products').insert(products);
   },
 };

@@ -1,4 +1,4 @@
-import { Barber, Service, User, Appointment } from '@/types';
+import { Barber, Service, User, Appointment, Product } from '@/types';
 import { format } from 'date-fns';
 
 const today = new Date();
@@ -30,5 +30,28 @@ export const DEFAULT_USERS: User[] = [
 ];
 
 export const DEFAULT_APPOINTMENTS: Appointment[] = [];
+
+export const DEFAULT_PRODUCTS: Product[] = [
+    {
+        id: '1',
+        name: 'Pomada Efeito Matte',
+        description: 'Finalização impecável sem brilho.',
+        price: 45.00,
+        image: '',
+        category: 'Pomada',
+        stock: 10,
+        active: true
+    },
+    {
+        id: '2',
+        name: 'Óleo para Barba',
+        description: 'Hidratação e brilho para sua barba.',
+        price: 35.00,
+        image: '',
+        category: 'Barba',
+        stock: 15,
+        active: true
+    }
+];
 
 export const LOYALTY_TARGET_DEFAULT = 10;

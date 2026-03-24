@@ -26,6 +26,8 @@ import Finance from "./pages/barber/Finance";
 import BarberProfile from "./pages/barber/Profile";
 import ResetPassword from "./pages/ResetPassword";
 import AdminLogin from "./pages/admin/Login";
+import Products from "./pages/Products";
+import AdminProducts from "./pages/admin/Products";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -69,6 +71,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/guest-booking" element={<GuestBooking />} />
             <Route path="/login" element={<ClientLogin />} />
@@ -89,6 +92,7 @@ const App = () => {
             <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminAppointments /></ProtectedRoute>} />
             <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
             <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
+            <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
             <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />

@@ -67,6 +67,7 @@ export const Navigation = () => {
           <div className="hidden md:flex items-center gap-8 font-medium">
             <Link to="/" className="text-foreground hover:text-primary transition-colors" onClick={handleHomeClick}>Início</Link>
             <Link to="/services" className="text-foreground hover:text-primary transition-colors">Serviços</Link>
+            <Link to="/products" className="text-foreground hover:text-primary transition-colors">Produtos</Link>
 
             {user ? (
               <div className="flex items-center gap-4 ml-4">
@@ -120,6 +121,7 @@ export const Navigation = () => {
                 <div className="flex flex-col gap-6 mt-4 font-medium text-lg">
                   <Link to="/" className="text-foreground hover:text-primary transition-colors" onClick={() => { handleHomeClick(); setIsSheetOpen(false); }}>Início</Link>
                   <Link to="/services" className="text-foreground hover:text-primary transition-colors" onClick={() => setIsSheetOpen(false)}>Serviços</Link>
+                  <Link to="/products" className="text-foreground hover:text-primary transition-colors" onClick={() => setIsSheetOpen(false)}>Produtos</Link>
 
                   <div className="h-px bg-border w-full my-2"></div>
 

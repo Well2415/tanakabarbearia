@@ -100,3 +100,16 @@ CREATE TABLE IF NOT EXISTS shop_settings (
   value JSONB NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+-- TABELA DE PRODUTOS
+CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  price NUMERIC(10, 2) NOT NULL,
+  category TEXT,
+  stock INT DEFAULT 0,
+  image TEXT,
+  active BOOLEAN DEFAULT true,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);

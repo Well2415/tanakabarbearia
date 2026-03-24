@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
-import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield } from 'lucide-react';
+import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -50,11 +50,13 @@ export const AdminMenu = () => {
         },
         { name: 'Equipe', path: '/admin/barbers', icon: UserCog },
         { name: 'Serviços', path: '/admin/services', icon: Scissors },
+        { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
+        { name: 'Produtos', path: '/products', icon: ShoppingBag },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Início', path: '/dashboard', icon: LayoutDashboard },
     ];
@@ -273,6 +275,12 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                                     <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
                                         <Users className="w-5 h-5 text-primary" />
                                         Novo Barbeiro
+                                    </Button>
+                                </Link>
+                                <Link to="/admin/products?action=new-product">
+                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                        <ShoppingBag className="w-5 h-5 text-primary" />
+                                        Novo Produto
                                     </Button>
                                 </Link>
                                 <Link to="/admin/recurring-schedules">

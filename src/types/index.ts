@@ -93,3 +93,14 @@ export interface Expense {
   category: string;
   createdAt: string;
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image?: string;
+  category?: string;
+  stock?: number;
+  active: boolean;
+}
