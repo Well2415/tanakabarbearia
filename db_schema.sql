@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS products (
   category TEXT,
   stock INT DEFAULT 0,
   image TEXT,
+  image2 TEXT,
   active BOOLEAN DEFAULT true,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
