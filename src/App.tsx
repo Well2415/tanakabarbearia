@@ -31,6 +31,7 @@ import AdminProducts from "./pages/admin/Products";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { InstallPWA } from "./components/InstallPWA";
 
 import { storage } from "@/lib/storage";
 import { Loader2 } from "lucide-react";
@@ -101,6 +102,7 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             )}
+            <InstallPWA />
           </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

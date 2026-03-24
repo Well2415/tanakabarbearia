@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { LogOut, LayoutDashboard, Menu, Scissors } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, Scissors, Smartphone } from 'lucide-react';
 import { storage } from '@/lib/storage';
 import { User } from '@/types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PWAInstructions } from './InstallPWA';
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -147,7 +149,24 @@ export const Navigation = () => {
                       </Link>
                       <Link to={agendarLink} onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-12 rounded-xl shadow-md shadow-primary/20 transition-colors">
                         Agendar Agora
-                        </Link>
+                      </Link>
+
+                      {/* Botão de instalar App no menu mobile */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 text-sm font-medium transition-colors mt-2">
+                            <Smartphone className="w-5 h-5 text-primary" />
+                            Instalar Aplicativo
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card/95 border-border rounded-3xl w-[95%] sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Instalar App</DialogTitle>
+                            <DialogDescription>Siga o guia para seu celular</DialogDescription>
+                          </DialogHeader>
+                          <PWAInstructions platform={/iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()) ? 'ios' : 'android'} />
+                        </DialogContent>
+                      </Dialog>
                       </div>
                     )}
                   </div>
