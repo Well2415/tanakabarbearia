@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -23,6 +23,9 @@ const Clients = () => {
   const [newPoints, setNewPoints] = useState(0);
   const [loyaltyTarget, setLoyaltyTarget] = useState(0);
   const [newLoyaltyTarget, setNewLoyaltyTarget] = useState(0); // New state for the input
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,6 +109,30 @@ const Clients = () => {
     toast({ title: 'Pontos atualizados!', description: `Os pontos de ${editingClient.fullName} foram definidos para ${newPoints}.` });
   };
 
+  const handlePasswordChange = () => {
+    if (!editingClient) return;
+    if (!password) {
+      toast({ title: 'Erro', description: 'Por favor, insira uma nova senha.', variant: 'destructive' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: 'Erro', description: 'As senhas não coincidem.', variant: 'destructive' });
+      return;
+    }
+
+    const allUsers = storage.getUsers();
+    const updatedUsers = allUsers.map(u =>
+      u.id === editingClient.id ? { ...u, password: password } : u
+    );
+    storage.saveUsers(updatedUsers);
+    setClients(updatedUsers.filter(u => u.role === 'client'));
+    setEditingClient(null);
+    setIsChangingPassword(false);
+    setPassword('');
+    setConfirmPassword('');
+    toast({ title: 'Senha atualizada!', description: `A senha de ${editingClient.fullName} foi alterada com sucesso.` });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AdminMenu />
@@ -172,9 +199,12 @@ const Clients = () => {
                   </div>
                   <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
-                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50">
-                  <Button variant="outline" className="w-full text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
-                    <Edit className="w-4 h-4 mr-2" />Editar Pontos
+                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 gap-2">
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
+                    <Edit className="w-4 h-4 mr-2" />Pontos
+                  </Button>
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
+                    <Lock className="w-4 h-4 mr-2" />Senha
                   </Button>
                 </CardFooter>
               </Card>
@@ -212,7 +242,7 @@ const Clients = () => {
       </div>
 
       {/* Edit Points Dialog */}
-      <Dialog open={!!editingClient} onOpenChange={(isOpen) => !isOpen && setEditingClient(null)}>
+      <Dialog open={!!editingClient && !isChangingPassword} onOpenChange={(isOpen) => !isOpen && setEditingClient(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Pontos de Fidelidade</DialogTitle></DialogHeader>
           <div className="py-4">
@@ -222,6 +252,28 @@ const Clients = () => {
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
             <Button onClick={handlePointsChange}>Salvar Pontos</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={!!editingClient && isChangingPassword} onOpenChange={(isOpen) => !isOpen && (setEditingClient(null), setIsChangingPassword(false))}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Alterar Senha do Cliente</DialogTitle></DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">Definindo nova senha para <span className="font-bold text-foreground">{editingClient?.fullName}</span></p>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
+            <Button onClick={handlePasswordChange}>Alterar Senha</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

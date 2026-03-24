@@ -20,6 +20,8 @@ const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<User['role'] | ''>('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedBarber, setSelectedBarber] = useState<string | undefined>(undefined);
 
   // New states for filtering and pagination
@@ -52,24 +54,41 @@ const Users = () => {
     setSelectedBarber(user.barberId || (barbers.length > 0 ? barbers[0].id : undefined));
   };
 
-  const handleRoleChange = () => {
+  const handleUserUpdate = () => {
     if (!editingUser || !newRole) return;
+
+    if (password && password !== confirmPassword) {
+      toast({ title: 'Erro na senha', description: 'As senhas não coincidem.', variant: 'destructive' });
+      return;
+    }
 
     let finalBarberId = selectedBarber;
     if (newRole === 'barber' && !finalBarberId && barbers.length > 0) {
       finalBarberId = barbers[0].id;
     }
 
-    const updatedUsers = users.map(u =>
-      u.id === editingUser.id
-        ? { ...u, role: newRole as User['role'], barberId: newRole === 'barber' ? finalBarberId : undefined }
-        : u
-    );
+    const updatedUsers = users.map(u => {
+      if (u.id === editingUser.id) {
+        const updated: User = { 
+          ...u, 
+          role: newRole as User['role'], 
+          barberId: newRole === 'barber' ? finalBarberId : undefined 
+        };
+        if (password) {
+           updated.password = password;
+        }
+        return updated;
+      }
+      return u;
+    });
+
     storage.saveUsers(updatedUsers);
     setUsers(updatedUsers);
     setEditingUser(null);
+    setPassword('');
+    setConfirmPassword('');
     setSelectedBarber(undefined);
-    toast({ title: 'Permissão alterada!', description: `O usuário ${editingUser.fullName} agora é ${newRole}.` });
+    toast({ title: 'Usuário atualizado!', description: `As informações de ${editingUser.fullName} foram salvas.` });
   };
 
   const handleDelete = (userId: string) => {
@@ -239,10 +258,9 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Edit Role Dialog */}
       <Dialog open={!!editingUser} onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}>
         <DialogContent className="w-[95vw] max-w-[425px] rounded-xl p-6 max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
-          <DialogHeader><DialogTitle>Editar Função</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Editar Usuário</DialogTitle></DialogHeader>
           <div className="py-2">
             <p className="text-sm text-muted-foreground mb-4">Alterar permissões de <span className="font-bold text-foreground">{editingUser?.fullName}</span>:</p>
             <Select value={newRole} onValueChange={(value) => setNewRole(value as User['role'])}>
@@ -267,10 +285,26 @@ const Users = () => {
                 </Select>
               </div>
             )}
+
+            <div className="mt-6 pt-6 border-t border-border">
+              <p className="text-sm font-bold mb-4 flex items-center gap-2">
+                 <Lock className="w-4 h-4 text-primary" /> Alterar Senha
+              </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova Senha (deixe em branco para manter)</Label>
+                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                </div>
+              </div>
+            </div>
           </div>
           <DialogFooter className="mt-4 gap-2 sm:gap-0">
             <DialogClose asChild><Button type="button" variant="outline" className="w-full sm:w-auto">Cancelar</Button></DialogClose>
-            <Button onClick={handleRoleChange} className="w-full sm:w-auto">Salvar Alteração</Button>
+            <Button onClick={handleUserUpdate} className="w-full sm:w-auto">Salvar Alterações</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
