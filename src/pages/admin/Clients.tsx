@@ -6,7 +6,7 @@ import { storage } from '@/lib/storage';
 import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AdminMenu } from '@/components/admin/AdminMenu';
@@ -241,26 +241,36 @@ const Clients = () => {
         </div>
       </div>
 
-      {/* Edit Points Dialog */}
       <Dialog open={!!editingClient && !isChangingPassword} onOpenChange={(isOpen) => !isOpen && setEditingClient(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Editar Pontos de Fidelidade</DialogTitle></DialogHeader>
-          <div className="py-4">
+          <DialogHeader>
+            <DialogTitle>Editar Pontos de Fidelidade</DialogTitle>
+            <DialogDescription>
+               Atualize o saldo de pontos de fidelidade do cliente selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handlePointsChange(); }} className="py-4">
             <Label htmlFor="points">Pontos para <span className="font-bold">{editingClient?.fullName}</span></Label>
-            <Input id="points" type="number" value={newPoints} onChange={(e) => setNewPoints(parseInt(e.target.value) || 0)} className="mt-2" />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-            <Button onClick={handlePointsChange}>Salvar Pontos</Button>
-          </DialogFooter>
+            <Input id="points" type="number" inputMode="numeric" value={newPoints} onChange={(e) => setNewPoints(parseInt(e.target.value) || 0)} className="mt-2" />
+            
+            <DialogFooter className="mt-6">
+              <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
+              <Button type="submit">Salvar Pontos</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
       {/* Change Password Dialog */}
       <Dialog open={!!editingClient && isChangingPassword} onOpenChange={(isOpen) => !isOpen && (setEditingClient(null), setIsChangingPassword(false))}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Alterar Senha do Cliente</DialogTitle></DialogHeader>
-          <div className="py-4 space-y-4">
+          <DialogHeader>
+            <DialogTitle>Alterar Senha do Cliente</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha segura para o acesso deste cliente.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }} className="py-4 space-y-4">
             <p className="text-sm text-muted-foreground">Definindo nova senha para <span className="font-bold text-foreground">{editingClient?.fullName}</span></p>
             <div className="space-y-2">
               <Label htmlFor="new-password">Nova Senha</Label>
@@ -270,11 +280,12 @@ const Clients = () => {
               <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
               <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
             </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-            <Button onClick={handlePasswordChange}>Alterar Senha</Button>
-          </DialogFooter>
+            
+            <DialogFooter className="mt-6">
+              <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
+              <Button type="submit">Alterar Senha</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

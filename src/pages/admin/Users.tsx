@@ -6,7 +6,7 @@ import { Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { User } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AdminMenu } from '@/components/admin/AdminMenu';
@@ -262,8 +262,13 @@ const Users = () => {
 
       <Dialog open={!!editingUser} onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}>
         <DialogContent className="w-[95vw] max-w-[425px] rounded-xl p-6 max-h-[90vh] overflow-y-auto pb-28 md:pb-6">
-          <DialogHeader><DialogTitle>Editar Usuário</DialogTitle></DialogHeader>
-          <div className="py-2">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Altere as permissões ou a senha de acesso deste usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleUserUpdate(); }} className="py-2">
             <p className="text-sm text-muted-foreground mb-4">Alterar permissões de <span className="font-bold text-foreground">{editingUser?.fullName}</span>:</p>
             <Select value={newRole} onValueChange={(value) => setNewRole(value as User['role'])}>
               <SelectTrigger><SelectValue placeholder="Selecione uma função" /></SelectTrigger>
@@ -303,11 +308,14 @@ const Users = () => {
                 </div>
               </div>
             </div>
-          </div>
-          <DialogFooter className="mt-4 gap-2 sm:gap-0">
-            <DialogClose asChild><Button type="button" variant="outline" className="w-full sm:w-auto">Cancelar</Button></DialogClose>
-            <Button onClick={handleUserUpdate} className="w-full sm:w-auto">Salvar Alterações</Button>
-          </DialogFooter>
+            
+            <DialogFooter className="mt-6 gap-2 sm:gap-0">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" className="w-full sm:w-auto">Cancelar</Button>
+              </DialogClose>
+              <Button type="submit" className="w-full sm:w-auto">Salvar Alterações</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
