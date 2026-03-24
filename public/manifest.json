@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/img/logo-pwa-black.png",
+      "src": "/img/icon-barber-v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/img/logo-pwa-black.png",
+      "src": "/img/icon-barber-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

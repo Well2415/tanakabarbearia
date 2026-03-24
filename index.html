@@ -20,8 +20,8 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     <link rel="icon" type="image/png" href="/img/logo-tanaka.png" />
-    <link rel="apple-touch-icon" href="/img/logo-pwa-black.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/img/icon-barber-v2.png" />
+    <link rel="manifest" href="/manifest.json?v=1.0.2" />
   </head>
 
   <body>
@@ -38,7 +38,7 @@
         
         // Registrar o novo SW
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=1.0.1', { scope: '/' })
+          navigator.serviceWorker.register('/sw.js?v=1.0.2', { scope: '/' })
             .catch(err => console.error('PWA erro no registro', err));
         });
       }
