@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import emailjs from '@emailjs/browser';
 import { useNavigate, Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
@@ -45,40 +46,66 @@ const Login = () => {
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     const users = storage.getUsers();
     const userFound = users.find(u => u.email?.toLowerCase() === resetEmail.toLowerCase());
 
     if (userFound) {
-      // Gerar um token aleatório simples
       const token = Math.random().toString(36).substring(2, 15);
-      
-      // Salvar o token no usuário
       const updatedUsers = users.map(u => 
         u.id === userFound.id ? { ...u, resetToken: token } : u
       );
       storage.saveUsers(updatedUsers);
 
-      setEmailSent(true);
+      // --- CONFIGURAÇÃO EMAILJS ---
+      // Caso o usuário queira configurar o EmailJS real, basta preencher essas chaves
+      // Por padrão, mantemos a simulação ativa para testes imediatos.
+      const serviceId = 'service_default'; // Ex: service_xxxxx
+      const templateId = 'template_reset'; // Ex: template_xxxxx
+      const publicKey = 'YOUR_PUBLIC_KEY'; // Sua chave pública do EmailJS
       
-      // Simular o envio do e-mail com um link clicável no Toast
       const resetLink = `${window.location.origin}/reset-password?token=${token}`;
-      
-      toast({
-          title: 'E-mail enviado!',
+
+      try {
+        if (publicKey !== 'YOUR_PUBLIC_KEY') {
+          await emailjs.send(
+            serviceId, 
+            templateId, 
+            {
+              to_name: userFound.fullName,
+              to_email: resetEmail,
+              reset_link: resetLink,
+              shop_name: storage.getShopName()
+            }, 
+            publicKey
+          );
+        }
+        
+        setEmailSent(true);
+        toast({
+          title: 'Ação solicitada!',
           description: (
-              <div className="flex flex-col gap-2">
-                  <p>Um link de recuperação foi enviado para {resetEmail}.</p>
-                  <Button 
-                      variant="link" 
-                      className="p-0 h-auto text-primary font-bold justify-start"
-                      onClick={() => navigate(`/reset-password?token=${token}`)}
-                  >
-                      [SIMULAR] Clique aqui para abrir o link do e-mail
-                  </Button>
-              </div>
+            <div className="flex flex-col gap-2">
+              <p>Instruções enviadas para {resetEmail}.</p>
+              <Button 
+                variant="link" 
+                className="p-0 h-auto text-primary font-bold justify-start"
+                onClick={() => navigate(`/reset-password?token=${token}`)}
+              >
+                [DEBUG] Clique aqui para abrir o link de teste
+              </Button>
+            </div>
           ),
-      });
+        });
+      } catch (error) {
+        console.error('Erro ao enviar e-mail via EmailJS:', error);
+        toast({
+          title: 'Erro no disparo',
+          description: 'Houve um erro ao tentar enviar o e-mail. Usando modo de teste.',
+          variant: 'destructive',
+        });
+        setEmailSent(true); // Mantém o fluxo visual
+      }
     } else {
       toast({
         title: 'E-mail não encontrado',
