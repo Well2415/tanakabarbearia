@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
-import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin } from 'lucide-react';
+import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
@@ -20,8 +20,10 @@ import { User } from '@/types';
 const Home = () => {
   const services = storage.getServices();
   const barbers = storage.getBarbers();
+  const products = storage.getProducts().filter(p => p.active).slice(0, 5);
   const [featuresRef, featuresVisible] = useScrollAnimation();
   const [servicesRef, servicesVisible] = useScrollAnimation();
+  const [productsRef, productsVisible] = useScrollAnimation();
   const [barbersRef, barbersVisible] = useScrollAnimation();
   const [testimonialsRef, testimonialsVisible] = useScrollAnimation();
   const [ctaRef, ctaVisible] = useScrollAnimation();
@@ -220,6 +222,83 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Products Sneak Peek (New Section) */}
+      {products.length > 0 && (
+        <section ref={productsRef} className={cn("py-24 px-4 bg-secondary/10 transition-opacity duration-700 ease-out", productsVisible ? "animate-fade-in-up" : "opacity-0")}>
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+              <div className="max-w-xl text-center md:text-left mx-auto md:mx-0">
+                <h2 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">
+                  Nossos <span className="text-primary">Produtos</span>
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  Leve o cuidado da barbearia para sua casa com nossa linha exclusiva.
+                </p>
+              </div>
+              <Button asChild variant="ghost" className="hidden md:flex text-primary hover:bg-primary/10 rounded-full font-bold group">
+                <Link to="/products" className="flex items-center gap-2">
+                  Ver todos os produtos <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="relative">
+              <Carousel
+                opts={{
+                  align: "start",
+                  dragFree: true,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="-ml-4">
+                  {products.map((product) => (
+                    <CarouselItem key={product.id} className="pl-4 basis-[75%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                      <Link to="/products">
+                        <Card className="overflow-hidden border-border/50 bg-card hover:border-primary/50 transition-all duration-300 rounded-3xl group h-full shadow-lg">
+                          <div className="relative aspect-square overflow-hidden bg-muted">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+                            {product.stock <= 0 && (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                <span className="bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">Esgotado</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-5">
+                            <div className="flex justify-between items-start mb-2 gap-2">
+                              <h3 className="font-bold text-lg leading-tight line-clamp-1">{product.name}</h3>
+                              <span className="font-black text-primary text-sm whitespace-nowrap">R$ {product.price}</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs line-clamp-2 mb-4 h-8">{product.description}</p>
+                            <Button variant="secondary" size="sm" className="w-full rounded-xl font-bold bg-secondary/50 group-hover:bg-primary group-hover:text-black transition-colors">
+                              <ShoppingBag className="w-4 h-4 mr-2" /> Comprar
+                            </Button>
+                          </div>
+                        </Card>
+                      </Link>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <div className="hidden md:block">
+                  <CarouselPrevious className="left-[-1.5rem] bg-black/50 border-white/10" />
+                  <CarouselNext className="right-[-1.5rem] bg-black/50 border-white/10" />
+                </div>
+              </Carousel>
+              
+              {/* Mobile Button - Centered */}
+              <div className="mt-10 md:hidden text-center px-4">
+                <Button asChild variant="outline" className="w-full rounded-2xl border-primary/20 bg-primary/5 text-primary py-6 h-auto font-bold text-lg active:scale-95 transition-all">
+                  <Link to="/products">Ver Todos os Produtos</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Barbers */}
       <section ref={barbersRef} className={cn("py-24 px-4 bg-secondary/30 transition-opacity duration-700 ease-out", barbersVisible ? "animate-fade-in-up" : "opacity-0")}>
