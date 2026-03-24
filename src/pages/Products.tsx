@@ -67,19 +67,39 @@ const Products = () => {
               {filteredProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden border-border bg-card/50 flex flex-col group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
                   <div className="relative">
-                    <AspectRatio ratio={1}>
-                      {product.image ? (
-                        <img 
-                          src={product.image} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <ShoppingBag className="w-16 h-16 text-muted-foreground/10" />
+                    <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                      <div className="flex-none w-full snap-start">
+                        <AspectRatio ratio={1}>
+                          {product.image ? (
+                            <img 
+                              src={product.image} 
+                              alt={product.name} 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <ShoppingBag className="w-16 h-16 text-muted-foreground/10" />
+                            </div>
+                          )}
+                        </AspectRatio>
+                      </div>
+                      {product.image2 && (
+                        <div className="flex-none w-full snap-start border-l border-white/5">
+                          <AspectRatio ratio={1}>
+                            <img 
+                              src={product.image2} 
+                              alt={`${product.name} - Vista 2`} 
+                              className="w-full h-full object-cover" 
+                            />
+                          </AspectRatio>
                         </div>
                       )}
-                    </AspectRatio>
+                    </div>
+                    {product.image2 && (
+                      <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm text-[8px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-widest pointer-events-none">
+                        Arraste para o lado →
+                      </div>
+                    )}
                     <div className="absolute top-4 left-4">
                       <span className="bg-primary/90 backdrop-blur-sm text-primary-foreground text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
                         {product.category || 'Destaque'}

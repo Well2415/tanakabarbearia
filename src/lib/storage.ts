@@ -115,7 +115,11 @@ export const storage = {
       cache.recurringSchedules = recurringRes.data || [];
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
-      cache.products = (productsRes.data || []).map(p => ({ ...p, image: normalizeImagePath(p.image) }));
+      cache.products = (productsRes.data || []).map(p => ({ 
+        ...p, 
+        image: normalizeImagePath(p.image), 
+        image2: normalizeImagePath(p.image2) 
+      }));
 
       // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
       if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {

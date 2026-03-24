@@ -32,6 +32,7 @@ const AdminProducts = () => {
     category: '',
     stock: '',
     image: '',
+    image2: '',
     active: true
   });
 
@@ -63,6 +64,7 @@ const AdminProducts = () => {
       category: formData.category,
       stock: parseInt(formData.stock) || 0,
       image: formData.image,
+      image2: formData.image2,
       active: formData.active
     };
 
@@ -89,6 +91,7 @@ const AdminProducts = () => {
       category: product.category || '',
       stock: (product.stock || 0).toString(),
       image: product.image || '',
+      image2: product.image2 || '',
       active: product.active
     });
     setIsOpen(true);
@@ -104,7 +107,7 @@ const AdminProducts = () => {
   const handleClose = () => {
     setIsOpen(false);
     setEditingProduct(null);
-    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', active: true });
+    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', image2: '', active: true });
   };
 
   return (
@@ -117,7 +120,7 @@ const AdminProducts = () => {
 
           <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogTrigger asChild>
-              <Button className="w-full md:w-auto gap-2">
+              <Button className="w-full md:w-auto gap-2" onClick={() => setIsOpen(true)}>
                 <Plus className="w-4 h-4" /> Novo Produto
               </Button>
             </DialogTrigger>
@@ -153,13 +156,23 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Imagem do Produto</Label>
-                  <ImageUpload 
-                    value={formData.image} 
-                    onChange={(image) => setFormData({...formData, image})} 
-                    label="Carregar Foto"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Imagem Principal</Label>
+                    <ImageUpload 
+                      value={formData.image} 
+                      onChange={(image) => setFormData({...formData, image})} 
+                      label="Foto 1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Imagem Secundária</Label>
+                    <ImageUpload 
+                      value={formData.image2} 
+                      onChange={(image2) => setFormData({...formData, image2})} 
+                      label="Foto 2"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
