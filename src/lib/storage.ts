@@ -137,7 +137,7 @@ export const storage = {
 
     await supabase.from('shop_settings').upsert([
       { key: 'loyalty_target', value: LOYALTY_TARGET_DEFAULT },
-      { key: 'shop_name', value: '' },
+      { key: 'shop_name', value: 'Barbearia Tanaka' },
       { key: 'shop_phone', value: '' },
       { key: 'shop_address', value: '' },
       { key: 'reminder_minutes', value: '30' },
