@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
-const VAPID_PUBLIC_KEY = 'BMBl_XN_C4P_XU_68f0_X_XpX_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X_X'; 
+const VAPID_PUBLIC_KEY = 'BI8D-5TvrvX-q3IdJMvLmfXZLagdWau_5R1DKMXGJ003hSw8svqjSsCtalCVwlxJS37WFTI-KPe-DWRE_EavR-4'; 
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -56,7 +56,6 @@ export const notificationManager = {
     if (!userId) return;
 
     try {
-      // Salva a inscrição no perfil do usuário no Supabase
       const { error } = await supabase
         .from('users')
         .update({ pushSubscription: subscription ? JSON.stringify(subscription) : null })
@@ -69,12 +68,18 @@ export const notificationManager = {
     }
   },
 
-  async sendTestNotification(userId: string) {
-    // Nota: O envio real deve ser feito via servidor (Edge Functions)
-    // Este método é apenas um exemplo de como disparar o processo
-    console.log('Solicitando envio de notificação de teste para o usuário:', userId);
-    
-    // Aqui faríamos um fetch para uma rota de API que usa o web-push
-    // fetch('/api/send-push', { method: 'POST', body: JSON.stringify({ userId, message: 'Teste!' }) });
+  async sendPushNotification(userId: string, title: string, body: string, url: string = '/') {
+    try {
+      // Chama a Edge Function do Supabase
+      const { data, error } = await supabase.functions.invoke('send-push', {
+        body: { userId, title, body, url }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Erro ao disparar Edge Function de Push:', error);
+      return null;
+    }
   }
 };

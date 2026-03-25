@@ -18,6 +18,7 @@ import { Loader2, QrCode, Copy, CreditCard, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search } from 'lucide-react';
 import { AdminMenu } from '@/components/admin/AdminMenu';
+import { notificationManager } from '@/lib/notifications';
 import { formatCurrency, cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
@@ -458,8 +459,12 @@ const Appointments = () => {
           if (app.userId) {
             const client = users.find(u => u.id === app.userId);
             if (client?.pushSubscription) {
-              // Aqui chamamos a lógica de envio (que no futuro será via Edge Function)
-              console.log('🚀 Disparando Push de lembrete para:', client.fullName);
+              await notificationManager.sendPushNotification(
+                client.id,
+                'Lembrete de Agendamento',
+                `Faltam 2 horas para o seu serviço de ${service.name} na Tanaka Barbearia!`,
+                '/dashboard'
+              );
             }
           }
 
@@ -646,8 +651,12 @@ const Appointments = () => {
         if (updatedAppointment.userId) {
           const client = users.find(u => u.id === updatedAppointment.userId);
           if (client?.pushSubscription) {
-            console.log('🚀 Disparando Push de confirmação para:', client.fullName);
-            // Lógica de disparo real virá aqui
+            await notificationManager.sendPushNotification(
+              client.id,
+              'Agendamento Confirmado!',
+              `Seu horário para ${service.name} foi confirmado com sucesso.`,
+              '/dashboard'
+            );
           }
         }
       }
