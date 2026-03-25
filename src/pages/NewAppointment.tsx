@@ -194,7 +194,23 @@ const NewAppointment = () => {
 
       const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
 
-      setFilteredTimes(masterHours.filter(h => canAccommodateService(h, requestedDuration, allBookedTimes, masterHours)));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(h => {
+        if (isToday) {
+          const [hour, min] = h.split(':').map(Number);
+          if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
+            return false;
+          }
+        }
+        return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
+      });
+
+      setFilteredTimes(available);
 
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
         setFormData(prev => ({ ...prev, time: '' }));

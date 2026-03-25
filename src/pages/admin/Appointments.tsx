@@ -136,7 +136,22 @@ const Appointments = () => {
 
       const requestedDuration = getAppointmentDuration([newBookingData.serviceId], services);
 
-      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(hour => {
+        if (isToday) {
+          const [h, m] = hour.split(':').map(Number);
+          if (h < currentHour || (h === currentHour && m <= currentMin)) {
+            return false;
+          }
+        }
+        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      });
+
       setManualFilteredTimes(available);
 
       // Only reset time if barber or date actually changed
@@ -180,7 +195,25 @@ const Appointments = () => {
 
       const requestedDuration = getAppointmentDuration([editedServiceId], services);
 
-      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(hour => {
+        if (isToday) {
+          const [h, m] = hour.split(':').map(Number);
+          if (h < currentHour || (h === currentHour && m <= currentMin)) {
+            // Mantém o horário atual do agendamento se estivermos editando ele mesmo
+            if (appointmentToEdit && appointmentToEdit.date === formattedDate && hour === appointmentToEdit.time) {
+              return true;
+            }
+            return false;
+          }
+        }
+        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      });
 
       // If the current appointment's time is not in the list (e.g. it was booked but is now being edited), include it
       if (appointmentToEdit && appointmentToEdit.date === formattedDate && appointmentToEdit.barberId === editedBarberId) {

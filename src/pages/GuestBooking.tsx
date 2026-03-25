@@ -75,7 +75,22 @@ const GuestBooking = () => {
 
       const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
 
-      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(hour => {
+        if (isToday) {
+          const [h, m] = hour.split(':').map(Number);
+          if (h < currentHour || (h === currentHour && m <= currentMin)) {
+            return false;
+          }
+        }
+        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      });
+
       setFilteredTimes(available);
 
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
