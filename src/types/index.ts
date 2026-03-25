@@ -101,7 +101,7 @@ export interface ProductVariant {
   weight: string; // ex: "100g", "200g"
   price: number;
   stock?: number;
-  imageIndex?: 0 | 1 | 2; // 0: image, 1: image2, 2: image3
+  imageIndices?: number[]; // Lista de índices (0, 1, 2)
 }
 
 export interface Product {

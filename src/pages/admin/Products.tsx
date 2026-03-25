@@ -200,7 +200,7 @@ const AdminProducts = () => {
                         ...formData, 
                         variants: [
                           ...formData.variants, 
-                          { id: Date.now().toString(), weight: '', price: parseFloat(formData.price) || 0, imageIndex: 0 }
+                          { id: Date.now().toString(), weight: '', price: parseFloat(formData.price) || 0, imageIndices: [0] }
                         ]
                       })}
                     >
@@ -238,20 +238,32 @@ const AdminProducts = () => {
                             />
                           </div>
                           <div className="col-span-3 space-y-1">
-                            <Label className="text-[10px] uppercase">Foto #</Label>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              value={variant.imageIndex}
-                              onChange={(e) => {
-                                const newVariants = [...formData.variants];
-                                newVariants[index].imageIndex = parseInt(e.target.value) as any;
-                                setFormData({...formData, variants: newVariants});
-                              }}
-                            >
-                              <option value={0}>Foto 1</option>
-                              <option value={1}>Foto 2</option>
-                              <option value={2}>Foto 3</option>
-                            </select>
+                            <Label className="text-[10px] uppercase text-center block">Fotos Vinculadas</Label>
+                            <div className="flex justify-center gap-1">
+                              {[0, 1, 2].map((idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    const newVariants = [...formData.variants];
+                                    const currentIndices = newVariants[index].imageIndices || [];
+                                    if (currentIndices.includes(idx)) {
+                                      newVariants[index].imageIndices = currentIndices.filter(i => i !== idx);
+                                    } else {
+                                      newVariants[index].imageIndices = [...currentIndices, idx].sort();
+                                    }
+                                    setFormData({...formData, variants: newVariants});
+                                  }}
+                                  className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold border transition-all ${
+                                    (variant.imageIndices || []).includes(idx)
+                                      ? 'bg-primary border-primary text-primary-foreground'
+                                      : 'bg-background border-border text-muted-foreground hover:border-primary/50'
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                           <div className="col-span-2 flex justify-center pb-1">
                             <Button 

@@ -17,8 +17,8 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product,
   const [activeImage, setActiveImage] = useState(product.image);
 
   useEffect(() => {
-    if (selectedVariant) {
-      const idx = selectedVariant.imageIndex || 0;
+    if (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0) {
+      const idx = selectedVariant.imageIndices[0];
       const images = [product.image, product.image2, product.image3];
       if (images[idx]) {
         setActiveImage(images[idx]);
@@ -50,35 +50,31 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product,
         </div>
       </div>
       
-      {/* Thumbnails if multiple images exist */}
-      {(product.image2 || product.image3) && (
-        <div className="flex gap-2 px-4 mt-2">
-          {product.image && (
-            <button 
-              onClick={() => { setActiveImage(product.image); setSelectedVariant(undefined); }}
-              className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
-            >
-              <img src={product.image} className="w-full h-full object-cover" alt="Vista 1" />
-            </button>
-          )}
-          {product.image2 && (
-            <button 
-              onClick={() => setActiveImage(product.image2)}
-              className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image2 ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
-            >
-              <img src={product.image2} className="w-full h-full object-cover" alt="Vista 2" />
-            </button>
-          )}
-          {product.image3 && (
-            <button 
-              onClick={() => setActiveImage(product.image3)}
-              className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image3 ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
-            >
-              <img src={product.image3} className="w-full h-full object-cover" alt="Vista 3" />
-            </button>
-          )}
-        </div>
-      )}
+      {/* Thumbnails logic */}
+      {(() => {
+        const allImages = [product.image, product.image2, product.image3].filter(Boolean) as string[];
+        
+        // Se houver variante selecionada com índices específicos, filtramos as fotos
+        const visibleImages = (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0)
+          ? selectedVariant.imageIndices.map(i => [product.image, product.image2, product.image3][i]).filter(Boolean) as string[]
+          : allImages;
+
+        if (visibleImages.length <= 1) return null;
+
+        return (
+          <div className="flex gap-2 px-4 mt-2">
+            {visibleImages.map((img, i) => (
+              <button 
+                key={i}
+                onClick={() => setActiveImage(img)}
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === img ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
+              >
+                <img src={img} className="w-full h-full object-cover" alt={`Vista ${i + 1}`} />
+              </button>
+            ))}
+          </div>
+        );
+      })()}
       
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
