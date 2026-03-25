@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editProfileData, setEditProfileData] = useState({
     avatarUrl: '',
+    phone: '',
     stylePreferences: '',
   });
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -55,6 +56,7 @@ const Dashboard = () => {
     } else {
       setEditProfileData({
         avatarUrl: currentUser.avatarUrl || '',
+        phone: currentUser.phone || '',
         stylePreferences: currentUser.stylePreferences?.join(', ') || '',
       });
 
@@ -70,18 +72,18 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  const handleUpdateProfile = () => {
+  const handleUpdateProfile = async () => {
     if (!user) return;
 
-    const updatedUsers = storage.getUsers().map(u =>
-      u.id === user.id ? {
-        ...u,
-        avatarUrl: editProfileData.avatarUrl || undefined,
-        stylePreferences: editProfileData.stylePreferences.split(',').map(p => p.trim()).filter(p => p !== '') || undefined,
-      } : u
-    );
-    storage.saveUsers(updatedUsers);
-    setUser(updatedUsers.find(u => u.id === user.id) || null); // Update current user state
+    const updatedUser = {
+      ...user,
+      phone: editProfileData.phone || undefined,
+      avatarUrl: editProfileData.avatarUrl || undefined,
+      stylePreferences: editProfileData.stylePreferences.split(',').map(p => p.trim()).filter(p => p !== '') || undefined,
+    };
+    
+    await storage.updateUser(updatedUser);
+    setUser(updatedUser);
     setIsEditProfileOpen(false);
     toast({ title: 'Perfil atualizado!', description: 'Seu perfil foi atualizado com sucesso.' });
   };
@@ -203,6 +205,10 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-phone">Número de Telefone</Label>
+                <Input id="edit-phone" type="tel" value={editProfileData.phone} onChange={(e) => setEditProfileData({ ...editProfileData, phone: e.target.value })} placeholder="(11) 99999-9999" className="h-12" />
               </div>
               <div>
                 <Label htmlFor="edit-stylePreferences">Preferências de Estilo (separados por vírgula)</Label>

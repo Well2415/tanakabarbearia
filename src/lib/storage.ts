@@ -310,6 +310,21 @@ export const storage = {
 
   // Users
   getUsers: (): User[] => cache.users,
+
+  async updateUser(user: User) {
+    cache.users = cache.users.map(u => u.id === user.id ? user : u);
+    localStorage.setItem('users', JSON.stringify(cache.users));
+    
+    // update localStorage currentUser if it's the logged in user
+    const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
+    if (loggedInId === user.id) {
+       localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+    
+    const { error } = await supabase.from('users').upsert(user);
+    if (error) console.error('❌ [Storage] Erro ao atualizar usuário:', error);
+  },
+
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));
