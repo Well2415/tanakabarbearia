@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import Home from "./pages/Home";
 import Services from "./pages/Services";
@@ -50,60 +50,60 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-          <BrowserRouter>
-            <ScrollToTop />
-            {!isReady ? (
-              <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-                <div className="relative">
-                  <div className="h-24 w-24 rounded-full border-t-2 border-b-2 border-primary animate-spin"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <img src="/img/logo-tanaka.png" alt="Loading" className="h-12 w-12 object-contain" />
-                  </div>
-                </div>
-                <div className="mt-8 flex flex-col items-center gap-2">
-                  <h2 className="text-xl font-bold italic uppercase tracking-tighter text-white">Barbearia Tanaka</h2>
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <p className="text-muted-foreground text-sm animate-pulse">Sincronizando dados...</p>
-                  </div>
+        <BrowserRouter>
+          <ScrollToTop />
+          {!isReady ? (
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+              <div className="relative">
+                <div className="h-24 w-24 rounded-full border-t-2 border-b-2 border-primary animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img src="/img/logo-tanaka.png" alt="Loading" className="h-12 w-12 object-contain" />
                 </div>
               </div>
-            ) : (
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/services" element={<Services />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/booking" element={<Booking />} />
-                <Route path="/guest-booking" element={<GuestBooking />} />
-                <Route path="/login" element={<ClientLogin />} />
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/register" element={<Register />} />
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <h2 className="text-xl font-bold italic uppercase tracking-tighter text-white">Barbearia Tanaka</h2>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <p className="text-muted-foreground text-sm animate-pulse">Sincronizando dados...</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/booking" element={<Booking />} />
+              <Route path="/guest-booking" element={<GuestBooking />} />
+              <Route path="/login" element={<ClientLogin />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/register" element={<Register />} />
 
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/new-appointment" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/new-appointment" element={<ProtectedRoute><NewAppointment /></ProtectedRoute>} />
 
-                <Route path="/my-schedule" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><MyAppointments /></ProtectedRoute>} />
-                <Route path="/barber/availability" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><ManageAvailability /></ProtectedRoute>} />
-                <Route path="/barber/finance" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><Finance /></ProtectedRoute>} />
-                <Route path="/barber/profile" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><BarberProfile /></ProtectedRoute>} />
+              <Route path="/my-schedule" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><MyAppointments /></ProtectedRoute>} />
+              <Route path="/barber/availability" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><ManageAvailability /></ProtectedRoute>} />
+              <Route path="/barber/finance" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><Finance /></ProtectedRoute>} />
+              <Route path="/barber/profile" element={<ProtectedRoute allowedRoles={['barber', 'admin']}><BarberProfile /></ProtectedRoute>} />
 
-                {/* Admin Routes */}
-                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminAppointments /></ProtectedRoute>} />
-                <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
-                <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
-                <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
-                <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
-                <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
-                <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminAppointments /></ProtectedRoute>} />
+              <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
+              <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
+              <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
+              <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
+              <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            )}
-            <InstallPWA />
-          </BrowserRouter>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          )}
+          <InstallPWA />
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
