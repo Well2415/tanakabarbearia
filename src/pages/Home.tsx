@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
-import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin, ShoppingBag, ArrowRight, Smartphone } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
@@ -16,6 +16,7 @@ import serviceStyling from '@/assets/service-styling.jpg';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { cn } from '@/lib/utils';
 import { User } from '@/types';
+import { PWAInstallDialog } from '@/components/InstallPWA';
 
 const Home = () => {
   const services = storage.getServices();
@@ -60,13 +61,21 @@ const Home = () => {
             Experimente o melhor serviço de barbearia com profissionais qualificados
             e um ambiente moderno, feito para você relaxar.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400 flex-wrap">
             <Button asChild size="lg" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full shadow-xl shadow-primary/20 hover:scale-105 transition-all duration-300 font-bold bg-primary text-primary-foreground hover:bg-primary/90">
               <Link to={agendarLink}>Agendar Agora</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/30 text-white hover:bg-primary hover:text-black hover:border-primary transition-all duration-300 shadow-xl active:scale-95 hover:scale-105">
               <Link to="/services">Ver Serviços</Link>
             </Button>
+            <PWAInstallDialog 
+              trigger={
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-black transition-all duration-300 shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center gap-2">
+                  <Smartphone className="w-5 h-5" />
+                  Baixar App
+                </Button>
+              }
+            />
             {shopMapsLink && (
               <a href={shopMapsLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/40 text-primary hover:bg-primary hover:text-black bg-primary/5 backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/10 active:scale-95">

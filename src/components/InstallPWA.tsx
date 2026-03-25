@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Smartphone, Download, Share, PlusSquare, MoreVertical, Chrome } from 'lucide-react';
 
 export const PWAInstructions = ({ platform }: { platform: 'ios' | 'android' | 'other' }) => {
@@ -55,6 +56,44 @@ export const PWAInstructions = ({ platform }: { platform: 'ios' | 'android' | 'o
   );
 };
 
+export const PWAInstallDialog = ({ trigger }: { trigger: React.ReactNode }) => {
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
+
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(userAgent)) setPlatform('ios');
+    else if (/android/.test(userAgent)) setPlatform('android');
+  }, []);
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        {trigger}
+      </DialogTrigger>
+      <DialogContent className="bg-card/95 backdrop-blur-xl border-border rounded-3xl w-[95%] sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-center pt-4">
+            Instalar <span className="text-primary">App Tanaka</span>
+          </DialogTitle>
+          <DialogDescription className="text-center text-zinc-400">
+            Siga os passos abaixo para instalar em seu celular
+          </DialogDescription>
+        </DialogHeader>
+
+        <PWAInstructions platform={platform} />
+
+        <div className="pt-4 border-t border-border/50 text-center">
+          <DialogClose asChild>
+            <Button variant="outline" className="rounded-full px-8 text-xs font-bold text-zinc-400">
+              ENTENDI, OBRIGADO
+            </Button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export const InstallPWA = () => {
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
   const [showBanner, setShowBanner] = useState(false);
@@ -71,10 +110,9 @@ export const InstallPWA = () => {
     // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (!isStandalone) {
-      const lastPrompt = localStorage.getItem('pwa_prompt_dismissed');
-      const now = new Date().getTime();
-      
-      if (!lastPrompt || (now - parseInt(lastPrompt)) > 3 * 24 * 60 * 60 * 1000) {
+      // Remover a restrição de 3 dias para que apareça sempre que entrar (até ser instalado ou minimizado na sessão)
+      const sessionDismissed = sessionStorage.getItem('pwa_prompt_dismissed_session');
+      if (!sessionDismissed) {
         setShowBanner(true);
       }
     }
@@ -82,7 +120,8 @@ export const InstallPWA = () => {
 
   const dismissBanner = () => {
     setShowBanner(false);
-    localStorage.setItem('pwa_prompt_dismissed', new Date().getTime().toString());
+    // Usar sessionStorage para que volte a aparecer em uma nova sessão/aba
+    sessionStorage.setItem('pwa_prompt_dismissed_session', 'true');
   };
 
   if (!showBanner) return null;
@@ -105,31 +144,13 @@ export const InstallPWA = () => {
           </button>
         </div>
 
-        <Dialog>
-          <DialogTrigger asChild>
+        <PWAInstallDialog 
+          trigger={
             <Button className="w-full bg-primary text-primary-foreground font-bold rounded-xl h-12 shadow-lg shadow-primary/20">
               COMO INSTALAR?
             </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card/95 backdrop-blur-xl border-border rounded-3xl w-[95%] sm:max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-center pt-4">
-                Instalar <span className="text-primary">App Tanaka</span>
-              </DialogTitle>
-              <DialogDescription className="text-center text-zinc-400">
-                Siga os passos abaixo para instalar em seu celular
-              </DialogDescription>
-            </DialogHeader>
-
-            <PWAInstructions platform={platform} />
-
-            <div className="pt-4 border-t border-border/50 text-center">
-              <Button onClick={dismissBanner} variant="outline" className="rounded-full px-8 text-xs font-bold text-zinc-400">
-                ENTENDI, OBRIGADO
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          }
+        />
       </div>
     </div>
   );
