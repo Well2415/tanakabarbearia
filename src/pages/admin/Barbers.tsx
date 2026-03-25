@@ -129,7 +129,7 @@ const Barbers = () => {
       availableDates: newBarberData.availableDates,
     };
     const updated = [...barbers, newBarber];
-    storage.saveBarbers(updated);
+    await storage.updateBarber(newBarber);
     setBarbers(updated);
     setIsAddOpen(false);
     setNewBarberData({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [], availableDates: [], customHours: '', scheduleByDay: initSchedule() });
@@ -149,30 +149,28 @@ const Barbers = () => {
       hours.forEach(h => combinedHours.add(h));
     });
 
-    const updatedBarbers = barbers.map(b =>
-      b.id === editingBarber?.id
-        ? {
-          ...b,
-          name: editBarberData.name,
-          photo: editBarberData.photo || undefined,
-          yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
-          description: editBarberData.description || undefined,
-          specialties: editBarberData.specialties.split(',').map(s => s.trim()),
-          availableHours: sortTimes(Array.from(combinedHours)),
-          scheduleByDay: editBarberData.scheduleByDay,
-          availableDates: editBarberData.availableDates, // availableDates is already an array
-        }
-        : b
-    );
-    await storage.saveBarbers(updatedBarbers);
+    const finalBarber = {
+      ...editingBarber!,
+      name: editBarberData.name,
+      photo: editBarberData.photo || undefined,
+      yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
+      description: editBarberData.description || undefined,
+      specialties: editBarberData.specialties.split(',').map(s => s.trim()),
+      availableHours: sortTimes(Array.from(combinedHours)),
+      scheduleByDay: editBarberData.scheduleByDay,
+      availableDates: editBarberData.availableDates,
+    };
+    
+    await storage.updateBarber(finalBarber);
+    const updatedBarbers = barbers.map(b => b.id === finalBarber.id ? finalBarber : b);
     setBarbers(updatedBarbers);
     setEditingBarber(null);
     toast({ title: 'Barbeiro atualizado', description: 'Os dados do barbeiro foram atualizados.' });
   };
 
   const handleDelete = async (id: string) => {
+    await storage.deleteBarber(id);
     const updated = barbers.filter(b => b.id !== id);
-    await storage.saveBarbers(updated);
     setBarbers(updated);
     toast({ title: 'Barbeiro removido', description: 'O barbeiro foi removido com sucesso' });
   };

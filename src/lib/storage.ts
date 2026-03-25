@@ -198,11 +198,35 @@ export const storage = {
 
   // --- GERENCIAMENTO DE BARBEIROS ---
   getBarbers: (): Barber[] => cache.barbers,
+
+  async updateBarber(barber: Barber) {
+    // 1. Update local cache
+    cache.barbers = cache.barbers.map(b => b.id === barber.id ? barber : b);
+    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+
+    // 2. Prepare for DB
+    const barberSchedules = cache.settings['barber_schedules'] || {};
+    barberSchedules[barber.id] = barber.scheduleByDay;
+    await storage.saveSetting('barber_schedules', barberSchedules);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { scheduleByDay, ...dbBarber } = barber;
+    
+    // 3. Upsert to Supabase
+    const { error } = await supabase.from('barbers').upsert(dbBarber);
+    if (error) console.error('Error updating barber:', error);
+  },
+
+  async deleteBarber(id: string) {
+    cache.barbers = cache.barbers.filter(b => b.id !== id);
+    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+    await supabase.from('barbers').delete().eq('id', id);
+  },
+
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
     localStorage.setItem('barbers', JSON.stringify(barbers));
 
-    // Extract scheduleByDay and save to settings to avoid modifying Supabase schema
     const barberSchedules: Record<string, any> = {};
     const dbBarbers = barbers.map(b => {
       barberSchedules[b.id] = b.scheduleByDay;
@@ -212,18 +236,28 @@ export const storage = {
     });
 
     await storage.saveSetting('barber_schedules', barberSchedules);
-
-    await supabase.from('barbers').delete().neq('id', '_none_');
-    await supabase.from('barbers').insert(dbBarbers);
+    await supabase.from('barbers').upsert(dbBarbers);
   },
 
   // --- GERENCIAMENTO DE SERVIÇOS ---
   getServices: (): Service[] => cache.services,
+
+  async updateService(service: Service) {
+    cache.services = cache.services.map(s => s.id === service.id ? service : s);
+    localStorage.setItem('services', JSON.stringify(cache.services));
+    await supabase.from('services').upsert(service);
+  },
+
+  async deleteService(id: string) {
+    cache.services = cache.services.filter(s => s.id !== id);
+    localStorage.setItem('services', JSON.stringify(cache.services));
+    await supabase.from('services').delete().eq('id', id);
+  },
+
   async saveServices(services: Service[]) {
     cache.services = services;
     localStorage.setItem('services', JSON.stringify(services));
-    await supabase.from('services').delete().neq('id', '_none_');
-    await supabase.from('services').insert(services);
+    await supabase.from('services').upsert(services);
   },
 
   // --- AGENDAMENTOS E HORÁRIOS ---
@@ -443,9 +477,19 @@ export const storage = {
 
   // --- GERENCIAMENTO DE PRODUTOS ---
   getProducts: (): Product[] => cache.products,
+
+  async updateProduct(product: Product) {
+    cache.products = cache.products.map(p => p.id === product.id ? product : p);
+    await supabase.from('products').upsert(product);
+  },
+
+  async deleteProduct(id: string) {
+    cache.products = cache.products.filter(p => p.id !== id);
+    await supabase.from('products').delete().eq('id', id);
+  },
+
   async saveProducts(products: Product[]) {
     cache.products = products;
-    await supabase.from('products').delete().neq('id', '_none_');
-    await supabase.from('products').insert(products);
+    await supabase.from('products').upsert(products);
   },
 };

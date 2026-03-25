@@ -74,17 +74,14 @@ const AdminProducts = () => {
       variants: formData.variants.length > 0 ? formData.variants : undefined
     };
 
-    let updatedProducts;
+    await storage.updateProduct(productData);
     if (editingProduct) {
-      updatedProducts = products.map(p => p.id === productData.id ? productData : p);
+      setProducts(products.map(p => p.id === productData.id ? productData : p));
       toast({ title: 'Produto atualizado' });
     } else {
-      updatedProducts = [...products, productData];
+      setProducts([...products, productData]);
       toast({ title: 'Produto adicionado' });
     }
-
-    await storage.saveProducts(updatedProducts);
-    setProducts(updatedProducts);
     handleClose();
   };
 
@@ -107,9 +104,8 @@ const AdminProducts = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const updated = products.filter(p => p.id !== id);
-    await storage.saveProducts(updated);
-    setProducts(updated);
+    await storage.deleteProduct(id);
+    setProducts(products.filter(p => p.id !== id));
     toast({ title: 'Produto removido' });
   };
 

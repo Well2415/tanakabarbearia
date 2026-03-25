@@ -70,9 +70,8 @@ const Services = () => {
         loyaltyPoints: parseInt(formData.loyaltyPoints),
         image: formData.image,
       };
-      const updatedServices = services.map(s => s.id === updatedService.id ? updatedService : s);
-      storage.saveServices(updatedServices);
-      setServices(updatedServices);
+      await storage.updateService(updatedService);
+      setServices(services.map(s => s.id === updatedService.id ? updatedService : s));
       setIsEditModalOpen(false);
       setEditingService(null);
       toast({
@@ -90,9 +89,8 @@ const Services = () => {
         loyaltyPoints: parseInt(formData.loyaltyPoints),
         image: formData.image,
       };
-      const updatedServices = [...services, newService];
-      storage.saveServices(updatedServices);
-      setServices(updatedServices);
+      await storage.updateService(newService);
+      setServices([...services, newService]);
       setIsOpen(false);
       toast({
         title: 'Serviço adicionado',
@@ -116,9 +114,8 @@ const Services = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const updated = services.filter(s => s.id !== id);
-    await storage.saveServices(updated);
-    setServices(updated);
+    await storage.deleteService(id);
+    setServices(services.filter(s => s.id !== id));
     toast({
       title: 'Serviço removido',
       description: 'O serviço foi removido com sucesso',
