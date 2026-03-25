@@ -162,7 +162,10 @@ const GuestBooking = () => {
       });
 
 
-      // Notificar Barbeiro (Push)
+      // Notificar Barbeiro (Push) - Força atualização para ver novas inscrições
+      storage.isInitialized = false;
+      await storage.initialize();
+
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
       if (barberUser?.pushSubscription) {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);

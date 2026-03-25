@@ -74,7 +74,7 @@ const Users = () => {
         const updated: User = { 
           ...u, 
           role: newRole as User['role'], 
-          barberId: newRole === 'barber' ? finalBarberId : undefined 
+          barberId: (newRole === 'barber' || newRole === 'admin') ? finalBarberId : undefined 
         };
         if (password) {
            updated.password = password.trim();
