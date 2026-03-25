@@ -74,11 +74,29 @@ const Finance = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
-    if (!currentUser || (currentUser.role !== 'barber' && currentUser.role !== 'admin')) {
-      navigate('/dashboard');
-      return;
-    }
-  }, [currentUser, navigate]);
+    const initFinance = async () => {
+      await storage.initialize();
+      const currentUser = storage.getCurrentUser();
+      
+      if (!currentUser || (currentUser.role !== 'barber' && currentUser.role !== 'admin')) {
+        navigate('/dashboard');
+        return;
+      }
+      
+      setUser(currentUser);
+      setUsers(storage.getUsers());
+      setCategories(storage.getExpenseCategories());
+      
+      const allAppointments = storage.getAppointments();
+      const allExpenses = storage.getExpenses();
+      const targetBarberId = currentUser.role === 'admin' ? null : (currentUser.barberId || currentUser.id);
+      
+      setAppointments(targetBarberId ? allAppointments.filter(a => a.barberId === targetBarberId) : allAppointments);
+      setExpenses(targetBarberId ? allExpenses.filter(e => e.barberId === targetBarberId) : allExpenses);
+    };
+    
+    initFinance();
+  }, [navigate]);
 
   // Reset pagination when filters change
   useEffect(() => {

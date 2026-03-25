@@ -87,10 +87,15 @@ const Appointments = () => {
   });
 
   useEffect(() => {
-    const barbersList = storage.getBarbers();
-    if (barbersList.length === 1 && !newBookingData.barberId) {
-      setNewBookingData(prev => ({ ...prev, barberId: barbersList[0].id }));
-    }
+    const initStorage = async () => {
+      await storage.initialize();
+      const barbersList = storage.getBarbers();
+      if (barbersList.length === 1 && !newBookingData.barberId) {
+        setNewBookingData(prev => ({ ...prev, barberId: barbersList[0].id }));
+      }
+      setAppointments(storage.getAppointments());
+    };
+    initStorage();
   }, [newBookingData.barberId]);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
@@ -550,11 +555,8 @@ const Appointments = () => {
   };
 
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
-    const updatedAppointments = appointments.map(a =>
-      a.id === updatedAppointment.id ? updatedAppointment : a
-    );
-    await storage.saveAppointments(updatedAppointments);
-    setAppointments(updatedAppointments);
+    await storage.updateAppointment(updatedAppointment);
+    setAppointments(storage.getAppointments());
   };
 
   const handleStartService = async (appointment: Appointment) => {

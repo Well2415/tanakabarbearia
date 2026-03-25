@@ -31,25 +31,30 @@ const MyAppointments = () => {
   const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
 
   useEffect(() => {
-    const user = storage.getCurrentUser();
+    const initAndFetch = async () => {
+      await storage.initialize();
+      const user = storage.getCurrentUser();
 
-    const isBarber = user?.role === 'barber';
-    if (!user || !isBarber) {
-      toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
-      navigate('/dashboard');
-      return;
-    }
+      const isBarber = user?.role === 'barber';
+      if (!user || !isBarber) {
+        toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
+        navigate('/dashboard');
+        return;
+      }
 
-    const allAppointments = storage.getAppointments();
-    const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
+      const allAppointments = storage.getAppointments();
+      const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
-    if (barberProfile) {
-      const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
-      setAppointments(barberAppointments);
-    } else {
-      toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
-      navigate('/dashboard');
-    }
+      if (barberProfile) {
+        const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
+        setAppointments(barberAppointments);
+      } else {
+        toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
+        navigate('/dashboard');
+      }
+    };
+
+    initAndFetch();
   }, [navigate, toast]);
 
   if (!user || user.role !== 'barber') return null;
@@ -69,14 +74,13 @@ const MyAppointments = () => {
   };
 
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
-    const allAppointments = storage.getAppointments();
-    const updatedAppointments = allAppointments.map(a =>
-      a.id === updatedAppointment.id ? updatedAppointment : a
-    );
-    await storage.saveAppointments(updatedAppointments);
-    const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
+    await storage.updateAppointment(updatedAppointment);
+    
+    // Atualiza o estado local para garantir que a UI reflita a mudança imediatamente
+    const barberProfile = storage.getBarbers().find(b => b.id === user?.barberId);
     if (barberProfile) {
-      const barberAppointments = updatedAppointments.filter(appt => appt.barberId === barberProfile.id);
+      const allAppointments = storage.getAppointments();
+      const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
       setAppointments(barberAppointments);
     }
   };

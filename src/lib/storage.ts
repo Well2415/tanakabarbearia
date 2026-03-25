@@ -228,6 +228,28 @@ export const storage = {
 
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
+  
+  /**
+   * Atualiza apenas UM agendamento de forma atômica no Supabase e no Cache.
+   * Evita race conditions de sobrescrita total.
+   */
+  async updateAppointment(appointment: Appointment) {
+    // 1. Atualizar Cache Local e LocalStorage imediatamente (UI receptiva)
+    cache.appointments = cache.appointments.map(a => a.id === appointment.id ? appointment : a);
+    localStorage.setItem('appointments', JSON.stringify(cache.appointments));
+
+    // 2. Preparar payload para o banco (remover campos locais como 'discount')
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { discount, ...dbPayload } = appointment;
+
+    // 3. Persistir no Supabase
+    const { error } = await supabase.from('appointments').upsert(dbPayload);
+    if (error) {
+      console.error('❌ [Storage] Erro ao atualizar agendamento granular:', error);
+      throw error;
+    }
+  },
+
   async saveAppointments(appointments: Appointment[]) {
     const currentIds = cache.appointments.map(a => a.id);
     const newIds = appointments.map(a => a.id);
