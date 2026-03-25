@@ -59,8 +59,7 @@ const normalizeImagePath = (src: string): string => {
   return `/${cleanSrc}`;
 };
 
-// Variável de controle para evitar inicializações duplicadas.
-let isInitialized = false;
+// Variável de controle removida do escopo global para o objeto storage
 
 /**
  * MOTOR DE ARMAZENAMENTO (STORAGE)
@@ -71,8 +70,9 @@ export const storage = {
    * Conecta ao Supabase e carrega todos os dados necessários para o cache.
    * Deve ser chamado uma única vez no início do carregamento do App.
    */
-  async initialize() {
-    if (isInitialized) return;
+    isInitialized: false,
+    async initialize() {
+    if (this.isInitialized) return;
 
     try {
       // 1. Carregar Configurações (Settings)
@@ -147,11 +147,11 @@ export const storage = {
         console.warn('⚠️ Banco de dados parece estar vazio ou inacessível.');
       }
 
-      isInitialized = true;
+      this.isInitialized = true;
       saveCacheToLocal();
     } catch (error) {
       console.error('❌ Error initializing Supabase:', error);
-      isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
+      this.isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
     }
   },
 
@@ -192,7 +192,7 @@ export const storage = {
       { key: 'shop_maps_link', value: '' },
     ]);
 
-    isInitialized = false;
+    this.isInitialized = false;
     await this.initialize();
   },
 
@@ -257,7 +257,13 @@ export const storage = {
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));
-    await supabase.from('users').upsert(users);
+    console.log('📡 [Storage] Salvando usuários no Supabase...', users.length);
+    const { error } = await supabase.from('users').upsert(users);
+    if (error) {
+      console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
+    } else {
+      console.log('✅ [Storage] Usuários salvos com sucesso.');
+    }
   },
 
   // Auth
