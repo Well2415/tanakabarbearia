@@ -49,8 +49,7 @@ const Register = () => {
       role: 'client', // Default role for new registrations
     };
 
-    const updatedUsers = [...users, newUser];
-    await storage.saveUsers(updatedUsers);
+    await storage.updateUser(newUser);
     storage.loginUser(newUser.id);
 
     toast({

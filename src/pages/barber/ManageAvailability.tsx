@@ -123,21 +123,20 @@ const ManageAvailability = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!barberProfile) return;
+    
+    try {
+      const updatedBarber = {
+        ...barberProfile,
+        availableHours: availableHours,
+        availableDates: availableDates,
+      };
 
-    const allBarbers = storage.getBarbers();
-    const updatedBarbers = allBarbers.map(b =>
-      b.id === barberProfile.id
-        ? {
-          ...b,
-          availableHours: availableHours,
-          availableDates: availableDates,
-        }
-        : b
-    );
-
-    await storage.saveBarbers(updatedBarbers);
-    toast({ title: 'Horários e Datas Atualizados!', description: 'Sua lista de horários e datas de trabalho foi salva.' });
-    navigate('/dashboard');
+      await storage.updateBarber(updatedBarber);
+      toast({ title: 'Horários e Datas Atualizados!', description: 'Sua lista de horários e datas de trabalho foi salva.' });
+      navigate('/dashboard');
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', description: 'Não foi possível salvar suas alterações. Tente novamente.', variant: 'destructive' });
+    }
   };
 
   if (!user || !barberProfile) return null;

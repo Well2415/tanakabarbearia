@@ -103,8 +103,7 @@ const Dashboard = () => {
           // Refresh user in context
           const updatedUser = { ...user, pushSubscription: JSON.stringify(sub) };
           setUser(updatedUser);
-          const allUsers = storage.getUsers().map(u => u.id === user.id ? updatedUser : u);
-          storage.saveUsers(allUsers);
+          await storage.updateUser(updatedUser);
         } else {
           toast({ title: 'Erro', description: 'Não foi possível configurar as notificações.', variant: 'destructive' });
         }
@@ -119,8 +118,7 @@ const Dashboard = () => {
       
       const updatedUser = { ...user, pushSubscription: null };
       setUser(updatedUser);
-      const allUsers = storage.getUsers().map(u => u.id === user.id ? updatedUser : u);
-      storage.saveUsers(allUsers);
+      await storage.updateUser(updatedUser);
     }
   };
 

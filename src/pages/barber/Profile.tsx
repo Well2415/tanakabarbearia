@@ -74,14 +74,8 @@ const BarberProfile = () => {
 
     // Save to Barber
     if (barberData) {
-      const barbers = storage.getBarbers();
-      const updatedBarbers = barbers.map(b => {
-        if (b.id === barberData.id) {
-          return { ...b, name, bio, description, photo };
-        }
-        return b;
-      });
-      await storage.saveBarbers(updatedBarbers);
+      const updatedBarber = { ...barberData, name, bio, description, photo };
+      await storage.updateBarber(updatedBarber);
     }
 
     toast({ title: 'Perfil Atualizado', description: 'Suas informações foram salvas com sucesso!' });

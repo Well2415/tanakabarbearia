@@ -130,8 +130,7 @@ const MyAppointments = () => {
           updatedUser.stylePreferences = [service.name];
         }
 
-        const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
-        await storage.saveUsers(finalUsers);
+        await storage.updateUser(updatedUser);
       }
     }
 
