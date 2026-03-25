@@ -38,6 +38,7 @@ export interface User {
   stylePreferences?: string[]; // New field
   latestCuts?: Cut[]; // New field for latest cuts
   noShowCount?: number; // Tracks number of times the client didn't show up
+  pushSubscription?: string | null; // Novo: Armazena a inscrição de Push do PWA
 }
 
 export interface Cut {

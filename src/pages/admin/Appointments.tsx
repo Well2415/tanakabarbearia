@@ -453,6 +453,15 @@ const Appointments = () => {
         if (barber && service) {
           console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
           await sendWhatsApp2HourReminder(app, barber, service);
+          
+          // Enviar Notificação Push se o usuário estiver inscrito
+          if (app.userId) {
+            const client = users.find(u => u.id === app.userId);
+            if (client?.pushSubscription) {
+              // Aqui chamamos a lógica de envio (que no futuro será via Edge Function)
+              console.log('🚀 Disparando Push de lembrete para:', client.fullName);
+            }
+          }
 
           // Marcar como enviado no storage
           await updateAppointmentInStorage({ ...app, reminderSent: true });
@@ -632,6 +641,15 @@ const Appointments = () => {
         // Envio MANUAL para economizar API nas confirmações por botão
         const link = getWhatsAppManualLink(newAppointment, barber, service);
         if (link) window.open(link, '_blank');
+
+        // Enviar Notificação Push de Confirmação
+        if (updatedAppointment.userId) {
+          const client = users.find(u => u.id === updatedAppointment.userId);
+          if (client?.pushSubscription) {
+            console.log('🚀 Disparando Push de confirmação para:', client.fullName);
+            // Lógica de disparo real virá aqui
+          }
+        }
       }
     }
 

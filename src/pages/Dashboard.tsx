@@ -16,6 +16,8 @@ import { ClientView } from '@/components/dashboard/ClientView';
 import { StaffView } from '@/components/dashboard/StaffView';
 import { MiniProfile } from '@/components/dashboard/MiniProfile';
 import { cn } from '@/lib/utils';
+import { notificationManager } from '@/lib/notifications';
+import { Bell, BellOff } from 'lucide-react';
 
 const AVAILABLE_AVATARS = [
   '/avatars/avatar1.png',
@@ -34,6 +36,8 @@ const Dashboard = () => {
     avatarUrl: '',
     stylePreferences: '',
   });
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [isPushSupported, setIsPushSupported] = useState(false);
 
   // Placeholder for My Best Barber
   const bestBarber: Barber | null = storage.getBarbers().find(barber => barber.name === 'João Silva') || null; // Example: picking João Silva
@@ -49,10 +53,19 @@ const Dashboard = () => {
     if (!currentUser) {
       navigate('/login');
     } else {
-      setUser(currentUser);
       setEditProfileData({
         avatarUrl: currentUser.avatarUrl || '',
         stylePreferences: currentUser.stylePreferences?.join(', ') || '',
+      });
+
+      // Check Push Status
+      notificationManager.isSupported().then(supported => {
+        setIsPushSupported(supported);
+        if (supported) {
+          notificationManager.getPermissionStatus().then(status => {
+            setPushEnabled(status === 'granted' && !!currentUser.pushSubscription);
+          });
+        }
       });
     }
   }, [navigate]);
@@ -71,6 +84,42 @@ const Dashboard = () => {
     setUser(updatedUsers.find(u => u.id === user.id) || null); // Update current user state
     setIsEditProfileOpen(false);
     toast({ title: 'Perfil atualizado!', description: 'Seu perfil foi atualizado com sucesso.' });
+  };
+
+  const handleTogglePush = async () => {
+    if (!user) return;
+
+    if (!pushEnabled) {
+      const granted = await notificationManager.requestPermission();
+      if (granted) {
+        const sub = await notificationManager.subscribe();
+        if (sub) {
+          await notificationManager.syncSubscriptionWithUser(user.id, sub);
+          setPushEnabled(true);
+          toast({ title: 'Notificações Ativadas!', description: 'Você receberá avisos sobre seus agendamentos.' });
+          
+          // Refresh user in context
+          const updatedUser = { ...user, pushSubscription: JSON.stringify(sub) };
+          setUser(updatedUser);
+          const allUsers = storage.getUsers().map(u => u.id === user.id ? updatedUser : u);
+          storage.saveUsers(allUsers);
+        } else {
+          toast({ title: 'Erro', description: 'Não foi possível configurar as notificações.', variant: 'destructive' });
+        }
+      } else {
+        toast({ title: 'Permissão Negatada', description: 'Ative as notificações nas configurações do seu navegador.', variant: 'destructive' });
+      }
+    } else {
+      // Unsubscribe logic (Optional for now)
+      await notificationManager.syncSubscriptionWithUser(user.id, null);
+      setPushEnabled(false);
+      toast({ title: 'Notificações Desativadas', description: 'Você não receberá mais avisos por este dispositivo.' });
+      
+      const updatedUser = { ...user, pushSubscription: null };
+      setUser(updatedUser);
+      const allUsers = storage.getUsers().map(u => u.id === user.id ? updatedUser : u);
+      storage.saveUsers(allUsers);
+    }
   };
 
   if (!user) {
@@ -100,7 +149,36 @@ const Dashboard = () => {
               bestBarber={bestBarber} 
             />
           </div>
-          <div className="flex flex-col gap-8 mt-8"> {/* Main content wrapper, added mt-8 */}
+
+          {/* Notificações Push Seção */}
+          {isPushSupported && !isStaff && (
+            <Card className="mb-8 p-6 border-primary/20 bg-primary/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                  pushEnabled ? "bg-primary/20 text-primary" : "bg-zinc-800 text-zinc-500"
+                )}>
+                  {pushEnabled ? <Bell className="w-6 h-6 animate-pulse" /> : <BellOff className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Notificações no Celular</h3>
+                  <p className="text-xs text-muted-foreground">Receba avisos de confirmação e lembretes 2h antes.</p>
+                </div>
+              </div>
+              <Button 
+                onClick={handleTogglePush}
+                variant={pushEnabled ? "outline" : "default"}
+                className={cn(
+                  "rounded-xl font-bold px-8 h-12",
+                  pushEnabled ? "border-primary/50 text-primary" : "bg-primary text-primary-foreground"
+                )}
+              >
+                {pushEnabled ? "DESATIVAR" : "ATIVAR AGORA"}
+              </Button>
+            </Card>
+          )}
+
+          <div className="flex flex-col gap-8 mt-8">
             {isStaff ? <StaffView user={user} /> : <ClientView user={user} />}
           </div>
         </div> {/* Closing tag for container mx-auto max-w-6xl */}
