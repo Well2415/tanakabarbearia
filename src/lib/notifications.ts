@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
-const VAPID_PUBLIC_KEY = 'BIs6K8tK9f6E9S8N0-L6B8U4Y8hN8O8l8B8_6U4Y8hN8O8l8B8_6U4Y8hN8O8l8B8_6U4Y8hN8O8l8B8_6U4Y8hN8O8l8B8_6';
+const VAPID_PUBLIC_KEY = 'BAnf46iN1M5P7xS2W8D9G0H1J2K3L4M5N6O7P8Q9R0S1T2U3V4W5X6Y7Z8A9B0C1D2E3F4G5H6I7J8K9L0M1N2O3';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
