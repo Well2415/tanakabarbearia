@@ -26,7 +26,7 @@ const Register = () => {
     e.preventDefault();
 
     const users = storage.getUsers();
-    const userExists = users.find(u => u.username === formData.username);
+    const userExists = users.find(u => u.username.toLowerCase() === formData.username.toLowerCase());
 
     if (userExists) {
       toast({
@@ -40,9 +40,9 @@ const Register = () => {
     const newUser: any = {
       id: Date.now().toString(),
       fullName: formData.fullName,
-      username: formData.username,
+      username: formData.username.toLowerCase(),
       password: formData.password, // Em um app real, isso seria criptografado
-      email: formData.email || undefined, // Make sure it's undefined if empty
+      email: formData.email?.toLowerCase() || undefined, // Make sure it's undefined if empty
       phone: formData.phone,
       loyaltyPoints: 0,
       createdAt: new Date().toISOString(),

@@ -28,7 +28,7 @@ const Login = () => {
     e.preventDefault();
 
     const users = storage.getUsers();
-    const user = users.find(u => u.username === formData.username && u.password === formData.password);
+    const user = users.find(u => u.username.toLowerCase() === formData.username.toLowerCase() && u.password === formData.password);
 
     if (user) {
       storage.loginUser(user.id);
