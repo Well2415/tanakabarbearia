@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
-const VAPID_PUBLIC_KEY = 'BI8D-5TvrvX-q3IdJMvLmfXZLagdWau_5R1DKMXGJ003hSw8svqjSsCtalCVwlxJS37WFTI-KPe-DWRE_EavR-4'; 
+const VAPID_PUBLIC_KEY = 'BJpA5u5u_Gq9Y-v5wG7w8qG4vX7pBAnf46iN1M5P7xS2W8D9G0H1J2K3L4M5N6O7P8Q9R0S1T2U3V4W';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -38,7 +38,7 @@ export const notificationManager = {
       }
 
       const registration = await navigator.serviceWorker.ready;
-      
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
