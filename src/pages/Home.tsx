@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
-import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin, ShoppingBag, ArrowRight, Smartphone } from 'lucide-react';
+import { Scissors, Clock, Award, Star, CheckCircle, Camera, MapPin, ShoppingBag, ArrowRight, Smartphone, Instagram } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
@@ -33,6 +33,7 @@ const Home = () => {
   const agendarLink = user ? "/new-appointment" : "/booking";
   const shopName = storage.getShopName();
   const shopMapsLink = storage.getShopMapsLink();
+  const shopInstagram = storage.getShopInstagram();
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
@@ -76,6 +77,20 @@ const Home = () => {
                 </Button>
               }
             />
+            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-black transition-all duration-300 shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center gap-2">
+              <Link to="/products" className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5" />
+                Nossos Produtos
+              </Link>
+            </Button>
+            {shopInstagram && (
+              <a href={shopInstagram} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-[#E4405F]/40 text-[#E4405F] hover:bg-[#E4405F] hover:text-white bg-[#E4405F]/5 backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#E4405F]/10 active:scale-95">
+                  <Instagram className="w-5 h-5" />
+                  Instagram
+                </Button>
+              </a>
+            )}
             {shopMapsLink && (
               <a href={shopMapsLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/40 text-primary hover:bg-primary hover:text-black bg-primary/5 backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/10 active:scale-95">
