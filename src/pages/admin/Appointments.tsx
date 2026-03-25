@@ -29,7 +29,6 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandItem,
   CommandList,
 } from "@/components/ui/command";
 import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
@@ -46,7 +45,8 @@ const Appointments = () => {
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
-  const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
+  const [discountInput, setDiscountInput] = useState(0);
+  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
 
@@ -110,7 +110,7 @@ const Appointments = () => {
       const selectedBarber = barbers.find(b => b.id === newBookingData.barberId);
       if (!selectedBarber) return;
 
-      const masterHours = selectedBarber.availableHours || [];
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[new Date(newBookingData.date).getDay()]) || selectedBarber.availableHours || [];
       const formattedDate = format(newBookingData.date, 'yyyy-MM-dd');
 
       const allBookedTimes: string[] = [];
@@ -154,7 +154,7 @@ const Appointments = () => {
       const selectedBarber = barbers.find(b => b.id === editedBarberId);
       if (!selectedBarber) return;
 
-      const masterHours = selectedBarber.availableHours || [];
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[editedDate.getDay()]) || selectedBarber.availableHours || [];
       const formattedDate = format(editedDate, 'yyyy-MM-dd');
 
       const allBookedTimes: string[] = [];
@@ -534,6 +534,7 @@ const Appointments = () => {
       endTime: format(now, 'HH:mm'),
       paymentType: paymentType,
       extraCharges: extraChargesInput,
+      discount: discountInput,
       finalPrice: finalPrice, // Usar o finalPrice calculado
       status: 'completed' as const,
     };
@@ -563,6 +564,7 @@ const Appointments = () => {
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
+    setDiscountInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: ${formatCurrency(finalPrice)}.` });
   };
 
@@ -837,7 +839,7 @@ const Appointments = () => {
                         </p>
                         <p className="text-sm text-zinc-500 flex items-center gap-2">
                           <CalendarIcon className="w-4 h-4 text-primary/70" />
-                          <span>{new Date(appointment.date).toLocaleDateString('pt-BR')} às <span className="font-bold text-foreground">{appointment.time}</span></span>
+                          <span>{new Date(appointment.date + 'T12:00:00').toLocaleDateString('pt-BR')} às <span className="font-bold text-foreground">{appointment.time}</span></span>
                         </p>
                         {appointment.paymentType && (
                           <p className="text-sm text-zinc-500 flex items-center gap-2">
@@ -986,6 +988,24 @@ const Appointments = () => {
                   const val = e.target.value.replace(',', '.');
                   if (val === '' || /^\d*\.?\d*$/.test(val)) {
                     setExtraChargesInput(val === '' ? 0 : parseFloat(val));
+                  }
+                }}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="discount">Desconto (R$)</Label>
+              <Input
+                id="discount"
+                type="text"
+                inputMode="decimal"
+                className="h-11 border-primary/40 focus-visible:ring-primary/40"
+                placeholder="0.00"
+                value={discountInput === 0 ? '' : discountInput}
+                onChange={(e) => {
+                  const val = e.target.value.replace(',', '.');
+                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setDiscountInput(val === '' ? 0 : parseFloat(val));
                   }
                 }}
               />

@@ -269,7 +269,12 @@ const RecurringSchedules = () => {
                                             <SelectValue placeholder="HH:mm" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
-                                            {barbers.find(b => b.id === formData.barberId)?.availableHours.map(h => (
+                                            {(() => {
+                                                const barber = barbers.find(b => b.id === formData.barberId);
+                                                if (!barber) return [];
+                                                const dayIdx = parseInt(formData.dayOfWeek);
+                                                return (barber.scheduleByDay && barber.scheduleByDay[dayIdx]) || barber.availableHours || [];
+                                            })().map(h => (
                                                 <SelectItem key={h} value={h} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1 font-bold text-center">{h}</SelectItem>
                                             )) || <SelectItem value="0" disabled>Selecione um barbeiro</SelectItem>}
                                         </SelectContent>

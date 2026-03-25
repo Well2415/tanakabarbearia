@@ -168,7 +168,7 @@ const NewAppointment = () => {
     if (date && formData.barberId) {
       const selectedBarber = barbers.find(b => b.id === formData.barberId);
       if (!selectedBarber) return;
-      const masterHours = selectedBarber.availableHours;
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
       const formattedDate = format(date, 'yyyy-MM-dd');
       const allApps = storage.getAppointments();
       const recurring = storage.getRecurringSchedules();

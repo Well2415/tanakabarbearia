@@ -5,6 +5,7 @@ export interface Barber {
   bio?: string;
   specialties: string[];
   availableHours: string[];
+  scheduleByDay?: Record<number, string[]>; // New field for schedule by day (0=Sun, 1=Mon, ..., 6=Sat)
   availableDates: string[]; // New field for available dates (yyyy-MM-dd)
   yearsOfExperience?: number; // New field
   description?: string; // New field
@@ -69,6 +70,7 @@ export interface Appointment {
   isDelayed?: boolean;
   servicePrice: number; // Price of the service at the time of booking
   extraCharges?: number; // New: For additional costs
+  discount?: number; // New: For discount amount applied on checkout
   finalPrice?: number; // New: Final price after all adjustments
   amountPaid?: number; // New: Amount already paid (e.g. deposit/signal)
 }

@@ -24,10 +24,11 @@ const MyAppointments = () => {
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
+  const [discountInput, setDiscountInput] = useState(0);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
- 
-  const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
+
+  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
 
   useEffect(() => {
     const user = storage.getCurrentUser();
@@ -104,6 +105,7 @@ const MyAppointments = () => {
       endTime: format(now, 'HH:mm'),
       paymentType: paymentType,
       extraCharges: extraChargesInput,
+      discount: discountInput,
       finalPrice: finalPrice,
       status: 'completed' as const,
     };
@@ -133,6 +135,7 @@ const MyAppointments = () => {
     setCurrentAppointmentToComplete(null);
     setPaymentType('');
     setExtraChargesInput(0);
+    setDiscountInput(0);
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
   };
 
@@ -141,11 +144,11 @@ const MyAppointments = () => {
     setIsLoadingLink(true);
     const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
     const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
-    
+
     const url = await createPreference(finalPrice, description, clientEmail);
     setPreferenceUrl(url);
     setIsLoadingLink(false);
-    
+
     if (url) {
       toast({ title: 'Link Gerado', description: 'Link de pagamento do Mercado Pago gerado com sucesso.' });
     } else {
@@ -205,7 +208,7 @@ const MyAppointments = () => {
                       {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                     </div>
                     <p className="text-muted-foreground"><span className="font-medium">Serviço:</span> {getServiceName(appointment.serviceIds || appointment.serviceId)}</p>
-                    <p className="text-muted-foreground"><span className="font-medium">Data:</span> {new Date(appointment.date).toLocaleDateString('pt-BR')} às {appointment.time}</p>
+                    <p className="text-muted-foreground"><span className="font-medium">Data:</span> {new Date(appointment.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {appointment.time}</p>
                     {appointment.startTime && <p className="text-muted-foreground"><span className="font-medium">Início:</span> {appointment.startTime}</p>}
                     {appointment.endTime && <p className="text-muted-foreground"><span className="font-medium">Fim:</span> {appointment.endTime}</p>}
                     {appointment.paymentType && <p className="text-muted-foreground"><span className="font-medium">Pagamento:</span> {paymentTypeLabels[appointment.paymentType] || appointment.paymentType}</p>}
@@ -245,11 +248,21 @@ const MyAppointments = () => {
             <div>
               <Label htmlFor="extraCharges">Encargos Extras (R$)</Label>
               <Input id="extraCharges" type="text" inputMode="decimal" className="h-12 mt-1" placeholder="0.00" value={extraChargesInput === 0 ? '' : extraChargesInput} onChange={(e) => {
-                  const val = e.target.value.replace(',', '.');
-                  if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                    setExtraChargesInput(val === '' ? 0 : parseFloat(val));
-                  }
-                }} />
+                const val = e.target.value.replace(',', '.');
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                  setExtraChargesInput(val === '' ? 0 : parseFloat(val));
+                }
+              }} />
+            </div>
+
+            <div>
+              <Label htmlFor="discount">Desconto (R$)</Label>
+              <Input id="discount" type="text" inputMode="decimal" className="h-12 mt-1 border-primary/40 focus-visible:ring-primary/40" placeholder="0.00" value={discountInput === 0 ? '' : discountInput} onChange={(e) => {
+                const val = e.target.value.replace(',', '.');
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                  setDiscountInput(val === '' ? 0 : parseFloat(val));
+                }
+              }} />
             </div>
 
             <div>
@@ -271,15 +284,15 @@ const MyAppointments = () => {
             </div>
 
             {/* Seção de Pix removida para unificação com Mercado Pago */}
-            
+
             {paymentType === 'link' && isMPConfigured() && (
               <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
                 {!preferenceUrl ? (
                   <>
                     <CreditCard className="w-10 h-10 text-primary mb-2 opacity-80" />
                     <p className="text-base font-bold text-foreground">Mercado Pago (Pix/Cartão)</p>
-                    <Button 
-                      onClick={handleGenerateLink} 
+                    <Button
+                      onClick={handleGenerateLink}
                       disabled={isLoadingLink || finalPrice <= 0}
                       className="w-full h-11 bg-primary hover:bg-primary/90 mt-2"
                     >
@@ -290,24 +303,24 @@ const MyAppointments = () => {
                 ) : (
                   <>
                     <div className="bg-background cursor-pointer hover:bg-accent/50 transition-colors p-4 rounded-xl mb-4 shadow-lg border-2 border-primary/20 w-full" onClick={() => window.open(preferenceUrl, '_blank')}>
-                       <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
-                       <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
+                      <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
+                      <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
                     </div>
                     <p className="text-base font-bold text-foreground mb-1">Link Gerado!</p>
                     <p className="text-[10px] text-muted-foreground mb-4">Envie o link para o cliente ou abra agora.</p>
-                    
+
                     <div className="w-full space-y-2">
-                       <Button 
-                        variant="default" 
-                        size="sm" 
+                      <Button
+                        variant="default"
+                        size="sm"
                         className="w-full h-10 gap-2"
                         onClick={() => window.open(preferenceUrl, '_blank')}
                       >
                         <ExternalLink className="w-4 h-4" /> Abrir Checkout
                       </Button>
-                       <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full h-10 text-xs gap-2"
                         onClick={() => {
                           navigator.clipboard.writeText(preferenceUrl);
@@ -316,9 +329,9 @@ const MyAppointments = () => {
                       >
                         <Copy className="w-4 h-4" /> Copiar Link
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="w-full h-8 text-[10px] text-zinc-500"
                         onClick={() => setPreferenceUrl(null)}
                       >
@@ -331,9 +344,9 @@ const MyAppointments = () => {
             )}
 
             {paymentType === 'link' && !isMPConfigured() && (
-               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Gateways de pagamento não configurados no painel Admin.</p>
+              <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Gateways de pagamento não configurados no painel Admin.</p>
             )}
-            
+
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0} className="w-full h-12 text-lg">Confirmar</Button>

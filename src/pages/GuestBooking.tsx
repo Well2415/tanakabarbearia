@@ -49,7 +49,7 @@ const GuestBooking = () => {
       const selectedBarber = barbers.find(b => b.id === formData.barberId);
       if (!selectedBarber) return;
 
-      const masterHours = selectedBarber.availableHours;
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
       const formattedDate = format(date, 'yyyy-MM-dd');
       const allAppointments = storage.getAppointments();
       const recurringSchedules = storage.getRecurringSchedules();

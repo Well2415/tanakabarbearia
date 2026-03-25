@@ -26,6 +26,16 @@ const COMMON_HOURS = [
   '18:00', '19:00', '20:00'
 ];
 
+const DAYS_OF_WEEK = [
+  { id: 0, name: 'Dom' },
+  { id: 1, name: 'Seg' },
+  { id: 2, name: 'Ter' },
+  { id: 3, name: 'Qua' },
+  { id: 4, name: 'Qui' },
+  { id: 5, name: 'Sex' },
+  { id: 6, name: 'Sáb' },
+];
+
 const Barbers = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,14 +43,19 @@ const Barbers = () => {
   const user = storage.getCurrentUser();
   const [barbers, setBarbers] = useState(storage.getBarbers());
 
+  const initSchedule = () => ({ 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
+
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [newBarberData, setNewBarberData] = useState({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '' });
+  const [newBarberData, setNewBarberData] = useState({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '', scheduleByDay: initSchedule() as Record<number, string[]> });
 
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
-  const [editBarberData, setEditBarberData] = useState({ id: '', name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '' });
+  const [editBarberData, setEditBarberData] = useState({ id: '', name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [] as string[], availableDates: [] as string[], customHours: '', scheduleByDay: initSchedule() as Record<number, string[]> });
 
   const [isAddCalendarOpen, setIsAddCalendarOpen] = useState(false);
   const [isEditCalendarOpen, setIsEditCalendarOpen] = useState(false);
+
+  const [activeDayNew, setActiveDayNew] = useState<number>(1);
+  const [activeDayEdit, setActiveDayEdit] = useState<number>(1);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -59,13 +74,24 @@ const Barbers = () => {
 
   useEffect(() => {
     if (editingBarber) {
+      const fallbackSchedule = initSchedule();
+      if (editingBarber.scheduleByDay) {
+        Object.assign(fallbackSchedule, editingBarber.scheduleByDay);
+      } else {
+        // Fallback legacy items inside each day
+        DAYS_OF_WEEK.forEach(d => {
+          fallbackSchedule[d.id as keyof typeof fallbackSchedule] = [...(editingBarber.availableHours || [])];
+        });
+      }
+
       setEditBarberData({
         id: editingBarber.id,
         name: editingBarber.name,
         specialties: editingBarber.specialties.join(', '),
         availableHours: editingBarber.availableHours.filter(h => COMMON_HOURS.includes(h)) || [],
         availableDates: editingBarber.availableDates || [],
-        customHours: editingBarber.availableHours.filter(h => !COMMON_HOURS.includes(h)).join(', '),
+        customHours: '',
+        scheduleByDay: fallbackSchedule,
         photo: editingBarber.photo || '',
         yearsOfExperience: editingBarber.yearsOfExperience?.toString() || '',
         description: editingBarber.description || '',
@@ -77,6 +103,20 @@ const Barbers = () => {
 
   const handleAddNewBarber = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Convert scheduleByDay items into a unified availableHours list
+    const combinedHours = new Set<string>();
+    Object.values(newBarberData.scheduleByDay).forEach(hours => {
+      hours.forEach(h => combinedHours.add(h));
+    });
+    const customH = newBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '');
+    customH.forEach(h => combinedHours.add(h));
+
+    // Apply customH to active day
+    if (customH.length > 0) {
+      newBarberData.scheduleByDay[activeDayNew] = [...new Set([...newBarberData.scheduleByDay[activeDayNew], ...customH])];
+    }
+
     const newBarber: Barber = {
       id: Date.now().toString(),
       name: newBarberData.name,
@@ -84,19 +124,31 @@ const Barbers = () => {
       yearsOfExperience: parseInt(newBarberData.yearsOfExperience) || undefined,
       description: newBarberData.description || undefined,
       specialties: newBarberData.specialties.split(',').map(s => s.trim()),
-      availableHours: sortTimes([...newBarberData.availableHours, ...newBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')]),
+      availableHours: sortTimes(Array.from(combinedHours)),
+      scheduleByDay: newBarberData.scheduleByDay,
       availableDates: newBarberData.availableDates,
     };
     const updated = [...barbers, newBarber];
     storage.saveBarbers(updated);
     setBarbers(updated);
     setIsAddOpen(false);
-    setNewBarberData({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [], availableDates: [], customHours: '' });
+    setNewBarberData({ name: '', photo: '', yearsOfExperience: '', description: '', specialties: '', availableHours: [], availableDates: [], customHours: '', scheduleByDay: initSchedule() });
     toast({ title: 'Barbeiro adicionado', description: 'O barbeiro foi cadastrado com sucesso' });
   };
 
   const handleUpdateBarber = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const customH = editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '');
+    if (customH.length > 0) {
+      editBarberData.scheduleByDay[activeDayEdit] = [...new Set([...editBarberData.scheduleByDay[activeDayEdit], ...customH])];
+    }
+
+    const combinedHours = new Set<string>();
+    Object.values(editBarberData.scheduleByDay).forEach(hours => {
+      hours.forEach(h => combinedHours.add(h));
+    });
+
     const updatedBarbers = barbers.map(b =>
       b.id === editingBarber?.id
         ? {
@@ -106,7 +158,8 @@ const Barbers = () => {
           yearsOfExperience: parseInt(editBarberData.yearsOfExperience) || undefined,
           description: editBarberData.description || undefined,
           specialties: editBarberData.specialties.split(',').map(s => s.trim()),
-          availableHours: sortTimes([...editBarberData.availableHours, ...editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '')]),
+          availableHours: sortTimes(Array.from(combinedHours)),
+          scheduleByDay: editBarberData.scheduleByDay,
           availableDates: editBarberData.availableDates, // availableDates is already an array
         }
         : b
@@ -165,42 +218,77 @@ const Barbers = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Horários Disponíveis</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {COMMON_HOURS.map(hour => (
-                      <Button
-                        key={hour}
-                        type="button"
-                        variant={newBarberData.availableHours.includes(hour) ? 'default' : 'outline'}
-                        onClick={() => {
-                          const currentHours = newBarberData.availableHours;
-                          if (currentHours.includes(hour)) {
-                            setNewBarberData({
-                              ...newBarberData,
-                              availableHours: currentHours.filter(h => h !== hour),
-                            });
-                          } else {
-                            setNewBarberData({
-                              ...newBarberData,
-                              availableHours: [...currentHours, hour].sort(),
-                            });
-                          }
-                        }}
-                      >
-                        {hour}
-                      </Button>
-                    ))}
+                <div className="space-y-4 border p-4 rounded-lg bg-accent/5">
+                  <div className="flex flex-col gap-2">
+                    <Label>Dias da Semana (Clique para configurar)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map(day => (
+                        <Button
+                          key={day.id}
+                          type="button"
+                          variant={activeDayNew === day.id ? 'default' : 'outline'}
+                          onClick={() => setActiveDayNew(day.id)}
+                          className={cn("h-8 px-3 text-xs", activeDayNew === day.id ? "bg-primary text-primary-foreground" : "")}
+                        >
+                          {day.name} {newBarberData.scheduleByDay[day.id].length > 0 && `(${newBarberData.scheduleByDay[day.id].length})`}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <Label htmlFor="customHours">Outros Horários (separados por vírgula)</Label>
-                  <Input
-                    id="customHours"
-                    value={newBarberData.customHours}
-                    onChange={(e) => setNewBarberData({ ...newBarberData, customHours: e.target.value })}
-                    placeholder="08:30, 12:15"
-                  />
+
+                  <div className="space-y-2">
+                    <Label className="text-primary font-bold">Horários para {DAYS_OF_WEEK.find(d => d.id === activeDayNew)?.name}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {COMMON_HOURS.map(hour => {
+                        const isSelected = newBarberData.scheduleByDay[activeDayNew].includes(hour);
+                        return (
+                          <Button
+                            key={hour}
+                            type="button"
+                            variant={isSelected ? 'default' : 'outline'}
+                            onClick={() => {
+                              const currentDayHours = newBarberData.scheduleByDay[activeDayNew];
+                              const newDayHours = isSelected
+                                ? currentDayHours.filter(h => h !== hour)
+                                : [...currentDayHours, hour].sort();
+
+                              setNewBarberData({
+                                ...newBarberData,
+                                scheduleByDay: {
+                                  ...newBarberData.scheduleByDay,
+                                  [activeDayNew]: newDayHours
+                                }
+                              });
+                            }}
+                          >
+                            {hour}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="customHours" className="text-xs text-muted-foreground">Adicionar horários extras que não estão na lista para este dia (separados por vírgula)</Label>
+                    <Input
+                      id="customHours"
+                      value={newBarberData.customHours}
+                      onChange={(e) => setNewBarberData({ ...newBarberData, customHours: e.target.value })}
+                      placeholder="Ex para este dia: 08:30, 12:15"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => {
+                      // Copy hours from this day to all other days
+                      const copyHours = newBarberData.scheduleByDay[activeDayNew];
+                      const updatedSchedule = { ...newBarberData.scheduleByDay };
+                      DAYS_OF_WEEK.forEach(d => {
+                        updatedSchedule[d.id] = [...copyHours];
+                      });
+                      setNewBarberData({ ...newBarberData, scheduleByDay: updatedSchedule });
+                      toast({ title: 'Horários Copiados', description: `Os horários de ${DAYS_OF_WEEK.find(d => d.id === activeDayNew)?.name} foram copiados para toda a semana.` });
+                    }}>Copiar para todos os dias</Button>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="dates">Datas Disponíveis</Label>
@@ -332,42 +420,77 @@ const Barbers = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Horários Disponíveis</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {COMMON_HOURS.map(hour => (
-                  <Button
-                    key={hour}
-                    type="button"
-                    variant={editBarberData.availableHours.includes(hour) ? 'default' : 'outline'}
-                    onClick={() => {
-                      const currentHours = editBarberData.availableHours;
-                      if (currentHours.includes(hour)) {
-                        setEditBarberData({
-                          ...editBarberData,
-                          availableHours: currentHours.filter(h => h !== hour),
-                        });
-                      } else {
-                        setEditBarberData({
-                          ...editBarberData,
-                          availableHours: [...currentHours, hour].sort(),
-                        });
-                      }
-                    }}
-                  >
-                    {hour}
-                  </Button>
-                ))}
+            <div className="space-y-4 border p-4 rounded-lg bg-accent/5">
+              <div className="flex flex-col gap-2">
+                <Label>Dias da Semana (Clique para configurar)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DAYS_OF_WEEK.map(day => (
+                    <Button
+                      key={day.id}
+                      type="button"
+                      variant={activeDayEdit === day.id ? 'default' : 'outline'}
+                      onClick={() => setActiveDayEdit(day.id)}
+                      className={cn("h-8 px-3 text-xs", activeDayEdit === day.id ? "bg-primary text-primary-foreground" : "")}
+                    >
+                      {day.name} {editBarberData.scheduleByDay[day.id].length > 0 && `(${editBarberData.scheduleByDay[day.id].length})`}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-customHours">Outros Horários (separados por vírgula)</Label>
-              <Input
-                id="edit-customHours"
-                value={editBarberData.customHours}
-                onChange={(e) => setEditBarberData({ ...editBarberData, customHours: e.target.value })}
-                placeholder="08:30, 12:15"
-              />
+
+              <div className="space-y-2">
+                <Label className="text-primary font-bold">Horários para {DAYS_OF_WEEK.find(d => d.id === activeDayEdit)?.name}</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {COMMON_HOURS.map(hour => {
+                    const isSelected = editBarberData.scheduleByDay[activeDayEdit].includes(hour);
+                    return (
+                      <Button
+                        key={hour}
+                        type="button"
+                        variant={isSelected ? 'default' : 'outline'}
+                        onClick={() => {
+                          const currentDayHours = editBarberData.scheduleByDay[activeDayEdit];
+                          const newDayHours = isSelected
+                            ? currentDayHours.filter(h => h !== hour)
+                            : [...currentDayHours, hour].sort();
+
+                          setEditBarberData({
+                            ...editBarberData,
+                            scheduleByDay: {
+                              ...editBarberData.scheduleByDay,
+                              [activeDayEdit]: newDayHours
+                            }
+                          });
+                        }}
+                      >
+                        {hour}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-customHours" className="text-xs text-muted-foreground">Adicionar horários extras que não estão na lista para este dia (separados por vírgula)</Label>
+                <Input
+                  id="edit-customHours"
+                  value={editBarberData.customHours}
+                  onChange={(e) => setEditBarberData({ ...editBarberData, customHours: e.target.value })}
+                  placeholder="Ex para este dia: 08:30, 12:15"
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button type="button" variant="secondary" size="sm" onClick={() => {
+                  // Copy hours from this day to all other days
+                  const copyHours = editBarberData.scheduleByDay[activeDayEdit];
+                  const updatedSchedule = { ...editBarberData.scheduleByDay };
+                  DAYS_OF_WEEK.forEach(d => {
+                    updatedSchedule[d.id] = [...copyHours];
+                  });
+                  setEditBarberData({ ...editBarberData, scheduleByDay: updatedSchedule });
+                  toast({ title: 'Horários Copiados', description: `Os horários de ${DAYS_OF_WEEK.find(d => d.id === activeDayEdit)?.name} foram copiados para toda a semana.` });
+                }}>Copiar para todos os dias</Button>
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-dates">Datas Disponíveis</Label>

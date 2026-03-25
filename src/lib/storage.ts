@@ -42,7 +42,7 @@ const saveCacheToLocal = () => {
 // Helper simples para caminhos de imagem
 const normalizeImagePath = (src: string): string => {
   if (!src) return src;
-  
+
   // Remove aspas extras que podem vir do banco de dados (erro comum de stringify)
   let cleanSrc = src.trim();
   if (cleanSrc.startsWith('"') && cleanSrc.endsWith('"')) {
@@ -51,9 +51,9 @@ const normalizeImagePath = (src: string): string => {
   if (cleanSrc.startsWith('%22') && cleanSrc.endsWith('%22')) {
     cleanSrc = cleanSrc.substring(3, cleanSrc.length - 3);
   }
-  
+
   if (cleanSrc.startsWith('http') || cleanSrc.startsWith('data:')) return cleanSrc;
-  
+
   // Apenas garante que se for um caminho local, comece com /
   if (cleanSrc.startsWith('/') || cleanSrc.startsWith('./') || cleanSrc.startsWith('../')) return cleanSrc;
   return `/${cleanSrc}`;
@@ -110,10 +110,21 @@ export const storage = {
         console.error('Error fetching products (Table might be missing):', productsRes.error);
       }
 
-      cache.barbers = (barbersRes.data || []).map(b => ({ 
-        ...b, 
+      cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
+      cache.products = (productsRes.data || []).map(p => ({
+        ...p,
+        image: normalizeImagePath(p.image),
+        image2: normalizeImagePath(p.image2)
+      }));
+
+      // Injetando scheduleByDay através dos settings (workaround para schema local)
+      const barberSchedules = settingsMap['barber_schedules'] || {};
+
+      cache.barbers = (barbersRes.data || []).map(b => ({
+        ...b,
         photo: normalizeImagePath(b.photo),
-        availableHours: sortTimes(b.availableHours || [])
+        availableHours: sortTimes(b.availableHours || []),
+        scheduleByDay: barberSchedules[b.id] || undefined
       }));
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
       cache.users = usersRes.data || [];
@@ -121,10 +132,10 @@ export const storage = {
       cache.recurringSchedules = recurringRes.data || [];
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
-      cache.products = (productsRes.data || []).map(p => ({ 
-        ...p, 
-        image: normalizeImagePath(p.image), 
-        image2: normalizeImagePath(p.image2) 
+      cache.products = (productsRes.data || []).map(p => ({
+        ...p,
+        image: normalizeImagePath(p.image),
+        image2: normalizeImagePath(p.image2)
       }));
 
       // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
@@ -185,8 +196,20 @@ export const storage = {
   getBarbers: (): Barber[] => cache.barbers,
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
+
+    // Extract scheduleByDay and save to settings to avoid modifying Supabase schema
+    const barberSchedules: Record<string, any> = {};
+    const dbBarbers = barbers.map(b => {
+      barberSchedules[b.id] = b.scheduleByDay;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { scheduleByDay, ...dbBarber } = b;
+      return dbBarber;
+    });
+
+    await storage.saveSetting('barber_schedules', barberSchedules);
+
     await supabase.from('barbers').delete().neq('id', '_none_');
-    await supabase.from('barbers').insert(barbers);
+    await supabase.from('barbers').insert(dbBarbers);
   },
 
   // --- GERENCIAMENTO DE SERVIÇOS ---
@@ -200,28 +223,26 @@ export const storage = {
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
   async saveAppointments(appointments: Appointment[]) {
+    const currentIds = cache.appointments.map(a => a.id);
+    const newIds = appointments.map(a => a.id);
+    const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
     cache.appointments = appointments;
-    
-    const dbPayload = appointments.map(app => ({
-      id: app.id,
-      userId: app.userId,
-      barberId: app.barberId,
-      serviceId: app.serviceId,
-      serviceIds: app.serviceIds,
-      date: app.date,
-      time: app.time,
-      status: app.status,
-      servicePrice: app.servicePrice,
-      extraCharges: app.extraCharges,
-      finalPrice: app.finalPrice,
-      amountPaid: app.amountPaid,
-      paymentType: app.paymentType,
-      cancelledReason: app.cancelledReason,
-      createdAt: app.createdAt
-    }));
-    
+
+    // Filtra discount (local only) out
+    const dbPayload = appointments.map(app => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { discount, ...rest } = app;
+      return rest;
+    });
+
     const { error } = await supabase.from('appointments').upsert(dbPayload);
     if (error) console.error('Error saving appointments:', error);
+
+    if (deletedIds.length > 0) {
+      const { error: deleteError } = await supabase.from('appointments').delete().in('id', deletedIds);
+      if (deleteError) console.error('Error deleting appointments:', deleteError);
+    }
   },
 
   // Users
@@ -243,7 +264,7 @@ export const storage = {
     if (!userId) return null;
     const user = cache.users.find(u => u.id === userId);
     if (user && !user.latestCuts) {
-      user.latestCuts = []; 
+      user.latestCuts = [];
     }
     return user || null;
   },
@@ -310,7 +331,7 @@ export const storage = {
 
   getShopGallery: (): string[] => {
     let gallery = storage.getSetting('shop_gallery', []);
-    
+
     // Fallback se vier como string JSON
     if (typeof gallery === 'string' && gallery.trim().startsWith('[')) {
       try {
@@ -319,7 +340,7 @@ export const storage = {
         gallery = [];
       }
     }
-    
+
     // Retorna a galeria exatamente como está no banco, permitindo gestão total pelo usuário
     return Array.isArray(gallery) ? gallery.map(normalizeImagePath) : [];
   },
@@ -340,19 +361,31 @@ export const storage = {
 
   getRecurringSchedules: (): RecurringSchedule[] => cache.recurringSchedules,
   async saveRecurringSchedules(schedules: RecurringSchedule[]) {
+    const currentIds = cache.recurringSchedules.map(s => s.id);
+    const newIds = schedules.map(s => s.id);
+    const deletedIds = currentIds.filter(id => !newIds.includes(id));
+
     cache.recurringSchedules = schedules;
 
     const dbPayload = schedules.map(s => ({
       id: s.id,
+      userId: s.userId,
       barberId: s.barberId,
       dayOfWeek: s.dayOfWeek,
       time: s.time,
       active: s.active,
-      createdAt: s.createdAt
+      createdAt: s.createdAt,
+      serviceId: s.serviceId,
+      serviceIds: s.serviceIds
     }));
 
     const { error } = await supabase.from('recurring_schedules').upsert(dbPayload);
     if (error) console.error('Error saving recurring schedules:', error);
+
+    if (deletedIds.length > 0) {
+      const { error: deleteError } = await supabase.from('recurring_schedules').delete().in('id', deletedIds);
+      if (deleteError) console.error('Error deleting recurring schedules:', deleteError);
+    }
   },
 
   getMPAccessToken: (): string => storage.getSetting('mp_access_token', ''),
