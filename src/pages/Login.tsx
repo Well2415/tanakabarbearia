@@ -28,7 +28,13 @@ const Login = () => {
     e.preventDefault();
 
     const users = storage.getUsers();
-    const user = users.find(u => u.username.toLowerCase() === formData.username.toLowerCase() && u.password === formData.password);
+    const typedUsername = formData.username.trim();
+    const typedPassword = formData.password.trim();
+
+    const user = users.find(u => 
+      u.username.trim().toLowerCase() === typedUsername.toLowerCase() && 
+      u.password?.trim() === typedPassword
+    );
 
     if (user) {
       storage.loginUser(user.id);
@@ -135,6 +141,8 @@ const Login = () => {
                   id="username"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   required
                 />
               </div>

@@ -39,11 +39,11 @@ const Register = () => {
 
     const newUser: any = {
       id: Date.now().toString(),
-      fullName: formData.fullName,
-      username: formData.username.toLowerCase(),
-      password: formData.password, // Em um app real, isso seria criptografado
-      email: formData.email?.toLowerCase() || undefined, // Make sure it's undefined if empty
-      phone: formData.phone,
+      fullName: formData.fullName.trim(),
+      username: formData.username.trim().toLowerCase(),
+      password: formData.password.trim(), // Em um app real, isso seria criptografado
+      email: formData.email?.trim().toLowerCase() || undefined, // Make sure it's undefined if empty
+      phone: formData.phone.trim(),
       loyaltyPoints: 0,
       createdAt: new Date().toISOString(),
       role: 'client', // Default role for new registrations

@@ -77,7 +77,7 @@ const Users = () => {
           barberId: newRole === 'barber' ? finalBarberId : undefined 
         };
         if (password) {
-           updated.password = password;
+           updated.password = password.trim();
         }
         return updated;
       }
@@ -300,11 +300,11 @@ const Users = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new-password">Nova Senha (deixe em branco para manter)</Label>
-                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoCapitalize="none" autoComplete="new-password" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" autoCapitalize="none" autoComplete="new-password" />
                 </div>
               </div>
             </div>
