@@ -48,7 +48,6 @@ export const notificationManager = {
       return subscription;
     } catch (error: any) {
       console.error('Erro ao subscrever para Push:', error);
-      window.alert(`Erro ao ativar: ${error.message || JSON.stringify(error)}`);
       return null;
     }
   },
