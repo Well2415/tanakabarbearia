@@ -272,12 +272,8 @@ export const storage = {
     cache.appointments = cache.appointments.map(a => a.id === appointment.id ? appointment : a);
     localStorage.setItem('appointments', JSON.stringify(cache.appointments));
 
-    // 2. Preparar payload para o banco (remover campos locais como 'discount')
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { discount, ...dbPayload } = appointment;
-
-    // 3. Persistir no Supabase
-    const { error } = await supabase.from('appointments').upsert(dbPayload);
+    // 2. Persistir no Supabase
+    const { error } = await supabase.from('appointments').upsert(appointment);
     if (error) {
       console.error('❌ [Storage] Erro ao atualizar agendamento granular:', error);
       throw error;
@@ -292,14 +288,7 @@ export const storage = {
     cache.appointments = appointments;
     localStorage.setItem('appointments', JSON.stringify(appointments));
 
-    // Filtra discount (local only) out
-    const dbPayload = appointments.map(app => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { discount, ...rest } = app;
-      return rest;
-    });
-
-    const { error } = await supabase.from('appointments').upsert(dbPayload);
+    const { error } = await supabase.from('appointments').upsert(appointments);
     if (error) console.error('Error saving appointments:', error);
 
     if (deletedIds.length > 0) {

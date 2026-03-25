@@ -85,7 +85,7 @@ const MyAppointments = () => {
     }
   };
 
-  const handleStartService = (appointment: Appointment) => {
+  const handleStartService = async (appointment: Appointment) => {
     const now = new Date();
     const scheduledDateTime = parseISO(`${appointment.date}T${appointment.time}:00`);
     const isDelayed = isAfter(now, scheduledDateTime);
@@ -96,8 +96,16 @@ const MyAppointments = () => {
       isDelayed: isDelayed,
       status: 'in_progress' as const,
     };
-    updateAppointmentInStorage(updatedAppointment);
-    toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
+    try {
+      await updateAppointmentInStorage(updatedAppointment);
+      toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
+    } catch (error) {
+      toast({
+        title: 'Erro ao iniciar',
+        description: 'Não foi possível iniciar o serviço. Verifique sua conexão e tente novamente.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleCompleteService = async () => {
@@ -113,33 +121,41 @@ const MyAppointments = () => {
       finalPrice: finalPrice,
       status: 'completed' as const,
     };
-    await updateAppointmentInStorage(updatedAppointment);
+    try {
+      await updateAppointmentInStorage(updatedAppointment);
 
-    if (currentAppointmentToComplete.userId) {
-      const allUsers = storage.getUsers();
-      const userToUpdate = allUsers.find(u => u.id === currentAppointmentToComplete.userId);
-      if (userToUpdate) {
-        const updatedUser = { ...userToUpdate };
-        // Update user's cutsCount and stylePreferences
-        updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
+      if (currentAppointmentToComplete.userId) {
+        const userToUpdate = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId);
+        if (userToUpdate) {
+          const updatedUser = { ...userToUpdate };
+          updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
 
-        const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
-        if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
-          updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
-        } else if (service && !updatedUser.stylePreferences) {
-          updatedUser.stylePreferences = [service.name];
+          const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
+          if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
+            updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
+          } else if (service && !updatedUser.stylePreferences) {
+            updatedUser.stylePreferences = [service.name];
+          }
+
+          await storage.updateUser(updatedUser);
         }
-
-        await storage.updateUser(updatedUser);
       }
-    }
 
-    setPreferenceUrl(null);
-    setCurrentAppointmentToComplete(null);
-    setPaymentType('');
-    setExtraChargesInput(0);
-    setDiscountInput(0);
-    toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
+      setPreferenceUrl(null);
+      setCurrentAppointmentToComplete(null);
+      setPaymentType('');
+      setExtraChargesInput(0);
+      setDiscountInput(0);
+      setShowPaymentDialog(false); // Fechar o diálogo após sucesso
+      toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
+    } catch (error) {
+      console.error('Erro ao finalizar serviço:', error);
+      toast({
+        title: 'Erro ao finalizar',
+        description: 'Ocorreu um erro no banco de dados. Certifique-se de que todas as colunas SQL foram criadas.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleGenerateLink = async () => {
