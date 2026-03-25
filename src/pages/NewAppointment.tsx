@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { storage } from '@/lib/storage';
 import { createPreference } from '@/lib/mercadoPago';
 import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
+import { notificationManager } from '@/lib/notifications';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -95,6 +96,19 @@ const NewAppointment = () => {
         title: isPaid ? 'Agendamento Confirmado!' : 'Agendamento Solicitado!',
         description: isPaid ? 'Seu pagamento foi aprovado. +1 ponto de fidelidade!' : 'Seu horário aguarda aprovação.',
       });
+
+
+      // Notificar Barbeiro (Push)
+      const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
+      if (barberUser?.pushSubscription) {
+        const primaryService = services.find(s => s.id === newAppointment.serviceId);
+        await notificationManager.sendPushNotification(
+          barberUser.id,
+          'Novo Agendamento! 💈',
+          `${user.fullName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`,
+          '/admin/appointments'
+        );
+      }
 
       navigate('/dashboard');
     } catch (error) {

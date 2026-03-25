@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { storage } from '@/lib/storage';
 import { createPreference, isMPConfigured } from '@/lib/mercadoPago';
 import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
+import { notificationManager } from '@/lib/notifications';
 import { Appointment, Service } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
@@ -159,6 +160,19 @@ const GuestBooking = () => {
           ? 'Pagamento aprovado. Seu horário está garantido!'
           : 'Seu agendamento foi registrado e aguarda confirmação.',
       });
+
+
+      // Notificar Barbeiro (Push)
+      const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
+      if (barberUser?.pushSubscription) {
+        const primaryService = services.find(s => s.id === newAppointment.serviceId);
+        await notificationManager.sendPushNotification(
+          barberUser.id,
+          'Novo Agendamento (Convidado)! 💈',
+          `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`,
+          '/admin/appointments'
+        );
+      }
 
       navigate('/');
     } catch (error) {

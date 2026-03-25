@@ -151,7 +151,7 @@ const Dashboard = () => {
           </div>
 
           {/* Notificações Push Seção */}
-          {isPushSupported && !isStaff && (
+          {isPushSupported && (
             <Card className="mb-8 p-6 border-primary/20 bg-primary/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center sm:text-left">
                 <div className={cn(
