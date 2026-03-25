@@ -62,43 +62,58 @@ const Home = () => {
             Experimente o melhor serviço de barbearia com profissionais qualificados
             e um ambiente moderno, feito para você relaxar.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-400 flex-wrap">
-            <Button asChild size="lg" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full shadow-xl shadow-primary/20 hover:scale-105 transition-all duration-300 font-bold bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link to={agendarLink}>Agendar Agora</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/30 text-white hover:bg-primary hover:text-black hover:border-primary transition-all duration-300 shadow-xl active:scale-95 hover:scale-105">
-              <Link to="/services">Ver Serviços</Link>
-            </Button>
-            <PWAInstallDialog 
-              trigger={
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-black transition-all duration-300 shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center gap-2">
-                  <Smartphone className="w-5 h-5" />
-                  Baixar App
-                </Button>
-              }
-            />
-            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary hover:text-black transition-all duration-300 shadow-xl active:scale-95 hover:scale-105 flex items-center justify-center gap-2">
-              <Link to="/products" className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5" />
-                Nossos Produtos
-              </Link>
-            </Button>
-            {shopInstagram && (
-              <a href={shopInstagram} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-[#E4405F]/40 text-[#E4405F] hover:bg-[#E4405F] hover:text-white bg-[#E4405F]/5 backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#E4405F]/10 active:scale-95">
-                  <Instagram className="w-5 h-5" />
-                  Instagram
-                </Button>
-              </a>
-            )}
-            {shopMapsLink && (
-              <a href={shopMapsLink} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-7 rounded-full border-primary/40 text-primary hover:bg-primary hover:text-black bg-primary/5 backdrop-blur-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/10 active:scale-95">
-                  <MapPin className="w-5 h-5" />
-                  Como Chegar
-                </Button>
-              </a>
-            )}
+          {/* Action Buttons Group */}
+          <div className="flex flex-col gap-8 animate-fade-in-up animation-delay-400">
+            {/* Main Primary Actions */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button asChild size="lg" className="w-full sm:w-[240px] text-xl px-10 py-8 rounded-2xl shadow-[0_0_30px_rgba(var(--primary),0.3)] hover:shadow-primary/40 hover:scale-105 transition-all duration-500 font-black bg-primary text-primary-foreground hover:bg-primary/90 group relative overflow-hidden">
+                <Link to={agendarLink} className="flex items-center justify-center gap-2">
+                  <Clock className="w-6 h-6 animate-pulse" />
+                  AGENDAR AGORA
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 py-8 rounded-2xl border-white/20 text-white bg-white/5 backdrop-blur-md hover:bg-white hover:text-black transition-all duration-500 shadow-xl hover:scale-105 active:scale-95">
+                <Link to="/services">Ver Serviços</Link>
+              </Button>
+            </div>
+
+            {/* Quick Access Grid (Secondary Actions) */}
+            <div className="flex flex-wrap items-center justify-center gap-3 max-w-3xl mx-auto">
+              <PWAInstallDialog 
+                trigger={
+                  <Button size="sm" variant="outline" className="h-14 px-6 rounded-xl border-white/10 bg-black/40 backdrop-blur-xl text-white hover:bg-primary hover:text-black hover:border-primary transition-all duration-300 flex items-center gap-2 group shadow-lg">
+                    <Smartphone className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-semibold">Baixar App</span>
+                  </Button>
+                }
+              />
+              
+              <Button asChild variant="outline" className="h-14 px-6 rounded-xl border-white/10 bg-black/40 backdrop-blur-xl text-white hover:bg-white hover:text-black transition-all duration-300 flex items-center gap-2 group shadow-lg">
+                <Link to="/products" className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="font-semibold">Produtos</span>
+                </Link>
+              </Button>
+
+              {shopInstagram && (
+                <a href={shopInstagram} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="h-14 px-6 rounded-xl border-white/10 bg-black/40 backdrop-blur-xl text-white hover:bg-gradient-to-tr hover:from-[#f9ce34] hover:via-[#ee2a7b] hover:to-[#6228d7] hover:border-transparent hover:text-white transition-all duration-500 flex items-center gap-2 group shadow-lg">
+                    <Instagram className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                    <span className="font-semibold">Instagram</span>
+                  </Button>
+                </a>
+              )}
+
+              {shopMapsLink && (
+                <a href={shopMapsLink} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="h-14 px-6 rounded-xl border-white/10 bg-black/40 backdrop-blur-xl text-white hover:bg-blue-600 hover:text-white hover:border-blue-500 transition-all duration-300 flex items-center gap-2 group shadow-lg">
+                    <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-semibold">Maps</span>
+                  </Button>
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="mt-12 w-full max-w-5xl mx-auto animate-fade-in-up animation-delay-600 relative overflow-visible">
