@@ -96,6 +96,14 @@ export interface Expense {
   createdAt: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  weight: string; // ex: "100g", "200g"
+  price: number;
+  stock?: number;
+  imageIndex?: 0 | 1 | 2; // 0: image, 1: image2, 2: image3
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -103,7 +111,9 @@ export interface Product {
   price: number;
   image?: string;
   image2?: string;
+  image3?: string;
   category?: string;
   stock?: number;
   active: boolean;
+  variants?: ProductVariant[];
 }

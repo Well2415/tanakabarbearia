@@ -114,7 +114,8 @@ export const storage = {
       cache.products = (productsRes.data || []).map(p => ({
         ...p,
         image: normalizeImagePath(p.image),
-        image2: normalizeImagePath(p.image2)
+        image2: normalizeImagePath(p.image2),
+        image3: normalizeImagePath(p.image3)
       }));
 
       // Injetando scheduleByDay através dos settings (workaround para schema local)
@@ -135,7 +136,8 @@ export const storage = {
       cache.products = (productsRes.data || []).map(p => ({
         ...p,
         image: normalizeImagePath(p.image),
-        image2: normalizeImagePath(p.image2)
+        image2: normalizeImagePath(p.image2),
+        image3: normalizeImagePath(p.image3)
       }));
 
       // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
