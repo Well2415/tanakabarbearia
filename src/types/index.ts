@@ -112,6 +112,7 @@ export interface Product {
   image?: string;
   image2?: string;
   image3?: string;
+  image4?: string;
   category?: string;
   stock?: number;
   active: boolean;

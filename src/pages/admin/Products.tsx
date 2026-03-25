@@ -34,6 +34,7 @@ const AdminProducts = () => {
     image: '',
     image2: '',
     image3: '',
+    image4: '',
     active: true,
     variants: [] as any[]
   });
@@ -68,6 +69,7 @@ const AdminProducts = () => {
       image: formData.image,
       image2: formData.image2,
       image3: formData.image3,
+      image4: formData.image4,
       active: formData.active,
       variants: formData.variants.length > 0 ? formData.variants : undefined
     };
@@ -97,6 +99,7 @@ const AdminProducts = () => {
       image: product.image || '',
       image2: product.image2 || '',
       image3: product.image3 || '',
+      image4: product.image4 || '',
       active: product.active,
       variants: product.variants || []
     });
@@ -113,7 +116,7 @@ const AdminProducts = () => {
   const handleClose = () => {
     setIsOpen(false);
     setEditingProduct(null);
-    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', image2: '', image3: '', active: true, variants: [] });
+    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', image2: '', image3: '', image4: '', active: true, variants: [] });
   };
 
   return (
@@ -162,9 +165,9 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="space-y-2">
-                    <Label>Foto Principal (1)</Label>
+                    <Label className="text-xs">Foto 1</Label>
                     <ImageUpload 
                       value={formData.image} 
                       onChange={(image) => setFormData({...formData, image})} 
@@ -172,7 +175,7 @@ const AdminProducts = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Foto Secundária (2)</Label>
+                    <Label className="text-xs">Foto 2</Label>
                     <ImageUpload 
                       value={formData.image2} 
                       onChange={(image2) => setFormData({...formData, image2})} 
@@ -180,11 +183,19 @@ const AdminProducts = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Foto Extra (3)</Label>
+                    <Label className="text-xs">Foto 3</Label>
                     <ImageUpload 
                       value={formData.image3} 
                       onChange={(image3) => setFormData({...formData, image3})} 
                       label="Foto 3"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Foto 4</Label>
+                    <ImageUpload 
+                      value={formData.image4} 
+                      onChange={(image4) => setFormData({...formData, image4})} 
+                      label="Foto 4"
                     />
                   </div>
                 </div>
@@ -200,7 +211,7 @@ const AdminProducts = () => {
                         ...formData, 
                         variants: [
                           ...formData.variants, 
-                          { id: Date.now().toString(), weight: '', price: parseFloat(formData.price) || 0, imageIndices: [0] }
+                          { id: Date.now().toString(), weight: '', price: parseFloat(formData.price) || 0, stock: parseInt(formData.stock) || 0, imageIndices: [0] }
                         ]
                       })}
                     >
@@ -212,10 +223,10 @@ const AdminProducts = () => {
                     <div className="space-y-3">
                       {formData.variants.map((variant, index) => (
                         <div key={variant.id} className="grid grid-cols-12 gap-2 items-end bg-card p-3 rounded-lg border border-border/50">
-                          <div className="col-span-4 space-y-1">
-                            <Label className="text-[10px] uppercase">Grama/Peso</Label>
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-[10px] uppercase">Grama</Label>
                             <Input 
-                              placeholder="Ex: 100g" 
+                              placeholder="100g" 
                               value={variant.weight} 
                               onChange={(e) => {
                                 const newVariants = [...formData.variants];
@@ -224,12 +235,13 @@ const AdminProducts = () => {
                               }}
                             />
                           </div>
-                          <div className="col-span-3 space-y-1">
-                            <Label className="text-[10px] uppercase">Preço R$</Label>
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-[10px] uppercase">R$</Label>
                             <Input 
                               type="number" 
                               step="0.01"
                               value={variant.price} 
+                              className="px-1"
                               onChange={(e) => {
                                 const newVariants = [...formData.variants];
                                 newVariants[index].price = parseFloat(e.target.value);
@@ -237,10 +249,23 @@ const AdminProducts = () => {
                               }}
                             />
                           </div>
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-[10px] uppercase">Estoque</Label>
+                            <Input 
+                              type="number" 
+                              value={variant.stock || 0} 
+                              className="px-1"
+                              onChange={(e) => {
+                                const newVariants = [...formData.variants];
+                                newVariants[index].stock = parseInt(e.target.value);
+                                setFormData({...formData, variants: newVariants});
+                              }}
+                            />
+                          </div>
                           <div className="col-span-3 space-y-1">
-                            <Label className="text-[10px] uppercase text-center block">Fotos Vinculadas</Label>
-                            <div className="flex justify-center gap-1">
-                              {[0, 1, 2].map((idx) => (
+                            <Label className="text-[10px] uppercase text-center block">Fotos</Label>
+                            <div className="flex justify-center gap-0.5">
+                              {[0, 1, 2, 3].map((idx) => (
                                 <button
                                   key={idx}
                                   type="button"
@@ -254,7 +279,7 @@ const AdminProducts = () => {
                                     }
                                     setFormData({...formData, variants: newVariants});
                                   }}
-                                  className={`w-8 h-8 rounded flex items-center justify-center text-[10px] font-bold border transition-all ${
+                                  className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold border transition-all ${
                                     (variant.imageIndices || []).includes(idx)
                                       ? 'bg-primary border-primary text-primary-foreground'
                                       : 'bg-background border-border text-muted-foreground hover:border-primary/50'

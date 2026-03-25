@@ -19,7 +19,7 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product,
   useEffect(() => {
     if (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0) {
       const idx = selectedVariant.imageIndices[0];
-      const images = [product.image, product.image2, product.image3];
+      const images = [product.image, product.image2, product.image3, product.image4];
       if (images[idx]) {
         setActiveImage(images[idx]);
       }
@@ -52,11 +52,11 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product,
       
       {/* Thumbnails logic */}
       {(() => {
-        const allImages = [product.image, product.image2, product.image3].filter(Boolean) as string[];
+        const allImages = [product.image, product.image2, product.image3, product.image4].filter(Boolean) as string[];
         
         // Se houver variante selecionada com índices específicos, filtramos as fotos
         const visibleImages = (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0)
-          ? selectedVariant.imageIndices.map(i => [product.image, product.image2, product.image3][i]).filter(Boolean) as string[]
+          ? selectedVariant.imageIndices.map(i => [product.image, product.image2, product.image3, product.image4][i]).filter(Boolean) as string[]
           : allImages;
 
         if (visibleImages.length <= 1) return null;
@@ -108,10 +108,12 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product,
             <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Preço</span>
             <span className="text-2xl font-black text-primary">{formatCurrency(selectedVariant ? selectedVariant.price : product.price)}</span>
           </div>
-          {product.stock !== undefined && (
+          {(selectedVariant ? selectedVariant.stock !== undefined : product.stock !== undefined) && (
             <div className="text-right">
-               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
-               <span className="text-sm font-bold text-foreground">{product.stock} unids</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
+              <span className="text-sm font-bold text-foreground">
+                {selectedVariant ? (selectedVariant.stock || 0) : (product.stock || 0)} unids
+              </span>
             </div>
           )}
         </div>
