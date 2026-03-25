@@ -30,8 +30,8 @@ const callApiSendMessage = async (phone: string, message: string) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiToken}`,
-                'apikey': apiToken, 
-                'Client-Token': apiToken 
+                'apikey': apiToken,
+                'Client-Token': apiToken
             },
             body: JSON.stringify({
                 instanceId: instanceId,
@@ -71,7 +71,7 @@ export const sendWhatsAppConfirmation = async (
     if (!phone) return;
 
     // Formatação amigável da data para a mensagem.
-    const dateObj = typeof appointment.date === 'string' ? parseISO(appointment.date) : appointment.date;
+    const dateObj = typeof appointment.date === 'string' ? new Date(appointment.date + 'T12:00:00') : appointment.date;
     const formattedDate = format(dateObj, "EEEE, dd 'de' MMMM", { locale: ptBR });
     const shopName = storage.getShopName();
 
@@ -101,12 +101,12 @@ export const getWhatsAppManualLink = (
 
     if (!phone) return "";
 
-    const dateObj = typeof appointment.date === 'string' ? parseISO(appointment.date) : appointment.date;
+    const dateObj = typeof appointment.date === 'string' ? new Date(appointment.date + 'T12:00:00') : appointment.date;
     const formattedDate = format(dateObj, "EEEE, dd 'de' MMMM", { locale: ptBR });
     const shopName = storage.getShopName();
 
     const message = `Olá ${guestName || 'Cliente'}! 👋\n\nSeu agendamento na *${shopName}* foi confirmado com sucesso! ✅\n\n📍 *Detalhes:*\n✂️ *Serviço:* ${service.name}\n👤 *Barbeiro:* ${barber.name}\n📆 *Data:* ${formattedDate}\n⏰ *Horário:* ${appointment.time}\n💰 *Valor:* R$ ${service.price.toFixed(2).replace('.', ',')}\n\nEstamos te esperando! ⚡`;
-    
+
     const cleanPhone = phone.replace(/\D/g, '');
     const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     return `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;

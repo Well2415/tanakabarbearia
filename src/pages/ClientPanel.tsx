@@ -179,7 +179,7 @@ const ClientPanel = () => {
                           <div>
                             <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                             <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
-                            <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
+                            <p className="text-sm text-muted-foreground">{format(new Date(app.date + 'T12:00:00'), 'PPP', { locale: ptBR })} às {app.time}</p>
                           </div>
                           <div className="text-right">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>
