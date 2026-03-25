@@ -1,52 +1,59 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Barbearia Tanaka" />
-    <meta name="theme-color" content="#09090b" />
-    <meta name="description" content="💈 Barbearia Tanaka | Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual!" />
-    <meta name="author" content="Barbearia Tanaka" />
-    
-    <title>Barbearia Tanaka - Agendamento Online</title>
 
-    <meta property="og:title" content="Barbearia Tanaka - Agendamento Online" />
-    <meta property="og:description" content="💈 Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual com os melhores!" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://raw.githubusercontent.com/Well2415/tanakabarbearia/main/public/img/logo-tanaka.png" />
-    <meta property="og:image:alt" content="Logo da Barbearia Tanaka" />
-    <meta property="og:image:type" content="image/png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Barbearia Tanaka" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="description"
+    content="💈 Barbearia Tanaka | Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual!" />
+  <meta name="author" content="Barbearia Tanaka" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Barbearia Tanaka - Agendamento Online" />
-    <meta name="twitter:description" content="💈 Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual com os melhores!" />
-    <meta name="twitter:image" content="https://raw.githubusercontent.com/Well2415/tanakabarbearia/main/public/img/logo-tanaka.png" />
-    
-    <link rel="icon" type="image/png" href="/img/logo-tanaka.png" />
-    <link rel="apple-touch-icon" href="/img/icon-barber-v2.png" />
-    <link rel="manifest" href="/manifest.json?v=1.0.2" />
-  </head>
+  <title>Barbearia Tanaka - Agendamento Online</title>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Forçar limpeza de Service Worker antigo e cache para garantir a entrega do novo código
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-          }
-        });
-        
-        // Registrar o novo SW
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=1.0.2', { scope: '/' })
-            .catch(err => console.error('PWA erro no registro', err));
-        });
-      }
-    </script>
-  </body>
+  <meta property="og:title" content="Barbearia Tanaka - Agendamento Online" />
+  <meta property="og:description"
+    content="💈 Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual com os melhores!" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image"
+    content="https://raw.githubusercontent.com/Well2415/tanakabarbearia/main/public/img/logo-pwa-black.png" />
+  <meta property="og:image:alt" content="Logo da Barbearia Tanaka" />
+  <meta property="og:image:type" content="image/png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Barbearia Tanaka - Agendamento Online" />
+  <meta name="twitter:description"
+    content="💈 Agende seu horário de forma rápida, prática e 100% online. Venha dar um trato no visual com os melhores!" />
+  <meta name="twitter:image"
+    content="https://raw.githubusercontent.com/Well2415/tanakabarbearia/main/public/img/logo-pwa-black.png" />
+
+  <link rel="icon" type="image/png" href="/img/logo-tanaka.png" />
+  <link rel="apple-touch-icon" href="/img/icon-barber-v2.png" />
+  <link rel="manifest" href="/manifest.json?v=1.0.2" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    // Forçar limpeza de Service Worker antigo e cache para garantir a entrega do novo código
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+
+      // Registrar o novo SW
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js?v=1.0.2', { scope: '/' })
+          .catch(err => console.error('PWA erro no registro', err));
+      });
+    }
+  </script>
+</body>
+
 </html>
