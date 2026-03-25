@@ -19,6 +19,7 @@ import { CalendarIcon, Palmtree } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
 const LogoLoginImg = "/img/logo-tanaka.png";
 
 const GuestBooking = () => {
@@ -36,7 +37,7 @@ const GuestBooking = () => {
   const barbers = storage.getBarbers();
   const categories = Array.from(new Set(services.map(s => s.category || 'Outros')));
   const [lastBarberDate, setLastBarberDate] = useState({ barberId: '', date: '' });
- 
+
   useEffect(() => {
     if (barbers.length === 1 && !formData.barberId) {
       setFormData(prev => ({ ...prev, barberId: barbers[0].id }));
@@ -54,15 +55,27 @@ const GuestBooking = () => {
       const recurringSchedules = storage.getRecurringSchedules();
       const dayOfWeek = date.getDay();
 
-      const bookedTimes = allAppointments
+      const allBookedTimes: string[] = [];
+
+      allAppointments
         .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
-        .map(app => app.time);
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
+        });
 
-      const recurringTimes = recurringSchedules
+      recurringSchedules
         .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
-        .map(s => s.time);
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
 
-      const available = masterHours.filter(hour => !bookedTimes.includes(hour) && !recurringTimes.includes(hour));
+      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
       setFilteredTimes(available);
 
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
@@ -127,11 +140,11 @@ const GuestBooking = () => {
 
       toast({
         title: 'Agendamento Confirmado!',
-        description: isPaid 
-          ? 'Pagamento aprovado. Seu horário está garantido!' 
+        description: isPaid
+          ? 'Pagamento aprovado. Seu horário está garantido!'
           : 'Seu agendamento foi registrado e aguarda confirmação.',
       });
-      
+
       navigate('/');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -261,12 +274,12 @@ const GuestBooking = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {categoryServices.map((service) => (
                             <label key={service.id} className="flex items-start space-x-3 p-3 rounded-md border border-border bg-card/50 cursor-pointer hover:bg-accent/50 transition-colors">
-                              <Checkbox 
+                              <Checkbox
                                 checked={formData.serviceIds.includes(service.id)}
                                 onCheckedChange={(checked) => {
                                   setFormData(prev => ({
                                     ...prev,
-                                    serviceIds: checked 
+                                    serviceIds: checked
                                       ? [...prev.serviceIds, service.id]
                                       : prev.serviceIds.filter(id => id !== service.id)
                                   }));

@@ -201,7 +201,27 @@ export const storage = {
   getAppointments: (): Appointment[] => cache.appointments,
   async saveAppointments(appointments: Appointment[]) {
     cache.appointments = appointments;
-    await supabase.from('appointments').upsert(appointments);
+    
+    const dbPayload = appointments.map(app => ({
+      id: app.id,
+      userId: app.userId,
+      barberId: app.barberId,
+      serviceId: app.serviceId,
+      serviceIds: app.serviceIds,
+      date: app.date,
+      time: app.time,
+      status: app.status,
+      servicePrice: app.servicePrice,
+      extraCharges: app.extraCharges,
+      finalPrice: app.finalPrice,
+      amountPaid: app.amountPaid,
+      paymentType: app.paymentType,
+      cancelledReason: app.cancelledReason,
+      createdAt: app.createdAt
+    }));
+    
+    const { error } = await supabase.from('appointments').upsert(dbPayload);
+    if (error) console.error('Error saving appointments:', error);
   },
 
   // Users
@@ -321,7 +341,18 @@ export const storage = {
   getRecurringSchedules: (): RecurringSchedule[] => cache.recurringSchedules,
   async saveRecurringSchedules(schedules: RecurringSchedule[]) {
     cache.recurringSchedules = schedules;
-    await supabase.from('recurring_schedules').upsert(schedules);
+
+    const dbPayload = schedules.map(s => ({
+      id: s.id,
+      barberId: s.barberId,
+      dayOfWeek: s.dayOfWeek,
+      time: s.time,
+      active: s.active,
+      createdAt: s.createdAt
+    }));
+
+    const { error } = await supabase.from('recurring_schedules').upsert(dbPayload);
+    if (error) console.error('Error saving recurring schedules:', error);
   },
 
   getMPAccessToken: (): string => storage.getSetting('mp_access_token', ''),

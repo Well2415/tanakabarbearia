@@ -19,6 +19,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { User, Appointment, Service } from '@/types';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const NewAppointment = () => {
     const s = services.find(srv => srv.id === id);
     return sum + (s?.price || 0);
   }, 0);
-  
+
   const depositValue = totalValue / 2;
   const isNoShowEnforcement = user ? (user.noShowCount || 0) >= 2 : false;
   const requiresPayment = isNoShowEnforcement;
@@ -94,7 +95,7 @@ const NewAppointment = () => {
         title: isPaid ? 'Agendamento Confirmado!' : 'Agendamento Solicitado!',
         description: isPaid ? 'Seu pagamento foi aprovado. +1 ponto de fidelidade!' : 'Seu horário aguarda aprovação.',
       });
-      
+
       navigate('/dashboard');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -172,9 +173,29 @@ const NewAppointment = () => {
       const allApps = storage.getAppointments();
       const recurring = storage.getRecurringSchedules();
       const dayOfWeek = date.getDay();
-      const booked = allApps.filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled').map(a => a.time);
-      const recurringTimes = recurring.filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active).map(s => s.time);
-      setFilteredTimes(masterHours.filter(h => !booked.includes(h) && !recurringTimes.includes(h)));
+
+      const allBookedTimes: string[] = [];
+
+      allApps
+        .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
+        });
+
+      recurring
+        .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
+
+      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+      setFilteredTimes(masterHours.filter(h => canAccommodateService(h, requestedDuration, allBookedTimes, masterHours)));
+
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
         setFormData(prev => ({ ...prev, time: '' }));
         setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
@@ -183,7 +204,7 @@ const NewAppointment = () => {
       setFilteredTimes([]);
     }
   }, [date, formData.barberId, barbers, lastBarberDate]);
-   
+
   if (!user) return null;
 
   return (
@@ -212,12 +233,12 @@ const NewAppointment = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {categoryServices.map((service) => (
                             <label key={service.id} className="flex items-start space-x-3 p-3 rounded-md border border-border bg-card/50 cursor-pointer hover:bg-accent/50 transition-colors">
-                              <Checkbox 
+                              <Checkbox
                                 checked={formData.serviceIds.includes(service.id)}
                                 onCheckedChange={(checked) => {
                                   setFormData(prev => ({
                                     ...prev,
-                                    serviceIds: checked 
+                                    serviceIds: checked
                                       ? [...prev.serviceIds, service.id]
                                       : prev.serviceIds.filter(id => id !== service.id)
                                   }));

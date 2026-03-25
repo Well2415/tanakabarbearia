@@ -29,8 +29,10 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
 
 const Appointments = () => {
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ const Appointments = () => {
   const finalPrice = (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput;
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
- 
+
 
   const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
@@ -111,17 +113,30 @@ const Appointments = () => {
       const masterHours = selectedBarber.availableHours || [];
       const formattedDate = format(newBookingData.date, 'yyyy-MM-dd');
 
-      const bookedTimes = appointments
+      const allBookedTimes: string[] = [];
+
+      appointments
         .filter(app => app.barberId === newBookingData.barberId && app.date === formattedDate && app.status !== 'cancelled' && app.status !== 'no_show')
-        .map(app => app.time);
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
+        });
 
       const recurringSchedules = storage.getRecurringSchedules();
       const dayOfWeek = newBookingData.date.getDay();
-      const recurringTimes = recurringSchedules
-        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active)
-        .map(s => s.time);
 
-      const available = masterHours.filter(hour => !bookedTimes.includes(hour) && !recurringTimes.includes(hour));
+      recurringSchedules
+        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
+
+      const requestedDuration = getAppointmentDuration([newBookingData.serviceId], services);
+
+      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
       setManualFilteredTimes(available);
 
       // Only reset time if barber or date actually changed
@@ -142,17 +157,30 @@ const Appointments = () => {
       const masterHours = selectedBarber.availableHours || [];
       const formattedDate = format(editedDate, 'yyyy-MM-dd');
 
-      const bookedTimes = appointments
+      const allBookedTimes: string[] = [];
+
+      appointments
         .filter(app => app.barberId === editedBarberId && app.date === formattedDate && app.status !== 'cancelled' && app.status !== 'no_show' && app.id !== appointmentToEdit?.id)
-        .map(app => app.time);
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
+        });
 
       const recurringSchedules = storage.getRecurringSchedules();
       const dayOfWeek = editedDate.getDay();
-      const recurringTimes = recurringSchedules
-        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active)
-        .map(s => s.time);
 
-      const available = masterHours.filter(hour => !bookedTimes.includes(hour) && !recurringTimes.includes(hour));
+      recurringSchedules
+        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active)
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
+
+      const requestedDuration = getAppointmentDuration([editedServiceId], services);
+
+      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
 
       // If the current appointment's time is not in the list (e.g. it was booked but is now being edited), include it
       if (appointmentToEdit && appointmentToEdit.date === formattedDate && appointmentToEdit.barberId === editedBarberId) {
@@ -367,18 +395,18 @@ const Appointments = () => {
     const checkReminders = async () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
-      
+
       const upcoming = appointments.filter(app => {
         // Apenas agendamentos confirmados hoje, sem lembrete enviado
         if (app.status !== 'confirmed' || app.reminderSent || app.date !== todayStr) return false;
-        
+
         try {
           const [hours, minutes] = app.time.split(':').map(Number);
           const appDate = new Date();
           appDate.setHours(hours, minutes, 0, 0);
-          
+
           const diffInMinutes = (appDate.getTime() - now.getTime()) / (1000 * 60);
-          
+
           // Se falta entre 0 e 125 minutos (aprox 2 horas com uma margem)
           return diffInMinutes > 0 && diffInMinutes <= 125;
         } catch (e) {
@@ -392,7 +420,7 @@ const Appointments = () => {
         if (barber && service) {
           console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
           await sendWhatsApp2HourReminder(app, barber, service);
-          
+
           // Marcar como enviado no storage
           await updateAppointmentInStorage({ ...app, reminderSent: true });
         }
@@ -543,11 +571,11 @@ const Appointments = () => {
     setIsLoadingLink(true);
     const description = `Serviço: ${getServiceName(currentAppointmentToComplete.serviceId)} - ${storage.getShopName() || 'Barbearia'}`;
     const clientEmail = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId)?.email || storage.getSetting('shop_email', 'contato@barbearia.com');
-    
+
     const url = await createPreference(finalPrice, description, clientEmail);
     setPreferenceUrl(url);
     setIsLoadingLink(false);
-    
+
     if (url) {
       toast({ title: 'Link Gerado', description: 'Link de pagamento do Mercado Pago gerado com sucesso.' });
     } else {
@@ -561,7 +589,7 @@ const Appointments = () => {
 
     const newAppointment = { ...updatedAppointment, status };
     await updateAppointmentInStorage(newAppointment);
-    
+
     if (status === 'confirmed') {
       const barber = barbers.find(b => b.id === updatedAppointment.barberId);
       const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
@@ -580,18 +608,18 @@ const Appointments = () => {
       const allUsers = storage.getUsers();
       const userToUpdate = allUsers.find(u => u.id === appointment.userId);
       if (userToUpdate) {
-        const updatedUser = { 
-          ...userToUpdate, 
-          noShowCount: (userToUpdate.noShowCount || 0) + 1 
+        const updatedUser = {
+          ...userToUpdate,
+          noShowCount: (userToUpdate.noShowCount || 0) + 1
         };
         const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
         await storage.saveUsers(finalUsers);
       }
     }
-    
+
     await updateAppointmentInStorage({ ...appointment, status: 'no_show' });
-    toast({ 
-      title: 'Não Comparecimento', 
+    toast({
+      title: 'Não Comparecimento',
       description: `O cliente foi sinalizado por não comparecer ao horário marcado.`,
       variant: "destructive"
     });
@@ -832,21 +860,21 @@ const Appointments = () => {
                             <DollarSign className="w-4 h-4 mr-2" /> Finalizar
                           </Button>
                         )}
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => {
-                              const barber = barbers.find(b => b.id === appointment.barberId);
-                              const service = services.find(s => s.id === (appointment.serviceIds?.[0] || appointment.serviceId));
-                              if (barber && service) {
-                                const link = getWhatsAppManualLink(appointment, barber, service);
-                                if (link) window.open(link, '_blank');
-                              }
-                            }} 
-                            className="h-9 px-4 border-green-600/30 text-green-600 bg-transparent hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium"
-                          >
-                            <MessageCircle className="w-4 h-4 mr-2" /> Enviar Whats
-                          </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const barber = barbers.find(b => b.id === appointment.barberId);
+                            const service = services.find(s => s.id === (appointment.serviceIds?.[0] || appointment.serviceId));
+                            if (barber && service) {
+                              const link = getWhatsAppManualLink(appointment, barber, service);
+                              if (link) window.open(link, '_blank');
+                            }
+                          }}
+                          className="h-9 px-4 border-green-600/30 text-green-600 bg-transparent hover:bg-green-600 hover:text-white hover:border-green-600 transition-all font-medium"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" /> Enviar Whats
+                        </Button>
                         {appointment.status === 'pending' && (
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => updateStatus(appointment.id, 'confirmed')} className="bg-green-600/10 text-green-600 hover:bg-green-600 hover:text-white border-green-600/20">
@@ -858,10 +886,10 @@ const Appointments = () => {
                           </div>
                         )}
                         {(appointment.status === 'confirmed' || appointment.status === 'pending') && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleNoShow(appointment)} 
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleNoShow(appointment)}
                             className="h-9 px-4 border-orange-500/30 text-orange-600 bg-transparent hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all font-medium"
                           >
                             <UserCog className="w-4 h-4 mr-2" /> Não Compareceu
@@ -899,9 +927,9 @@ const Appointments = () => {
                 Mostrando <span className="font-medium">{filteredAppointments.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredAppointments.length)}</span> de <span className="font-medium">{filteredAppointments.length}</span> agendamentos
               </p>
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
@@ -910,9 +938,9 @@ const Appointments = () => {
                 <div className="text-sm font-medium px-2">
                   Página {currentPage} de {Math.max(1, totalPages)}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage >= totalPages || totalPages === 0}
                 >
@@ -992,15 +1020,15 @@ const Appointments = () => {
             </div>
 
             {/* Seção de Pix Dinâmico removida para unificação de gateway */}
-            
+
             {paymentType === 'link' && isMPConfigured() && (
               <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
                 {!preferenceUrl ? (
                   <>
                     <CreditCard className="w-10 h-10 text-primary mb-2 opacity-80" />
                     <p className="text-base font-bold text-foreground">Mercado Pago (Pix/Cartão)</p>
-                    <Button 
-                      onClick={handleGenerateLink} 
+                    <Button
+                      onClick={handleGenerateLink}
                       disabled={isLoadingLink || finalPrice <= 0}
                       className="w-full h-11 bg-primary hover:bg-primary/90 mt-2"
                     >
@@ -1011,24 +1039,24 @@ const Appointments = () => {
                 ) : (
                   <>
                     <div className="bg-background cursor-pointer hover:bg-accent/50 transition-colors p-4 rounded-xl mb-4 shadow-lg border-2 border-primary/20 w-full" onClick={() => window.open(preferenceUrl, '_blank')}>
-                       <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
-                       <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
+                      <CreditCard className="w-10 h-10 text-primary mx-auto mb-2" />
+                      <p className="text-[10px] font-bold text-foreground truncate">{preferenceUrl}</p>
                     </div>
                     <p className="text-base font-bold text-foreground mb-1">Link Gerado!</p>
                     <p className="text-[10px] text-muted-foreground mb-4">Envie o link para o cliente ou abra agora.</p>
-                    
+
                     <div className="w-full space-y-2">
-                       <Button 
-                        variant="default" 
-                        size="sm" 
+                      <Button
+                        variant="default"
+                        size="sm"
                         className="w-full h-10 gap-2"
                         onClick={() => window.open(preferenceUrl, '_blank')}
                       >
                         <ExternalLink className="w-4 h-4" /> Abrir Checkout
                       </Button>
-                       <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="w-full h-10 text-xs gap-2"
                         onClick={() => {
                           navigator.clipboard.writeText(preferenceUrl);
@@ -1037,9 +1065,9 @@ const Appointments = () => {
                       >
                         <Copy className="w-4 h-4" /> Copiar Link
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="w-full h-8 text-[10px] text-zinc-500"
                         onClick={() => setPreferenceUrl(null)}
                       >
@@ -1052,7 +1080,7 @@ const Appointments = () => {
             )}
 
             {paymentType === 'link' && !isMPConfigured() && (
-               <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Gateways de pagamento não configurados no painel Admin.</p>
+              <p className="text-xs text-amber-500 font-medium italic text-center mt-2">Gateways de pagamento não configurados no painel Admin.</p>
             )}
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end mt-4 pb-4">
@@ -1215,16 +1243,16 @@ const Appointments = () => {
                     aria-expanded={isClientComboOpen}
                     className="w-full justify-between h-11 border-primary/20 bg-primary/5 hover:bg-primary/10 font-normal"
                   >
-                    {newBookingData.userId 
-                      ? users.find((u) => u.id === newBookingData.userId)?.fullName 
+                    {newBookingData.userId
+                      ? users.find((u) => u.id === newBookingData.userId)?.fullName
                       : "Buscar cliente..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                   <Command shouldFilter={false}>
-                    <CommandInput 
-                      placeholder="Digite o nome do cliente..." 
+                    <CommandInput
+                      placeholder="Digite o nome do cliente..."
                       value={clientSearchQuery}
                       onValueChange={setClientSearchQuery}
                     />
@@ -1249,7 +1277,7 @@ const Appointments = () => {
                           -- Novo Cliente / Convidado --
                         </CommandItem>
                         {users
-                          .filter(u => u.role === 'client' && 
+                          .filter(u => u.role === 'client' &&
                             u.fullName.toLowerCase().includes(clientSearchQuery.toLowerCase()))
                           .sort((a, b) => a.fullName.localeCompare(b.fullName))
                           .slice(0, 10) // Limit to 10 results for performance
@@ -1258,11 +1286,11 @@ const Appointments = () => {
                               key={client.id}
                               value={client.id}
                               onSelect={() => {
-                                setNewBookingData({ 
-                                  ...newBookingData, 
-                                  userId: client.id, 
-                                  clientName: client.fullName, 
-                                  clientPhone: client.phone || '' 
+                                setNewBookingData({
+                                  ...newBookingData,
+                                  userId: client.id,
+                                  clientName: client.fullName,
+                                  clientPhone: client.phone || ''
                                 });
                                 setClientSearchQuery('');
                                 setIsClientComboOpen(false);
@@ -1277,12 +1305,12 @@ const Appointments = () => {
                               {client.fullName}
                             </CommandItem>
                           ))}
-                        {users.filter(u => u.role === 'client' && 
+                        {users.filter(u => u.role === 'client' &&
                           u.fullName.toLowerCase().includes(clientSearchQuery.toLowerCase())).length > 10 && (
-                          <div className="px-2 py-1.5 text-xs text-muted-foreground italic border-t mt-1">
-                            Continue digitando para refinar a busca...
-                          </div>
-                        )}
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground italic border-t mt-1">
+                              Continue digitando para refinar a busca...
+                            </div>
+                          )}
                       </CommandGroup>
                     </CommandList>
                   </Command>
