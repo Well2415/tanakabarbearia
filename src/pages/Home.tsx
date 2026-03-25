@@ -203,9 +203,9 @@ const Home = () => {
                       />
                     </AspectRatio>
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
-                    <div className="absolute bottom-4 left-6 right-6 flex justify-between items-end">
-                      <h3 className="text-2xl font-bold text-white drop-shadow-md">{service.name}</h3>
-                      <span className="text-xl font-black text-primary bg-background/80 backdrop-blur-md px-3 py-1 rounded-lg">R$ {service.price}</span>
+                    <div className="absolute bottom-4 left-6 right-6 flex justify-between items-end gap-2">
+                      <h3 className="text-2xl font-bold text-white drop-shadow-md line-clamp-1 flex-1">{service.name}</h3>
+                      <span className="text-xl font-black text-primary bg-background/80 backdrop-blur-md px-3 py-1 rounded-lg whitespace-nowrap shrink-0">R$ {service.price}</span>
                     </div>
                   </div>
                   <div className="p-6">
