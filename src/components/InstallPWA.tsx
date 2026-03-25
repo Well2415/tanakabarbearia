@@ -127,30 +127,32 @@ export const InstallPWA = () => {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-md animate-fade-in-up">
-      <div className="bg-card/95 backdrop-blur-xl border border-primary/20 p-5 rounded-3xl shadow-2xl flex flex-col gap-4 text-left">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-            <img src="/img/icon-barber-v2.png" alt="App Logo" className="h-8 w-8 object-contain" />
+    <div className="fixed bottom-6 left-0 right-0 z-[60] flex justify-center pointer-events-none px-4">
+      <div className="w-full max-w-md animate-fade-in-up pointer-events-auto">
+        <div className="bg-card/95 backdrop-blur-xl border border-primary/20 p-5 rounded-3xl shadow-2xl flex flex-col gap-4 text-left">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+              <img src="/img/icon-barber-v2.png" alt="App Logo" className="h-8 w-8 object-contain" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-white leading-tight">Instalar Aplicativo Tanaka</h4>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-1">
+                Para uma experiência melhor e agendamentos mais rápidos.
+              </p>
+            </div>
+            <button onClick={dismissBanner} className="text-muted-foreground hover:text-white p-1">
+              <PlusSquare className="w-5 h-5 rotate-45" />
+            </button>
           </div>
-          <div className="flex-1">
-            <h4 className="text-sm font-bold text-white leading-tight">Instalar Aplicativo Tanaka</h4>
-            <p className="text-[11px] text-muted-foreground leading-tight mt-1">
-              Para uma experiência melhor e agendamentos mais rápidos.
-            </p>
-          </div>
-          <button onClick={dismissBanner} className="text-muted-foreground hover:text-white p-1">
-            <PlusSquare className="w-5 h-5 rotate-45" />
-          </button>
-        </div>
 
-        <PWAInstallDialog 
-          trigger={
-            <Button className="w-full bg-primary text-primary-foreground font-bold rounded-xl h-12 shadow-lg shadow-primary/20">
-              COMO INSTALAR?
-            </Button>
-          }
-        />
+          <PWAInstallDialog 
+            trigger={
+              <Button className="w-full bg-primary text-primary-foreground font-bold rounded-xl h-12 shadow-lg shadow-primary/20">
+                COMO INSTALAR?
+              </Button>
+            }
+          />
+        </div>
       </div>
     </div>
   );
