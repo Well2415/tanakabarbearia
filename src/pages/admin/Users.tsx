@@ -279,7 +279,7 @@ const Users = () => {
               </SelectContent>
             </Select>
 
-            {newRole === 'barber' && (
+            {(newRole === 'barber' || newRole === 'admin') && (
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground mb-2">Vincular a qual barbeiro?</p>
                 <Select value={selectedBarber} onValueChange={(value) => setSelectedBarber(value)}>
