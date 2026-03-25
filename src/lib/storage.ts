@@ -196,6 +196,7 @@ export const storage = {
   getBarbers: (): Barber[] => cache.barbers,
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
+    localStorage.setItem('barbers', JSON.stringify(barbers));
 
     // Extract scheduleByDay and save to settings to avoid modifying Supabase schema
     const barberSchedules: Record<string, any> = {};
@@ -216,6 +217,7 @@ export const storage = {
   getServices: (): Service[] => cache.services,
   async saveServices(services: Service[]) {
     cache.services = services;
+    localStorage.setItem('services', JSON.stringify(services));
     await supabase.from('services').delete().neq('id', '_none_');
     await supabase.from('services').insert(services);
   },
@@ -228,6 +230,7 @@ export const storage = {
     const deletedIds = currentIds.filter(id => !newIds.includes(id));
 
     cache.appointments = appointments;
+    localStorage.setItem('appointments', JSON.stringify(appointments));
 
     // Filtra discount (local only) out
     const dbPayload = appointments.map(app => {
@@ -249,6 +252,7 @@ export const storage = {
   getUsers: (): User[] => cache.users,
   async saveUsers(users: User[]) {
     cache.users = users;
+    localStorage.setItem('users', JSON.stringify(users));
     await supabase.from('users').upsert(users);
   },
 
@@ -366,6 +370,7 @@ export const storage = {
     const deletedIds = currentIds.filter(id => !newIds.includes(id));
 
     cache.recurringSchedules = schedules;
+    localStorage.setItem('recurring_schedules', JSON.stringify(schedules));
 
     const dbPayload = schedules.map(s => ({
       id: s.id,
