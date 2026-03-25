@@ -41,14 +41,6 @@ const Login = () => {
       const user = users.find(u => {
         const matchUsername = (u.username || "").trim().toLowerCase() === typedUsername.toLowerCase();
         const matchPassword = (u.password || "").trim() === typedPassword;
-        
-        if (matchUsername) {
-          console.log('🔍 [Login Debug] Usuário encontrado:', u.username);
-          console.log('🔍 [Login Debug] ID do Usuário:', u.id);
-          console.log('🔍 [Login Debug] Senha no Banco existe?', !!u.password);
-          console.log('🔍 [Login Debug] Senha coincide?', matchPassword);
-        }
-        
         return matchUsername && matchPassword;
       });
 

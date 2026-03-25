@@ -257,12 +257,9 @@ export const storage = {
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));
-    console.log('📡 [Storage] Salvando usuários no Supabase...', users.length);
     const { error } = await supabase.from('users').upsert(users);
     if (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
-    } else {
-      console.log('✅ [Storage] Usuários salvos com sucesso.');
     }
   },
 
