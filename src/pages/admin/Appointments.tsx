@@ -460,17 +460,14 @@ const Appointments = () => {
           console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
           await sendWhatsApp2HourReminder(app, barber, service);
           
-          // Enviar Notificação Push se o usuário estiver inscrito
+          // Enviar Notificação Push se o usuário tiver ID (a Edge Function verifica a inscrição no Banco)
           if (app.userId) {
-            const client = users.find(u => u.id === app.userId);
-            if (client?.pushSubscription) {
-              await notificationManager.sendPushNotification(
-                client.id,
-                'Lembrete de Agendamento',
-                `Faltam 2 horas para o seu serviço de ${service.name} na Tanaka Barbearia!`,
-                '/dashboard'
-              );
-            }
+            await notificationManager.sendPushNotification(
+              app.userId,
+              'Lembrete de Agendamento',
+              `Faltam 2 horas para o seu serviço de ${service.name} na Tanaka Barbearia!`,
+              '/dashboard'
+            );
           }
 
           // Marcar como enviado no storage
@@ -649,17 +646,14 @@ const Appointments = () => {
         const link = getWhatsAppManualLink(newAppointment, barber, service);
         if (link) window.open(link, '_blank');
 
-        // Enviar Notificação Push de Confirmação
+        // Enviar Notificação Push de Confirmação (a Edge Function verifica a inscrição no Banco)
         if (updatedAppointment.userId) {
-          const client = users.find(u => u.id === updatedAppointment.userId);
-          if (client?.pushSubscription) {
-            await notificationManager.sendPushNotification(
-              client.id,
-              'Agendamento Confirmado!',
-              `Seu horário para ${service.name} foi confirmado com sucesso.`,
-              '/dashboard'
-            );
-          }
+          await notificationManager.sendPushNotification(
+            updatedAppointment.userId,
+            'Agendamento Confirmado!',
+            `Seu horário para ${service.name} foi confirmado com sucesso.`,
+            '/dashboard'
+          );
         }
       }
     }

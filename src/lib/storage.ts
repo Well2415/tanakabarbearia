@@ -151,7 +151,23 @@ export const storage = {
       saveCacheToLocal();
     } catch (error) {
       console.error('❌ Error initializing Supabase:', error);
-      this.isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
+      this.isInitialized = true;
+    }
+  },
+  
+  /**
+   * Recarrega apenas a lista de usuários do Supabase.
+   * Útil para garantir que temos as inscrições de push mais recentes sem re-inicializar tudo.
+   */
+  async refreshUsers() {
+    try {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) throw error;
+      cache.users = data || [];
+      saveCacheToLocal();
+      console.log('✅ [Storage] Usuários recarregados com sucesso.');
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao recarregar usuários:', error);
     }
   },
 
@@ -301,8 +317,15 @@ export const storage = {
   getUsers: (): User[] => cache.users,
 
   async updateUser(user: User) {
-    cache.users = cache.users.map(u => u.id === user.id ? user : u);
-    localStorage.setItem('users', JSON.stringify(cache.users));
+    // 1. Atualizar Cache Local e LocalStorage
+    const userExists = cache.users.some(u => u.id === user.id);
+    if (userExists) {
+      cache.users = cache.users.map(u => u.id === user.id ? user : u);
+    } else {
+      cache.users = [...cache.users, user];
+    }
+    
+    saveCacheToLocal();
     
     // update localStorage currentUser if it's the logged in user
     const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');

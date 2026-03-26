@@ -98,12 +98,11 @@ const NewAppointment = () => {
       });
 
 
-      // Notificar Barbeiro (Push) - Força atualização para ver novas inscrições
-      storage.isInitialized = false;
-      await storage.initialize();
-
+      // Notificar Barbeiro (Push)
+      await storage.refreshUsers();
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
-      if (barberUser?.pushSubscription) {
+      
+      if (barberUser) {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);
         await notificationManager.sendPushNotification(
           barberUser.id,
