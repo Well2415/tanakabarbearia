@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { XCircle, Clock } from 'lucide-react';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 interface ClientViewProps {
   user: User;
@@ -93,7 +94,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
                       <div>
                         <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                         <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
-                        <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
+                        <p className="text-sm text-muted-foreground">{format(parseLocalDate(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>

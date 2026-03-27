@@ -18,7 +18,7 @@ import { ptBR } from 'date-fns/locale';
 import { Barber } from '@/types';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { sortTimes } from '@/lib/timeUtils';
+import { sortTimes, parseLocalDate } from '@/lib/timeUtils';
 
 const COMMON_HOURS = [
   '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -310,7 +310,7 @@ const Barbers = () => {
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="multiple"
-                        selected={newBarberData.availableDates.map(d => new Date(d + 'T12:00:00'))}
+                        selected={newBarberData.availableDates.map(d => parseLocalDate(d))}
                         onSelect={(dates) => {
                           const formatted = (dates as Date[] || []).map(d => format(d, 'yyyy-MM-dd'));
                           setNewBarberData({ ...newBarberData, availableDates: formatted.sort() });
@@ -334,7 +334,7 @@ const Barbers = () => {
                             });
                           }}
                         >
-                          {format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy')}
+                          {format(parseLocalDate(dateStr), 'dd/MM/yyyy')}
                           <X className="w-3 h-3" />
                         </Badge>
                       ))}
@@ -376,7 +376,7 @@ const Barbers = () => {
                 </div>
                 <h4 className="text-sm font-semibold mt-4 mb-2">Datas Disponíveis</h4>
                 <div className="flex flex-wrap gap-2">
-                  {barber.availableDates.map((dateStr, idx) => (<span key={idx} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">{format(new Date(dateStr), 'dd/MM/yyyy')}</span>))}
+                  {barber.availableDates.map((dateStr, idx) => (<span key={idx} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">{format(parseLocalDate(dateStr), 'dd/MM/yyyy')}</span>))}
                 </div>
               </div>
             </Card>
@@ -512,7 +512,7 @@ const Barbers = () => {
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="multiple"
-                    selected={editBarberData.availableDates.map(d => new Date(d + 'T12:00:00'))}
+                    selected={editBarberData.availableDates.map(d => parseLocalDate(d))}
                     onSelect={(dates) => {
                       const formatted = (dates as Date[] || []).map(d => format(d, 'yyyy-MM-dd'));
                       setEditBarberData({ ...editBarberData, availableDates: formatted.sort() });
@@ -536,7 +536,7 @@ const Barbers = () => {
                         });
                       }}
                     >
-                      {format(new Date(dateStr + 'T12:00:00'), 'dd/MM/yyyy')}
+                      {format(parseLocalDate(dateStr), 'dd/MM/yyyy')}
                       <X className="w-3 h-3" />
                     </Badge>
                   ))}

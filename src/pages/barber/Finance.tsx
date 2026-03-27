@@ -20,6 +20,7 @@ import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 const Finance = () => {
   const navigate = useNavigate();
@@ -111,19 +112,19 @@ const Finance = () => {
   const filteredAppointments = useMemo(() => {
     return appointments.filter(a => {
       if (a.status !== 'completed') return false;
-      const d = parseISO(a.date);
-      if (filterPeriod === 'month') return isSameMonth(d, parseISO(`${filterMonth}-01`));
-      if (filterPeriod === 'year') return isSameYear(d, parseISO(`${filterYear}-01-01`));
+      const d = parseLocalDate(a.date);
+      if (filterPeriod === 'month') return isSameMonth(d, parseLocalDate(`${filterMonth}-01`));
+      if (filterPeriod === 'year') return isSameYear(d, parseLocalDate(`${filterYear}-01-01`));
       return true; // 'all'
     });
   }, [appointments, filterPeriod, filterMonth, filterYear]);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter(e => {
-      const d = parseISO(e.date);
+      const d = parseLocalDate(e.date);
       let timeMatch = true;
-      if (filterPeriod === 'month') timeMatch = isSameMonth(d, parseISO(`${filterMonth}-01`));
-      if (filterPeriod === 'year') timeMatch = isSameYear(d, parseISO(`${filterYear}-01-01`));
+      if (filterPeriod === 'month') timeMatch = isSameMonth(d, parseLocalDate(`${filterMonth}-01`));
+      if (filterPeriod === 'year') timeMatch = isSameYear(d, parseLocalDate(`${filterYear}-01-01`));
       
       let catMatch = true;
       if (filterCategory !== 'all' && filterCategory !== 'revenue') {
@@ -167,7 +168,7 @@ const Finance = () => {
       category: e.category
     }));
 
-    return [...revenueTx, ...expenseTx].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...revenueTx, ...expenseTx].sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
   }, [activeAppointments, activeExpenses, users]);
 
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -192,7 +193,7 @@ const Finance = () => {
 
       return {
         date: dateStr,
-        label: format(parseISO(dateStr), 'EEE', { locale: ptBR }),
+        label: format(parseLocalDate(dateStr), 'EEE', { locale: ptBR }),
         revenue
       };
     });
@@ -256,7 +257,7 @@ const Finance = () => {
 
   const getFilterLabel = () => {
     let timeBlock = '';
-    if (filterPeriod === 'month') timeBlock = format(parseISO(`${filterMonth}-01`), 'MMM/yyyy', { locale: ptBR });
+    if (filterPeriod === 'month') timeBlock = format(parseLocalDate(`${filterMonth}-01`), 'MMM/yyyy', { locale: ptBR });
     if (filterPeriod === 'year') timeBlock = `Ano ${filterYear}`;
     if (filterPeriod === 'all') timeBlock = 'Todo o Período';
 
@@ -444,7 +445,7 @@ const Finance = () => {
                                 {tx.category}
                               </span>
                               <span className="text-[11px] text-muted-foreground ml-1">
-                                {format(parseISO(tx.date), 'dd/MM/yyyy')}
+                                {format(parseLocalDate(tx.date), 'dd/MM/yyyy')}
                               </span>
                             </div>
                           </div>
@@ -618,13 +619,13 @@ const Finance = () => {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('w-full h-12 justify-start text-left font-normal bg-card', !newExpense.date && 'text-muted-foreground')}>
                       <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                      <span className="truncate">{newExpense.date ? format(parseISO(newExpense.date), 'dd/MM/yyyy') : 'Selecione a data'}</span>
+                      <span className="truncate">{newExpense.date ? format(parseLocalDate(newExpense.date), 'dd/MM/yyyy') : 'Selecione a data'}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={newExpense.date ? parseISO(newExpense.date) : undefined}
+                      selected={newExpense.date ? parseLocalDate(newExpense.date) : undefined}
                       onSelect={(selectedDate) => {
                         if (selectedDate) {
                           setNewExpense({ ...newExpense, date: format(selectedDate, 'yyyy-MM-dd') });

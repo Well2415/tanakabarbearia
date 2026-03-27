@@ -32,7 +32,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate } from '@/lib/timeUtils';
 
 const Appointments = () => {
   const navigate = useNavigate();
@@ -321,7 +321,7 @@ const Appointments = () => {
 
     const filtered = appointments.filter(appt => {
       if (appt.status !== 'completed' || !appt.finalPrice || !appt.paymentType) return false;
-      const apptDate = parseISO(appt.date);
+      const apptDate = parseLocalDate(appt.date);
       if (start && isBefore(apptDate, start)) return false;
       if (end && isAfter(apptDate, end)) return false;
       if (paymentTypeFilter !== 'all' && appt.paymentType !== paymentTypeFilter) return false;
@@ -518,7 +518,7 @@ const Appointments = () => {
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          return isSameDay(parseISO(appt.date), today);
+          return isSameDay(parseLocalDate(appt.date), today);
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled';
         case 'all':
@@ -543,7 +543,7 @@ const Appointments = () => {
       case 'confirmed':
         return appointments.filter(a => a.status === 'confirmed').length;
       case 'today':
-        return appointments.filter(a => isSameDay(parseISO(a.date), today)).length;
+        return appointments.filter(a => isSameDay(parseLocalDate(a.date), today)).length;
       case 'history':
         return appointments.filter(a => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show').length;
       default:

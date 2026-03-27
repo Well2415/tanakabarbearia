@@ -20,7 +20,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { User, Appointment, Service } from '@/types';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate } from '@/lib/timeUtils';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -132,7 +132,7 @@ const NewAppointment = () => {
       if (pendingJson) {
         try {
           const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, new Date(savedDateStr));
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
           localStorage.removeItem('pending_appointment_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -148,7 +148,7 @@ const NewAppointment = () => {
     try {
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia`;
-      localStorage.setItem('pending_appointment_booking', JSON.stringify({ formData, date: date?.toISOString() }));
+      localStorage.setItem('pending_appointment_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
       const url = await createPreference(depositValue, description, user.email, window.location.href);
       if (url) {
         window.location.href = url;

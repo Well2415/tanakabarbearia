@@ -102,3 +102,13 @@ export const canAccommodateService = (
   const neededSlots = getBlockedTimes(startTime, durationMinutes);
   return neededSlots.every(slot => masterHours.includes(slot) && !allBookedTimes.includes(slot));
 };
+/**
+ * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 
+ * sem sofrer deslocamento de fuso horário UTC.
+ */
+export const parseLocalDate = (dateStr: string | undefined): Date => {
+  if (!dateStr) return new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  // O mês no construtor de Date é 0-indexado (0 = Janeiro)
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
