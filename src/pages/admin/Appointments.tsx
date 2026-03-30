@@ -464,7 +464,7 @@ const Appointments = () => {
           if (app.userId) {
             await notificationManager.sendPushNotification(
               app.userId,
-              'Lembrete de Agendamento',
+            'Aviso de Agendamento',
               `Faltam 2 horas para o seu serviço de ${service.name} na Tanaka Barbearia!`,
               '/dashboard'
             );
@@ -650,7 +650,7 @@ const Appointments = () => {
         if (updatedAppointment.userId) {
           await notificationManager.sendPushNotification(
             updatedAppointment.userId,
-            'Agendamento Confirmado!',
+            'Horário Confirmado! ✅',
             `Seu horário para ${service.name} foi confirmado com sucesso.`,
             '/dashboard'
           );

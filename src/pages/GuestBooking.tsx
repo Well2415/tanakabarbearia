@@ -170,7 +170,7 @@ const GuestBooking = () => {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);
         await notificationManager.sendPushNotification(
           barberUser.id,
-          'Novo Agendamento (Convidado)! 💈',
+          'Novo Agendamento! 💈',
           `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`,
           '/admin/appointments'
         );

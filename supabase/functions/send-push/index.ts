@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supUrl, supKey);
 
-    webpush.setVapidDetails('mailto:contato@tanakabarbearia.com.br', pubKey, privKey);
+    webpush.setVapidDetails('https://tanakabarbearia.vercel.app', pubKey, privKey);
 
     // 4. Buscar Usuário
     console.log(`🔍 Buscando subscrição para ID: ${userId}`);
