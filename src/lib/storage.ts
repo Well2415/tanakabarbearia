@@ -216,6 +216,25 @@ export const storage = {
   getBarbers: (): Barber[] => cache.barbers,
 
   async updateBarber(barber: Barber) {
+    // 0. Deep clean hours (split commas, unique, sort)
+    const cleanHoursArray = (hours: string[]) => {
+      const cleaned = new Set<string>();
+      (hours || []).forEach(h => {
+        if (typeof h === 'string') {
+          h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleaned.add(s));
+        }
+      });
+      return sortTimes(Array.from(cleaned));
+    };
+
+    barber.availableHours = cleanHoursArray(barber.availableHours);
+    if (barber.scheduleByDay) {
+      Object.keys(barber.scheduleByDay).forEach(day => {
+        const d = parseInt(day);
+        barber.scheduleByDay![d] = cleanHoursArray(barber.scheduleByDay![d]);
+      });
+    }
+
     // 1. Update local cache
     cache.barbers = cache.barbers.map(b => b.id === barber.id ? barber : b);
     localStorage.setItem('barbers', JSON.stringify(cache.barbers));
@@ -326,15 +345,45 @@ export const storage = {
     }
     
     saveCacheToLocal();
-    
-    // update localStorage currentUser if it's the logged in user
     const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
     if (loggedInId === user.id) {
        localStorage.setItem('currentUser', JSON.stringify(user));
     }
     
-    const { error } = await supabase.from('users').upsert(user);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { pushSubscription, ...dbUser } = user; // Remove pushSubscription para evitar sobrescrever com null se não estiver no form
+    const { error } = await supabase.from('users').upsert(dbUser);
     if (error) console.error('❌ [Storage] Erro ao atualizar usuário:', error);
+  },
+
+  /**
+   * Atualiza apenas a inscrição de push de um usuário específico.
+   * Evita perda de dados por sobrescrita de objeto inteiro.
+   */
+  async updateUserPushSubscription(userId: string, subscription: string | null) {
+    // 1. Atualizar Cache Local
+    const user = cache.users.find(u => u.id === userId);
+    if (user) {
+      user.pushSubscription = subscription;
+      saveCacheToLocal();
+      
+      const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
+      if (loggedInId === userId) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+      }
+    }
+
+    // 2. Atualizar apenas a coluna no Supabase
+    const { error } = await supabase
+      .from('users')
+      .update({ pushSubscription: subscription })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao atualizar pushSubscription:', error);
+      throw error;
+    }
+    console.log('✅ [Storage] pushSubscription atualizado no banco.');
   },
 
   async saveUsers(users: User[]) {

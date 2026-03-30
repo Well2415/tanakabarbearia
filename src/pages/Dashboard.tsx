@@ -39,6 +39,7 @@ const Dashboard = () => {
   });
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isPushSupported, setIsPushSupported] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Placeholder for My Best Barber
   const bestBarber: Barber | null = storage.getBarbers().find(barber => barber.name === 'João Silva') || null; // Example: picking João Silva
@@ -90,35 +91,42 @@ const Dashboard = () => {
 
   const handleTogglePush = async () => {
     if (!user) return;
+    setIsProcessing(true);
 
-    if (!pushEnabled) {
-      const granted = await notificationManager.requestPermission();
-      if (granted) {
+    try {
+      if (!pushEnabled) {
+        const permission = await notificationManager.requestPermission();
+        if (!permission) {
+          toast({ title: 'Permissão Negada', description: 'Ative as notificações nas configurações do navegador.', variant: 'destructive' });
+          return;
+        }
+
         const sub = await notificationManager.subscribe();
         if (sub) {
+          // syncSubscriptionWithUser agora cuida do banco E do cache via storage.updateUserPushSubscription
           await notificationManager.syncSubscriptionWithUser(user.id, sub);
           setPushEnabled(true);
-          toast({ title: 'Notificações Ativadas!', description: 'Você receberá avisos sobre seus agendamentos.' });
           
-          // Refresh user in context
-          const updatedUser = { ...user, pushSubscription: JSON.stringify(sub) };
-          setUser(updatedUser);
-          await storage.updateUser(updatedUser);
-        } else {
-          toast({ title: 'Erro', description: 'Não foi possível configurar as notificações.', variant: 'destructive' });
+          // Atualiza o estado local do Dashboard para refletir a mudança
+          const updatedUser = storage.getCurrentUser();
+          if (updatedUser) setUser(updatedUser);
+
+          toast({ title: 'Notificações Ativadas!', description: 'Você receberá avisos de novos agendamentos.' });
         }
       } else {
-        toast({ title: 'Permissão Negatada', description: 'Ative as notificações nas configurações do seu navegador.', variant: 'destructive' });
+        await notificationManager.syncSubscriptionWithUser(user.id, null);
+        setPushEnabled(false);
+        
+        const updatedUser = storage.getCurrentUser();
+        if (updatedUser) setUser(updatedUser);
+
+        toast({ title: 'Notificações Desativadas', description: 'Você não receberá mais avisos push.' });
       }
-    } else {
-      // Unsubscribe logic (Optional for now)
-      await notificationManager.syncSubscriptionWithUser(user.id, null);
-      setPushEnabled(false);
-      toast({ title: 'Notificações Desativadas', description: 'Você não receberá mais avisos por este dispositivo.' });
-      
-      const updatedUser = { ...user, pushSubscription: null };
-      setUser(updatedUser);
-      await storage.updateUser(updatedUser);
+    } catch (error) {
+      console.error('Erro ao alternar Push:', error);
+      toast({ title: 'Erro', description: 'Não foi possível alterar as notificações.', variant: 'destructive' });
+    } finally {
+      setIsProcessing(false);
     }
   };
 

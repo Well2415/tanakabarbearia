@@ -43,11 +43,54 @@ const MyAppointments = () => {
       }
 
       const allAppointments = storage.getAppointments();
+      const recurringSchedules = storage.getRecurringSchedules();
       const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
       if (barberProfile) {
+        const today = new Date();
+        const todayFormatted = format(today, 'yyyy-MM-dd');
+        const dayOfWeek = today.getDay();
+
+        // 1. Agendamentos reais do barbeiro
         const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
-        setAppointments(barberAppointments);
+        
+        // 2. Agendamentos fixos (recorrentes) para HOJE
+        const todayRecurring = recurringSchedules
+          .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active)
+          .filter(s => {
+            // Evitar duplicados: Se já existe um agendamento real para este cliente neste horário hoje, não mostrar o virtual
+            return !barberAppointments.some(appt => 
+              appt.date === todayFormatted && 
+              appt.time === s.time && 
+              appt.userId === s.userId
+            );
+          })
+          .map(s => {
+            const servicesData = storage.getServices();
+            const sIds = s.serviceIds || [s.serviceId];
+            const totalPrice = sIds.reduce((sum, id) => {
+              const srv = servicesData.find(x => x.id === id);
+              return sum + (srv?.price || 0);
+            }, 0);
+
+            return {
+              id: `recurring-v-${s.id}`, // v de virtual
+              userId: s.userId,
+              barberId: s.barberId,
+              serviceId: sIds[0],
+              serviceIds: sIds,
+              date: todayFormatted,
+              time: s.time,
+              status: 'pending' as const,
+              servicePrice: totalPrice,
+              amountPaid: 0,
+              paymentType: '',
+              isRecurring: true, // Flag para a UI
+            };
+          });
+
+        // Combinar e ordenar (appointments já estão tipados, estender se necessário ou usar any temporário para a flag)
+        setAppointments([...barberAppointments, ...todayRecurring as any]);
       } else {
         toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
         navigate('/dashboard');
@@ -90,8 +133,34 @@ const MyAppointments = () => {
     const scheduledDateTime = parseISO(`${appointment.date}T${appointment.time}:00`);
     const isDelayed = isAfter(now, scheduledDateTime);
 
+    let finalAppointment = { ...appointment };
+
+    // Se for virtual, cria o agendamento real no banco agora
+    if (appointment.id.startsWith('recurring-v-')) {
+      const servicesData = storage.getServices();
+      const sIds = appointment.serviceIds || [appointment.serviceId];
+      const totalServicePrice = sIds.reduce((sum, id) => {
+        const s = servicesData.find(srv => srv.id === id);
+        return sum + (s?.price || 0);
+      }, 0);
+
+      finalAppointment = {
+        ...appointment,
+        id: `rec-${Date.now()}`, // Novo ID real
+        servicePrice: totalServicePrice,
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Salva no banco (spread para remover flags extras se houver)
+      const { ...dbAppointment } = finalAppointment;
+      // @ts-ignore (remover a flag isRecurring se existir)
+      delete dbAppointment.isRecurring;
+      
+      await storage.saveAppointments([...storage.getAppointments(), dbAppointment as Appointment]);
+    }
+
     const updatedAppointment = {
-      ...appointment,
+      ...finalAppointment,
       startTime: format(now, 'HH:mm'),
       isDelayed: isDelayed,
       status: 'in_progress' as const,
@@ -224,6 +293,7 @@ const MyAppointments = () => {
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg">{getClientName(appointment)}</h3>
                       <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
+                      {(appointment as any).isRecurring && <Badge variant="outline" className="border-primary text-primary font-bold">FIXO</Badge>}
                       {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                     </div>
                     <p className="text-muted-foreground"><span className="font-medium">Serviço:</span> {getServiceName(appointment.serviceIds || appointment.serviceId)}</p>

@@ -55,7 +55,12 @@ const ManageAvailability = () => {
   };
 
   const handleAddHour = () => {
-    const hoursToAdd = newHour.split(',').map(h => h.trim()).filter(h => h !== '');
+    const hoursToAdd: string[] = [];
+    newHour.split(',').forEach(h => {
+      const trimmed = h.trim();
+      if (trimmed) hoursToAdd.push(trimmed);
+    });
+
     const uniqueNewHours = hoursToAdd.filter(h => !availableHours.includes(h));
     if (uniqueNewHours.length > 0) {
       setAvailableHours(sortTimes([...availableHours, ...uniqueNewHours]));
@@ -125,9 +130,15 @@ const ManageAvailability = () => {
     if (!barberProfile) return;
     
     try {
+      // Limpeza profunda de horários antes de salvar
+      const cleanedHours = new Set<string>();
+      availableHours.forEach(h => {
+        h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleanedHours.add(s));
+      });
+
       const updatedBarber = {
         ...barberProfile,
-        availableHours: availableHours,
+        availableHours: sortTimes(Array.from(cleanedHours)),
         availableDates: availableDates,
       };
 

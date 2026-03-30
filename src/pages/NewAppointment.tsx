@@ -98,11 +98,11 @@ const NewAppointment = () => {
       });
 
 
-      // Notificar Barbeiro (Push)
+      // Notificar Barbeiro (Push) - Atualiza usuários para pegar inscrições recentes
       await storage.refreshUsers();
+
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
-      
-      if (barberUser) {
+      if (barberUser?.pushSubscription) {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);
         await notificationManager.sendPushNotification(
           barberUser.id,
@@ -201,7 +201,7 @@ const NewAppointment = () => {
         });
 
       recurring
-        .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active)
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);

@@ -76,11 +76,23 @@ const Barbers = () => {
     if (editingBarber) {
       const fallbackSchedule = initSchedule();
       if (editingBarber.scheduleByDay) {
-        Object.assign(fallbackSchedule, editingBarber.scheduleByDay);
+        // Garantir que horários salvos por engano com vírgula sejam separados
+        Object.entries(editingBarber.scheduleByDay).forEach(([day, hours]) => {
+          const cleaned = new Set<string>();
+          (hours as string[]).forEach(h => {
+            h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleaned.add(s));
+          });
+          fallbackSchedule[parseInt(day) as keyof typeof fallbackSchedule] = sortTimes(Array.from(cleaned));
+        });
       } else {
         // Fallback legacy items inside each day
+        const legacyHours = new Set<string>();
+        (editingBarber.availableHours || []).forEach(h => {
+          h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => legacyHours.add(s));
+        });
+        const cleanedLegacy = sortTimes(Array.from(legacyHours));
         DAYS_OF_WEEK.forEach(d => {
-          fallbackSchedule[d.id as keyof typeof fallbackSchedule] = [...(editingBarber.availableHours || [])];
+          fallbackSchedule[d.id as keyof typeof fallbackSchedule] = [...cleanedLegacy];
         });
       }
 
@@ -88,7 +100,7 @@ const Barbers = () => {
         id: editingBarber.id,
         name: editingBarber.name,
         specialties: editingBarber.specialties.join(', '),
-        availableHours: editingBarber.availableHours.filter(h => COMMON_HOURS.includes(h)) || [],
+        availableHours: editingBarber.availableHours || [],
         availableDates: editingBarber.availableDates || [],
         customHours: '',
         scheduleByDay: fallbackSchedule,
@@ -140,13 +152,26 @@ const Barbers = () => {
     e.preventDefault();
 
     const customH = editBarberData.customHours.split(',').map(h => h.trim()).filter(h => h !== '');
+    const updatedSchedule = { ...editBarberData.scheduleByDay };
+    
     if (customH.length > 0) {
-      editBarberData.scheduleByDay[activeDayEdit] = [...new Set([...editBarberData.scheduleByDay[activeDayEdit], ...customH])];
+      updatedSchedule[activeDayEdit] = sortTimes([...new Set([...updatedSchedule[activeDayEdit], ...customH])]);
     }
 
+    // Limpeza profunda em todos os dias antes de salvar (garantir que não há vírgulas sobrando)
+    Object.keys(updatedSchedule).forEach(dayKey => {
+      const day = parseInt(dayKey);
+      const hours = updatedSchedule[day];
+      const cleaned = new Set<string>();
+      (hours as string[]).forEach(h => {
+        h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleaned.add(s));
+      });
+      updatedSchedule[day] = sortTimes(Array.from(cleaned));
+    });
+
     const combinedHours = new Set<string>();
-    Object.values(editBarberData.scheduleByDay).forEach(hours => {
-      hours.forEach(h => combinedHours.add(h));
+    Object.values(updatedSchedule).forEach(hours => {
+      (hours as string[]).forEach(h => combinedHours.add(h));
     });
 
     const finalBarber = {
@@ -157,7 +182,7 @@ const Barbers = () => {
       description: editBarberData.description || undefined,
       specialties: editBarberData.specialties.split(',').map(s => s.trim()),
       availableHours: sortTimes(Array.from(combinedHours)),
-      scheduleByDay: editBarberData.scheduleByDay,
+      scheduleByDay: updatedSchedule,
       availableDates: editBarberData.availableDates,
     };
     
@@ -446,11 +471,12 @@ const Barbers = () => {
                         key={hour}
                         type="button"
                         variant={isSelected ? 'default' : 'outline'}
+                        className="h-10 text-sm"
                         onClick={() => {
                           const currentDayHours = editBarberData.scheduleByDay[activeDayEdit];
                           const newDayHours = isSelected
                             ? currentDayHours.filter(h => h !== hour)
-                            : [...currentDayHours, hour].sort();
+                            : sortTimes([...currentDayHours, hour]);
 
                           setEditBarberData({
                             ...editBarberData,
@@ -467,6 +493,32 @@ const Barbers = () => {
                   })}
                 </div>
               </div>
+
+              {/* Horários personalizados para o dia selecionado */}
+              {editBarberData.scheduleByDay[activeDayEdit].filter(h => !COMMON_HOURS.includes(h)).length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Horários Personalizados / Ativos</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {editBarberData.scheduleByDay[activeDayEdit]
+                      .filter(h => !COMMON_HOURS.includes(h))
+                      .map(hour => (
+                        <Badge key={hour} variant="secondary" className="bg-primary/20 text-primary py-1 px-2 flex items-center gap-2">
+                          {hour}
+                          <X 
+                            className="w-3 h-3 cursor-pointer hover:text-destructive" 
+                            onClick={() => {
+                              const newHours = editBarberData.scheduleByDay[activeDayEdit].filter(h => h !== hour);
+                              setEditBarberData({
+                                ...editBarberData,
+                                scheduleByDay: { ...editBarberData.scheduleByDay, [activeDayEdit]: newHours }
+                              });
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <Label htmlFor="edit-customHours" className="text-xs text-muted-foreground">Adicionar horários extras que não estão na lista para este dia (separados por vírgula)</Label>
                 <Input

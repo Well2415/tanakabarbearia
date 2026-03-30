@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { storage } from './storage';
 
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
 const VAPID_PUBLIC_KEY = 'BM85bcqG2nbHO_6fLZ2PPtiNQnI0DdAuO2EGXs2MKbnnT73b7O1UX_ztkcSRWT610rhiVOTVKMURO-wny3762_M';
@@ -56,13 +57,10 @@ export const notificationManager = {
     if (!userId) return;
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ pushSubscription: subscription ? JSON.stringify(subscription) : null })
-        .eq('id', userId);
-
-      if (error) throw error;
-      console.log('Inscrição sincronizada com sucesso no Supabase.');
+      // Usa o método granular do storage para manter cache e banco sincronizados
+      const subString = subscription ? JSON.stringify(subscription) : null;
+      await storage.updateUserPushSubscription(userId, subString);
+      console.log('Inscrição sincronizada com sucesso via Storage.');
     } catch (error) {
       console.error('Erro ao sincronizar inscrição:', error);
     }

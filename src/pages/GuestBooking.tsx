@@ -67,7 +67,7 @@ const GuestBooking = () => {
         });
 
       recurringSchedules
-        .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active)
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -162,9 +162,8 @@ const GuestBooking = () => {
       });
 
 
-      // Notificar Barbeiro (Push) - Força atualização para ver novas inscrições
-      storage.isInitialized = false;
-      await storage.initialize();
+      // Notificar Barbeiro (Push) - Atualiza usuários para pegar inscrições recentes
+      await storage.refreshUsers();
 
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
       if (barberUser?.pushSubscription) {
