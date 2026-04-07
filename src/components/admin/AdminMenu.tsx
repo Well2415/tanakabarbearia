@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
-import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -53,6 +53,7 @@ export const AdminMenu = () => {
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
+        { name: 'Logs Push', path: '/admin/notifications/logs', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },

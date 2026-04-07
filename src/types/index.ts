@@ -122,3 +122,12 @@ export interface Product {
   active: boolean;
   variants?: ProductVariant[];
 }
+export interface NotificationLog {
+  id: string;
+  userId: string | null;
+  title: string;
+  body: string;
+  status: 'success' | 'error';
+  errorMessage?: string;
+  createdAt: string;
+}

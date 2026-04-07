@@ -73,10 +73,33 @@ export const notificationManager = {
         body: { userId, title, body, url }
       });
 
+      // Salva o log no banco de dados
+      await supabase.from('notification_logs').insert({
+        userId,
+        title,
+        body,
+        status: error ? 'error' : 'success',
+        errorMessage: error ? (error.message || JSON.stringify(error)) : (data?.status === 'error' ? data?.message : null)
+      });
+
       if (error) throw error;
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao disparar Edge Function de Push:', error);
+      
+      // Tenta logar o erro caso a inserção acima não tenha ocorrido por falha na função
+      try {
+        await supabase.from('notification_logs').insert({
+          userId,
+          title,
+          body,
+          status: 'error',
+          errorMessage: error.message || 'Falha na conexão com a Edge Function'
+        });
+      } catch (logErr) {
+        console.error('Erro ao salvar log de erro:', logErr);
+      }
+      
       return null;
     }
   }
