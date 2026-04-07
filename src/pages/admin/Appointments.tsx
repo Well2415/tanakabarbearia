@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
-import { useMemo } from 'react';
 
 const Appointments = () => {
   const navigate = useNavigate();
