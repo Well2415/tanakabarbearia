@@ -70,9 +70,14 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS recurring_schedules (
   id TEXT PRIMARY KEY,
   "barberId" TEXT REFERENCES barbers(id),
+  "userId" TEXT REFERENCES users(id),
+  "serviceId" TEXT REFERENCES services(id),
+  "serviceIds" JSONB DEFAULT '[]',
   "dayOfWeek" INT NOT NULL,
   time TEXT NOT NULL,
   active BOOLEAN DEFAULT true,
+  frequency TEXT DEFAULT 'weekly',
+  "startDate" DATE,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
