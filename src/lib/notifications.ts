@@ -57,8 +57,15 @@ export const notificationManager = {
     if (!userId) return;
 
     try {
-      // Usa o método granular do storage para manter cache e banco sincronizados
       const subString = subscription ? JSON.stringify(subscription) : null;
+      
+      if (subString) {
+        // Agora registramos na nova tabela para suportar múltiplos dispositivos
+        await storage.registerPushSubscription(userId, subString);
+        console.log('✅ [Push] Inscrição multi-device registrada com sucesso.');
+      }
+
+      // Mantemos a sincronização com a coluna antiga por compatibilidade temporária
       await storage.updateUserPushSubscription(userId, subString);
       console.log('Inscrição sincronizada com sucesso via Storage.');
     } catch (error) {

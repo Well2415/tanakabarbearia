@@ -386,6 +386,26 @@ export const storage = {
     console.log('✅ [Storage] pushSubscription atualizado no banco.');
   },
 
+  /**
+   * Registra uma nova assinatura de push para o usuário na tabela de múltiplas assinaturas.
+   */
+  async registerPushSubscription(userId: string, subscription: string) {
+    if (!userId || !subscription) return;
+
+    const { error } = await supabase
+      .from('user_push_subscriptions')
+      .upsert({ 
+        user_id: userId, 
+        subscription: subscription 
+      }, { onConflict: 'user_id, subscription' });
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao registrar multi-push:', error);
+      throw error;
+    }
+    console.log('✅ [Storage] Nova assinatura de push registrada.');
+  },
+
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));

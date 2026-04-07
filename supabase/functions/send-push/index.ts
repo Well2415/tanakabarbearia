@@ -36,27 +36,75 @@ Deno.serve(async (req) => {
 
     webpush.setVapidDetails('https://tanakabarbearia.vercel.app', pubKey, privKey);
 
-    // 4. Buscar Usuário
-    console.log(`🔍 Buscando subscrição para ID: ${userId}`);
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('pushSubscription, fullName')
-      .eq('id', userId)
-      .single();
-
-    if (userError) throw new Error(`Erro ao buscar usuário no Banco: ${userError.message}`);
-    if (!user?.pushSubscription) throw new Error(`O usuário ${user?.fullName || userId} não tem uma inscrição de Push ativa.`);
-
-    // 5. Enviar Notificação
-    console.log(`🚀 Enviando notificação para: ${user.fullName}`);
-    const subscription = JSON.parse(user.pushSubscription);
-    const payload = JSON.stringify({ title, body, url });
+    // 4. Buscar Inscrições (Múltiplos Dispositivos)
+    console.log(`🔍 Buscando inscrições para ID: ${userId}`);
     
-    await webpush.sendNotification(subscription, payload);
-    console.log('✅ Push entregue com sucesso!');
+    // Tentamos buscar na nova tabela de múltiplos dispositivos
+    const { data: multiSubs, error: multiError } = await supabase
+      .from('user_push_subscriptions')
+      .select('id, subscription')
+      .eq('user_id', userId);
+
+    const subscriptions: any[] = [];
+
+    if (!multiError && multiSubs && multiSubs.length > 0) {
+      console.log(`📱 Encontrados ${multiSubs.length} dispositivos para este usuário.`);
+      multiSubs.forEach(s => {
+        try {
+          subscriptions.push({ id: s.id, data: JSON.parse(s.subscription) });
+        } catch (e) {
+          console.error(`Erro ao parsear inscrição ${s.id}:`, e);
+        }
+      });
+    } else {
+      // Fallback para a coluna antiga caso a migração ainda não tenha ocorrido ou falhado
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('pushSubscription, fullName')
+        .eq('id', userId)
+        .single();
+      
+      if (user?.pushSubscription) {
+        console.log("⚠️ Usando fallback da coluna única 'pushSubscription'.");
+        subscriptions.push({ id: null, data: JSON.parse(user.pushSubscription) });
+      }
+    }
+
+    if (subscriptions.length === 0) {
+      throw new Error(`Nenhum dispositivo de Push encontrado para o usuário ${userId}.`);
+    }
+
+    // 5. Enviar Notificações em Paralelo
+    const payload = JSON.stringify({ title, body, url });
+    const results = await Promise.allSettled(subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification(sub.data, payload);
+        return { success: true, id: sub.id };
+      } catch (err: any) {
+        // Se o erro for 410 (Gone) ou 404 (Not Found), a inscrição expirou e deve ser removida
+        if (sub.id && (err.statusCode === 410 || err.statusCode === 404)) {
+          console.log(`🗑️ Removendo inscrição expirada: ${sub.id}`);
+          await supabase.from('user_push_subscriptions').delete().eq('id', sub.id);
+        }
+        throw err;
+      }
+    }));
+
+    const details = results.map((r, i) => ({
+      device: i + 1,
+      status: r.status === 'fulfilled' ? 'sent' : 'failed',
+      error: r.status === 'rejected' ? (r as any).reason.message : null
+    }));
+
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    console.log(`✅ Processo finalizado. Sucessos: ${successCount}/${subscriptions.length}`);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Entregue' }),
+      JSON.stringify({ 
+        success: successCount > 0, 
+        message: `${successCount} notificações enviadas.`,
+        details 
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
