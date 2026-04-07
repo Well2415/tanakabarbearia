@@ -406,7 +406,7 @@ const RecurringSchedules = () => {
                             <Card key={schedule.id} className="p-6 relative group border-border hover:border-primary/50 transition-colors">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-2 bg-primary/10 rounded-lg">
-                                        <Calendar className="w-5 h-5 text-primary" />
+                                        <CalendarIcon className="w-5 h-5 text-primary" />
                                     </div>
                                     <div className="flex gap-2">
                                         <Button 
