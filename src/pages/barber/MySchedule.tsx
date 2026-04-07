@@ -9,12 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parseISO, isAfter, startOfDay } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, isSameDay, startOfDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
 import { AdminMenu } from '@/components/admin/AdminMenu';
-import { isRecurringActive } from '@/lib/timeUtils';
+import { isRecurringActive, parseLocalDate } from '@/lib/timeUtils';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -28,6 +33,10 @@ const MyAppointments = () => {
   const [discountInput, setDiscountInput] = useState(0);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
 
   const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
 
@@ -47,59 +56,77 @@ const MyAppointments = () => {
       const recurringSchedules = storage.getRecurringSchedules();
       const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
-      if (barberProfile) {
-        const today = new Date();
-        const todayFormatted = format(today, 'yyyy-MM-dd');
-        const dayOfWeek = today.getDay();
+      if (barberProfile && startDate && endDate) {
+        const start = startOfDay(startDate);
+        const end = startOfDay(endDate);
 
-        // 1. Agendamentos reais do barbeiro
-        const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
+        // 1. Agendamentos reais do barbeiro NO INTERVALO
+        const barberAppointments = allAppointments.filter(appt => {
+          if (appt.barberId !== barberProfile.id) return false;
+          const apptDate = parseLocalDate(appt.date);
+          return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
+                 (isSameDay(apptDate, end) || isBefore(apptDate, end));
+        });
         
-        // 2. Agendamentos fixos (recorrentes) para HOJE
-        const todayRecurring = recurringSchedules
-          .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, today))
-          .filter(s => {
-            // Evitar duplicados: Se já existe um agendamento real para este cliente neste horário hoje, não mostrar o virtual
-            return !barberAppointments.some(appt => 
-              appt.date === todayFormatted && 
-              appt.time === s.time && 
-              appt.userId === s.userId
-            );
-          })
-          .map(s => {
-            const servicesData = storage.getServices();
-            const sIds = s.serviceIds || [s.serviceId];
-            const totalPrice = sIds.reduce((sum, id) => {
-              const srv = servicesData.find(x => x.id === id);
-              return sum + (srv?.price || 0);
-            }, 0);
+        // 2. Agendamentos fixos (recorrentes) NO INTERVALO
+        const virtualAppointments: Appointment[] = [];
+        
+        // Limita a 31 dias
+        const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 31) {
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const currentDayStr = format(d, 'yyyy-MM-dd');
+            const dayOfWeek = d.getDay();
+            
+            const dayVirtuals = recurringSchedules
+              .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, d))
+              .filter(s => {
+                // Evitar duplicados
+                return !barberAppointments.some(appt => 
+                  appt.date === currentDayStr && 
+                  appt.time === s.time && 
+                  appt.userId === s.userId &&
+                  appt.status !== 'cancelled'
+                );
+              })
+              .map(s => {
+                const servicesData = storage.getServices();
+                const sIds = s.serviceIds || [s.serviceId];
+                const totalPrice = sIds.reduce((sum, id) => {
+                  const srv = servicesData.find(x => x.id === id);
+                  return sum + (srv?.price || 0);
+                }, 0);
 
-            return {
-              id: `recurring-v-${s.id}`, // v de virtual
-              userId: s.userId,
-              barberId: s.barberId,
-              serviceId: sIds[0],
-              serviceIds: sIds,
-              date: todayFormatted,
-              time: s.time,
-              status: 'pending' as const,
-              servicePrice: totalPrice,
-              amountPaid: 0,
-              paymentType: '',
-              isRecurring: true, // Flag para a UI
-            };
-          });
+                return {
+                  id: `recurring-v-${s.id}-${currentDayStr}`,
+                  userId: s.userId,
+                  barberId: s.barberId,
+                  serviceId: sIds[0],
+                  serviceIds: sIds,
+                  date: currentDayStr,
+                  time: s.time,
+                  status: 'pending' as const,
+                  servicePrice: totalPrice,
+                  amountPaid: 0,
+                  paymentType: '',
+                  isRecurring: true,
+                };
+              });
+              
+            virtualAppointments.push(...dayVirtuals as any);
+          }
+        }
 
-        // Combinar e ordenar (appointments já estão tipados, estender se necessário ou usar any temporário para a flag)
-        setAppointments([...barberAppointments, ...todayRecurring as any]);
-      } else {
+        setAppointments([...barberAppointments, ...virtualAppointments]);
+      } else if (!barberProfile) {
         toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
         navigate('/dashboard');
       }
     };
 
     initAndFetch();
-  }, [navigate, toast]);
+  }, [navigate, toast, startDate, endDate, user?.barberId]);
 
   if (!user || user.role !== 'barber') return null;
 
@@ -154,8 +181,6 @@ const MyAppointments = () => {
       
       // Salva no banco (spread para remover flags extras se houver)
       const { ...dbAppointment } = finalAppointment;
-      // @ts-ignore (remover a flag isRecurring se existir)
-      delete dbAppointment.isRecurring;
       
       await storage.saveAppointments([...storage.getAppointments(), dbAppointment as Appointment]);
     }
@@ -280,8 +305,60 @@ const MyAppointments = () => {
     <div className="min-h-screen bg-background">
       <AdminMenu />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-32">
         <h2 className="text-3xl font-bold mb-8">Meus Agendamentos</h2>
+
+        <Card className="p-6 mb-8 border-border">
+          <h3 className="font-bold text-xl mb-4">Filtrar por Período</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Data de Início</Label>
+              <Popover open={isStartDatePickerOpen} onOpenChange={setIsStartDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12 mt-1", !startDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date ? startOfDay(date) : undefined);
+                      setIsStartDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Data de Fim</Label>
+              <Popover open={isEndDatePickerOpen} onOpenChange={setIsEndDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12 mt-1", !endDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date ? startOfDay(date) : undefined);
+                      setIsEndDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </Card>
 
         <div className="space-y-4">
           {appointments.length === 0 ? (

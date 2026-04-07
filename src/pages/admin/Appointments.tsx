@@ -506,43 +506,77 @@ const Appointments = () => {
 
   const displayAppointments = useMemo(() => {
     const recurringSchedules = storage.getRecurringSchedules();
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+    const virtualAppointments: Appointment[] = [];
+    
+    // Se tivermos um intervalo definido, geramos os virtuais para cada dia desse intervalo
+    if (startDate && endDate) {
+      const start = startOfDay(startDate);
+      const end = startOfDay(endDate);
+      
+      // Limita a geração a 31 dias para evitar problemas de performance
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 31) {
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const currentDayStr = format(d, 'yyyy-MM-dd');
+          const dayOfWeek = d.getDay();
+          
+          const dayVirtuals = recurringSchedules
+            .filter(s => s.active && s.dayOfWeek === dayOfWeek && isRecurringActive(s, d))
+            .map(s => {
+              const scheduleServiceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+              const totalPrice = scheduleServiceIds.reduce((sum, id) => {
+                const srv = services.find(serv => serv.id === id);
+                return sum + (srv?.price || 0);
+              }, 0);
 
-    // Gerar agendamentos virtuais apenas para HOJE por enquanto, para não poluir
-    const virtualToday = recurringSchedules
-      .filter(s => s.active && s.dayOfWeek === today.getDay() && isRecurringActive(s, today))
-      .map(s => {
-        const scheduleServiceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-        const totalPrice = scheduleServiceIds.reduce((sum, id) => {
-          const srv = services.find(serv => serv.id === id);
-          return sum + (srv?.price || 0);
-        }, 0);
-
-        return {
-          id: `recurring-${s.id}`,
+              return {
+                id: `recurring-${s.id}-${currentDayStr}`,
+                userId: s.userId,
+                barberId: s.barberId,
+                serviceId: s.serviceId,
+                serviceIds: scheduleServiceIds,
+                date: currentDayStr,
+                time: s.time,
+                status: 'confirmed' as const,
+                isRecurring: true,
+                servicePrice: totalPrice,
+                createdAt: s.createdAt
+              } as Appointment;
+            });
+            
+          virtualAppointments.push(...dayVirtuals);
+        }
+      }
+    } else {
+      // Fallback para Hoje se não houver filtro (segurança)
+      const today = new Date();
+      const todayStr = format(today, 'yyyy-MM-dd');
+      const todayVirtuals = recurringSchedules
+        .filter(s => s.active && s.dayOfWeek === today.getDay() && isRecurringActive(s, today))
+        .map(s => ({
+          id: `recurring-${s.id}-${todayStr}`,
           userId: s.userId,
           barberId: s.barberId,
           serviceId: s.serviceId,
-          serviceIds: scheduleServiceIds,
+          serviceIds: s.serviceIds || [s.serviceId],
           date: todayStr,
           time: s.time,
           status: 'confirmed' as const,
           isRecurring: true,
-          servicePrice: totalPrice,
+          servicePrice: (s.serviceIds || [s.serviceId]).reduce((sum, id) => sum + (services.find(serv => serv.id === id)?.price || 0), 0),
           createdAt: s.createdAt
-        } as Appointment;
-      });
+        } as Appointment));
+      virtualAppointments.push(...todayVirtuals);
+    }
 
-    // Remove duplicatas se o horário fixo já tiver sido transformado em um agendamento real para hoje
-    const realTodayTimes = appointments
-      .filter(a => a.date === todayStr && a.status !== 'cancelled')
-      .map(a => `${a.barberId}-${a.time}`);
-
-    const uniqueVirtual = virtualToday.filter(v => !realTodayTimes.includes(`${v.barberId}-${v.time}`));
+    // Remove duplicatas (se já existir um agendamento real para aquele barbeiro/hora/dia)
+    const realBusySlots = new Set(appointments.filter(a => a.status !== 'cancelled').map(a => `${a.barberId}-${a.date}-${a.time}`));
+    const uniqueVirtual = virtualAppointments.filter(v => !realBusySlots.has(`${v.barberId}-${v.date}-${v.time}`));
 
     return [...appointments, ...uniqueVirtual];
-  }, [appointments, services]);
+  }, [appointments, services, startDate, endDate]);
 
   const filteredAppointments = displayAppointments
     .filter(appt => {
@@ -550,6 +584,11 @@ const Appointments = () => {
       const clientName = (appt.guestName || users.find(u => u.id === appt.userId)?.fullName || '').toLowerCase();
       const matchesSearch = clientName.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
+
+      // Date range filter
+      const apptDate = parseLocalDate(appt.date);
+      if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
+      if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
 
       // Tab filter
       const today = new Date();
@@ -559,7 +598,7 @@ const Appointments = () => {
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          return isSameDay(parseLocalDate(appt.date), today);
+          return isSameDay(apptDate, today);
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
         case 'all':
@@ -923,6 +962,7 @@ const Appointments = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-lg">{getClientName(appointment)}</h3>
                         <Badge className={cn(statusColors[appointment.status])}>{statusLabels[appointment.status]}</Badge>
+                        {appointment.isRecurring && <Badge variant="outline" className="border-primary text-primary font-bold">FIXO</Badge>}
                         {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 mt-2">
