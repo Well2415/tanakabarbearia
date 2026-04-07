@@ -103,7 +103,7 @@ const RecurringSchedules = () => {
             });
             await storage.saveRecurringSchedules(updated);
             setSchedules(updated);
-            toast({ title: 'Sucesso', description: 'Horário fixo atualizado.' });
+            toast({ title: 'Sucesso', description: 'HorÃ¡rio fixo atualizado.' });
         } else {
             const newSchedule: RecurringSchedule = {
                 id: Date.now().toString(),
@@ -121,7 +121,7 @@ const RecurringSchedules = () => {
             const updated = [...schedules, newSchedule];
             await storage.saveRecurringSchedules(updated);
             setSchedules(updated);
-            toast({ title: 'Sucesso', description: 'Horário fixo cadastrado.' });
+            toast({ title: 'Sucesso', description: 'HorÃ¡rio fixo cadastrado.' });
         }
 
         setIsDialogOpen(false);
@@ -147,7 +147,7 @@ const RecurringSchedules = () => {
         const updated = schedules.filter(s => s.id !== id);
         await storage.saveRecurringSchedules(updated);
         setSchedules(updated);
-        toast({ title: 'Removido', description: 'Horário fixo removido.' });
+        toast({ title: 'Removido', description: 'HorÃ¡rio fixo removido.' });
     };
 
     const getClientName = (id: string) => users.find(u => u.id === id)?.fullName || 'Desconhecido';
@@ -166,7 +166,7 @@ const RecurringSchedules = () => {
                     <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <h1 className="text-3xl font-bold">Horários <span className="text-primary">Fixos</span></h1>
+                    <h1 className="text-3xl font-bold">HorÃ¡rios <span className="text-primary">Fixos</span></h1>
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -181,16 +181,16 @@ const RecurringSchedules = () => {
                             setEditingId(null);
                             setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '', frequency: 'weekly', startDate: startOfDay(new Date()) });
                         }}>
-                            <Plus className="w-4 h-4" /> Novo Horário Fixo
+                            <Plus className="w-4 h-4" /> Novo HorÃ¡rio Fixo
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md w-[95vw] h-auto max-h-[96dvh] overflow-hidden flex flex-col p-0 rounded-3xl border-white/10 bg-zinc-950 shadow-2xl">
                         <DialogHeader className="p-6 pb-0 text-left">
                             <DialogTitle className="text-2xl font-bold text-white">
-                                {editingId ? 'Editar Horário Fixo' : 'Cadastrar Horário Fixo'}
+                                {editingId ? 'Editar HorÃ¡rio Fixo' : 'Cadastrar HorÃ¡rio Fixo'}
                             </DialogTitle>
                             <DialogDescription className="text-zinc-400">
-                                {editingId ? 'Altere as configurações deste agendamento.' : 'Configure um agendamento recorrente para este cliente.'}
+                                {editingId ? 'Altere as configuraÃ§Ãµes deste agendamento.' : 'Configure um agendamento recorrente para este cliente.'}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -251,14 +251,14 @@ const RecurringSchedules = () => {
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                         {barbers.map(b => (
-                                            <SelectItem key={b.id} value={b.id} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{b.name}</SelectItem>
+                                            <SelectItem key={b.id} value={b.id} className="py-3 pl-10 pr-4 focus:bg-zinc-800 focus:text-white rounded-lg m-1">{b.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-3">
-                                <Label className="text-zinc-300 font-medium ml-1">Serviços</Label>
+                                <Label className="text-zinc-300 font-medium ml-1">ServiÃ§os</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button variant="outline" className="w-full justify-between h-auto min-h-[56px] bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg font-normal px-4 py-3">
@@ -270,7 +270,7 @@ const RecurringSchedules = () => {
                                                         </Badge>
                                                     ))
                                                 ) : (
-                                                    <span className="text-zinc-500">Selecione os serviços</span>
+                                                    <span className="text-zinc-500">Selecione os serviÃ§os</span>
                                                 )}
                                             </div>
                                             <ChevronsUpDown className="h-5 w-5 opacity-50 shrink-0 ml-2" />
@@ -278,9 +278,9 @@ const RecurringSchedules = () => {
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl" align="start">
                                         <Command className="bg-transparent">
-                                            <CommandInput placeholder="Pesquisar serviço..." className="h-12" />
+                                            <CommandInput placeholder="Pesquisar serviÃ§o..." className="h-12" />
                                             <CommandList className="max-h-[300px]">
-                                                <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
+                                                <CommandEmpty>Nenhum serviÃ§o encontrado.</CommandEmpty>
                                                 <CommandGroup>
                                                     {services.map((service) => (
                                                         <CommandItem
@@ -293,7 +293,7 @@ const RecurringSchedules = () => {
                                                                     : [...current, service.id];
                                                                 setFormData(prev => ({ ...prev, serviceIds: next }));
                                                             }}
-                                                            className="cursor-pointer px-4 py-3 rounded-xl m-1 aria-selected:bg-primary/20 aria-selected:text-primary group/item transition-colors"
+                                                            className="cursor-pointer px-4 py-3 rounded-xl m-1 aria-selected:bg-zinc-800 aria-selected:text-white group/item transition-colors"
                                                         >
                                                             <div className={cn(
                                                                 "mr-3 flex h-5 w-5 items-center justify-center rounded-md border-2 border-primary",
@@ -323,7 +323,7 @@ const RecurringSchedules = () => {
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
                                             {DAYS_OF_WEEK.map(d => (
-                                                <SelectItem key={d.id} value={d.id.toString()} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">{d.name}</SelectItem>
+                                                <SelectItem key={d.id} value={d.id.toString()} className="py-3 pl-10 pr-4 focus:bg-zinc-800 focus:text-white rounded-lg m-1">{d.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -341,7 +341,7 @@ const RecurringSchedules = () => {
                                                 const dayIdx = parseInt(formData.dayOfWeek);
                                                 return (barber.scheduleByDay && barber.scheduleByDay[dayIdx]) || barber.availableHours || [];
                                             })().map(h => (
-                                                <SelectItem key={h} value={h} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1 font-bold">{h}</SelectItem>
+                                                <SelectItem key={h} value={h} className="py-3 pl-10 pr-4 focus:bg-zinc-800 focus:text-white rounded-lg m-1 font-bold">{h}</SelectItem>
                                             )) || <SelectItem value="0" disabled>Selecione um barbeiro</SelectItem>}
                                         </SelectContent>
                                     </Select>
@@ -349,21 +349,21 @@ const RecurringSchedules = () => {
                             </div>
 
                             <div className="space-y-3 pt-2">
-                                <Label className="text-zinc-300 font-medium ml-1">Frequência</Label>
+                                <Label className="text-zinc-300 font-medium ml-1">FrequÃªncia</Label>
                                 <Select value={formData.frequency} onValueChange={(v: any) => setFormData({ ...formData, frequency: v })}>
                                     <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
-                                        <SelectItem value="weekly" className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Toda semana</SelectItem>
-                                        <SelectItem value="biweekly" className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Semana sim, semana não</SelectItem>
+                                        <SelectItem value="weekly" className="py-3 pl-10 pr-4 focus:bg-zinc-800 focus:text-white rounded-lg m-1">Toda semana</SelectItem>
+                                        <SelectItem value="biweekly" className="py-3 pl-10 pr-4 focus:bg-zinc-800 focus:text-white rounded-lg m-1">Semana sim, semana nÃ£o</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {formData.frequency === 'biweekly' && (
                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <Label className="text-zinc-300 font-medium ml-1">Semana de Início (Âncora)</Label>
+                                    <Label className="text-zinc-300 font-medium ml-1">Semana de InÃ­cio (Ã‚ncora)</Label>
                                     <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                                         <PopoverTrigger asChild>
                                             <Button
@@ -391,7 +391,7 @@ const RecurringSchedules = () => {
                                         </PopoverContent>
                                     </Popover>
                                     <p className="text-[10px] text-zinc-500 ml-1">
-                                        O horário será ativo nesta semana e em todas as semanas ímpares a partir dela (pulando uma).
+                                        O horÃ¡rio serÃ¡ ativo nesta semana e em todas as semanas Ã­mpares a partir dela (pulando uma).
                                     </p>
                                 </div>
                             )}
@@ -408,7 +408,7 @@ const RecurringSchedules = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Object.keys(groupedSchedules).length === 0 ? (
                         <Card className="p-8 text-center col-span-full border-dashed bg-muted/20">
-                            <p className="text-muted-foreground">Nenhum horário fixo cadastrado.</p>
+                            <p className="text-muted-foreground">Nenhum horÃ¡rio fixo cadastrado.</p>
                         </Card>
                     ) : (
                         Object.entries(groupedSchedules).map(([userId, userSchedules]) => (
@@ -420,7 +420,7 @@ const RecurringSchedules = () => {
                                     <div>
                                         <h3 className="font-black text-xl leading-tight">{getClientName(userId)}</h3>
                                         <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
-                                            {userSchedules.length} {userSchedules.length === 1 ? 'Horário' : 'Horários'}
+                                            {userSchedules.length} {userSchedules.length === 1 ? 'HorÃ¡rio' : 'HorÃ¡rios'}
                                         </p>
                                     </div>
                                 </div>
@@ -431,14 +431,14 @@ const RecurringSchedules = () => {
                                             <div className="flex justify-between items-start mb-2">
                                                 <div className="flex items-center gap-2 text-primary font-bold">
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{getDayName(schedule.dayOfWeek)} às {schedule.time}</span>
+                                                    <span>{getDayName(schedule.dayOfWeek)} Ã s {schedule.time}</span>
                                                 </div>
                                                 <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon" 
                                                         onClick={() => handleEdit(schedule)} 
-                                                        className="w-8 h-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                                                        className="w-8 h-8 rounded-full hover:bg-zinc-800 hover:text-white"
                                                     >
                                                         <Pencil className="w-3.5 h-3.5" />
                                                     </Button>
@@ -460,7 +460,7 @@ const RecurringSchedules = () => {
                                                 <div className="flex flex-wrap gap-x-4 gap-y-1">
                                                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
                                                         <CalendarDays className="w-3 h-3" />
-                                                        {schedule.frequency === 'biweekly' ? 'Semana sim/não' : 'Semanal'}
+                                                        {schedule.frequency === 'biweekly' ? 'Semana sim/nÃ£o' : 'Semanal'}
                                                     </div>
                                                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
                                                         <Scissors className="w-3 h-3" />

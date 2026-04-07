@@ -572,12 +572,43 @@ const Appointments = () => {
       virtualAppointments.push(...todayVirtuals);
     }
 
+    // Agrupa agendamentos virtuais por usuário/dia/barbeiro para evitar duplicidade visual
+    const groupedVirtual = virtualAppointments.reduce((acc, appt) => {
+      const key = `${appt.userId || appt.guestName}-${appt.date}-${appt.barberId}`;
+      if (!acc[key]) {
+        acc[key] = { ...appt };
+      } else {
+        // Se já existe, unificamos os serviços e somamos os preços
+        const existing = acc[key];
+        const newServiceIds = [...(existing.serviceIds || [existing.serviceId])];
+        const nextServiceIds = appt.serviceIds || [appt.serviceId];
+        
+        nextServiceIds.forEach(id => {
+          if (!newServiceIds.includes(id)) {
+            newServiceIds.push(id);
+          }
+        });
+
+        existing.serviceIds = newServiceIds;
+        existing.serviceId = newServiceIds[0];
+        existing.servicePrice = (existing.servicePrice || 0) + (appt.servicePrice || 0);
+        // Mantém o horário mais cedo como horário de exibição principal
+        if (appt.time < existing.time) {
+          existing.time = appt.time;
+        }
+      }
+      return acc;
+    }, {} as Record<string, Appointment>);
+
+    const finalVirtual = Object.values(groupedVirtual);
+
     // Remove duplicatas (se já existir um agendamento real para aquele barbeiro/hora/dia)
-    const realBusySlots = new Set(appointments.filter(a => a.status !== 'cancelled').map(a => `${a.barberId}-${a.date}-${a.time}`));
-    const uniqueVirtual = virtualAppointments.filter(v => !realBusySlots.has(`${v.barberId}-${v.date}-${v.time}`));
+    // Aqui relaxamos a checagem de hora para ID-Dia-Barbeiro para evitar sobrepor o grupo todo
+    const realBusySlots = new Set(appointments.filter(a => a.status !== 'cancelled').map(a => `${a.userId || a.guestName}-${a.date}-${a.barberId}`));
+    const uniqueVirtual = finalVirtual.filter(v => !realBusySlots.has(`${v.userId || v.guestName}-${v.date}-${v.barberId}`));
 
     return [...appointments, ...uniqueVirtual];
-  }, [appointments, services, startDate, endDate]);
+  }, [appointments, services, startDate, endDate, users]);
 
   const filteredAppointments = displayAppointments
     .filter(appt => {

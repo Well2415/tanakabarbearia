@@ -86,20 +86,19 @@ const MyAppointments = () => {
           for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const currentDayStr = format(d, 'yyyy-MM-dd');
             const dayOfWeek = d.getDay();
+            const servicesData = storage.getServices();
             
             const dayVirtuals = recurringSchedules
               .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, d))
               .filter(s => {
-                // Evitar duplicados
+                // Evitar duplicados com agendamentos reais
                 return !barberAppointments.some(appt => 
                   appt.date === currentDayStr && 
-                  appt.time === s.time && 
                   appt.userId === s.userId &&
                   appt.status !== 'cancelled'
                 );
               })
               .map(s => {
-                const servicesData = storage.getServices();
                 const sIds = s.serviceIds || [s.serviceId];
                 const totalPrice = sIds.reduce((sum, id) => {
                   const srv = servicesData.find(x => x.id === id);
@@ -117,12 +116,37 @@ const MyAppointments = () => {
                   status: 'pending' as const,
                   servicePrice: totalPrice,
                   amountPaid: 0,
-                  paymentType: '',
                   isRecurring: true,
-                };
+                  createdAt: new Date().toISOString(),
+                } as Appointment;
               });
               
-            virtualAppointments.push(...dayVirtuals as any);
+            // Agrupa por usuário para evitar múltiplos cards no mesmo dia
+            const groupedDayVirtuals = dayVirtuals.reduce((acc, appt) => {
+              const key = `${appt.userId}-${appt.date}`;
+              if (!acc[key]) {
+                acc[key] = { ...appt };
+              } else {
+                const existing = acc[key];
+                const existingSIds = existing.serviceIds || [existing.serviceId];
+                const currentSIds = appt.serviceIds || [appt.serviceId];
+                
+                const combinedSIds = [...existingSIds];
+                currentSIds.forEach(id => {
+                  if (!combinedSIds.includes(id)) combinedSIds.push(id);
+                });
+                
+                existing.serviceIds = combinedSIds;
+                existing.serviceId = combinedSIds[0];
+                existing.servicePrice = (existing.servicePrice || 0) + (appt.servicePrice || 0);
+                if (appt.time < existing.time) {
+                  existing.time = appt.time;
+                }
+              }
+              return acc;
+            }, {} as Record<string, Appointment>);
+            
+            virtualAppointments.push(...Object.values(groupedDayVirtuals));
           }
         }
 
