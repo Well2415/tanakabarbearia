@@ -1,3 +1,19 @@
+import { RecurringSchedule, Service } from '../types';
+import { differenceInCalendarWeeks } from 'date-fns';
+
+/**
+ * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 
+ * sem sofrer deslocamento de fuso horário UTC.
+ */
+export const parseLocalDate = (dateStr: string | undefined): Date => {
+  if (!dateStr || typeof dateStr !== 'string') return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return new Date();
+  const [year, month, day] = parts.map(Number);
+  // O mês no construtor de Date é 0-indexado (0 = Janeiro)
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 /**
  * Normaliza uma string de horário para o formato "HH:mm".
  * Exemplo: "8:30" -> "08:30", "09:5" -> "09:05"
@@ -32,7 +48,32 @@ export const sortTimes = (times: string[]): string[] => {
     });
 };
 
-import { Service } from '../types';
+/**
+ * Verifica se um horário fixo está ativo em uma data específica,
+ * considerando a frequência (semanal ou bi-semanal).
+ */
+export const isRecurringActive = (schedule: RecurringSchedule, date: Date | string): boolean => {
+  if (!schedule.active) return false;
+  
+  const targetDate = typeof date === 'string' ? parseLocalDate(date) : date;
+  
+  // Se não houver frequência definida ou for semanal, está sempre ativo
+  if (!schedule.frequency || schedule.frequency === 'weekly') {
+    return true;
+  }
+
+  // Para frequências bi-semanais, verificamos a paridade das semanas em relação à data de início
+  if (schedule.frequency === 'biweekly' && schedule.startDate) {
+    const start = parseLocalDate(schedule.startDate);
+    
+    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo)
+    const weeksDiff = Math.abs(differenceInCalendarWeeks(targetDate, start, { weekStartsOn: 0 }));
+    
+    return weeksDiff % 2 === 0;
+  }
+
+  return true;
+};
 
 /**
  * Calcula a duração total de múltiplos serviços selecionados.
@@ -101,14 +142,4 @@ export const canAccommodateService = (
 ): boolean => {
   const neededSlots = getBlockedTimes(startTime, durationMinutes);
   return neededSlots.every(slot => masterHours.includes(slot) && !allBookedTimes.includes(slot));
-};
-/**
- * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 
- * sem sofrer deslocamento de fuso horário UTC.
- */
-export const parseLocalDate = (dateStr: string | undefined): Date => {
-  if (!dateStr) return new Date();
-  const [year, month, day] = dateStr.split('-').map(Number);
-  // O mês no construtor de Date é 0-indexado (0 = Janeiro)
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
 };

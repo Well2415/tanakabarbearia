@@ -5,16 +5,19 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
 import { AdminMenu } from '@/components/admin/AdminMenu';
-import { Plus, Trash2, Calendar, Clock, User, Scissors, ArrowLeft } from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, User, Scissors, ArrowLeft, Check, ChevronsUpDown, CalendarDays, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { RecurringSchedule, User as UserType, Barber, Service } from '@/types';
+import { parseLocalDate } from '@/lib/timeUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const DAYS_OF_WEEK = [
     { id: 0, name: 'Domingo' },
@@ -35,6 +38,7 @@ const RecurringSchedules = () => {
     const [services, setServices] = useState<Service[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isComboboxOpen, setIsComboboxOpen] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         userId: '',
@@ -42,7 +46,10 @@ const RecurringSchedules = () => {
         serviceIds: [] as string[],
         dayOfWeek: '1',
         time: '',
+        frequency: 'weekly' as 'weekly' | 'biweekly',
+        startDate: startOfDay(new Date()),
     });
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
     useEffect(() => {
         const currentUser = storage.getCurrentUser();
@@ -62,30 +69,69 @@ const RecurringSchedules = () => {
         }
     }, [navigate, formData.barberId]);
 
-    const handleCreateSchedule = async () => {
+    const handleSaveSchedule = async () => {
         if (!formData.userId || !formData.barberId || formData.serviceIds.length === 0 || !formData.time) {
             toast({ title: 'Erro', description: 'Preencha todos os campos.', variant: 'destructive' });
             return;
         }
 
-        const newSchedule: RecurringSchedule = {
-            id: Date.now().toString(),
-            userId: formData.userId,
-            barberId: formData.barberId,
-            serviceId: formData.serviceIds[0], // Mantido para compatibilidade simples
-            serviceIds: formData.serviceIds,
-            dayOfWeek: parseInt(formData.dayOfWeek),
-            time: formData.time,
-            active: true,
-            createdAt: new Date().toISOString(),
-        };
+        if (editingId) {
+            const updated = schedules.map(s => {
+                if (s.id === editingId) {
+                    return {
+                        ...s,
+                        userId: formData.userId,
+                        barberId: formData.barberId,
+                        serviceId: formData.serviceIds[0],
+                        serviceIds: formData.serviceIds,
+                        dayOfWeek: parseInt(formData.dayOfWeek),
+                        time: formData.time,
+                        frequency: formData.frequency,
+                        startDate: formData.frequency === 'biweekly' ? format(formData.startDate, 'yyyy-MM-dd') : undefined,
+                    };
+                }
+                return s;
+            });
+            await storage.saveRecurringSchedules(updated);
+            setSchedules(updated);
+            toast({ title: 'Sucesso', description: 'Horário fixo atualizado.' });
+        } else {
+            const newSchedule: RecurringSchedule = {
+                id: Date.now().toString(),
+                userId: formData.userId,
+                barberId: formData.barberId,
+                serviceId: formData.serviceIds[0],
+                serviceIds: formData.serviceIds,
+                dayOfWeek: parseInt(formData.dayOfWeek),
+                time: formData.time,
+                frequency: formData.frequency,
+                startDate: formData.frequency === 'biweekly' ? format(formData.startDate, 'yyyy-MM-dd') : undefined,
+                active: true,
+                createdAt: new Date().toISOString(),
+            };
+            const updated = [...schedules, newSchedule];
+            await storage.saveRecurringSchedules(updated);
+            setSchedules(updated);
+            toast({ title: 'Sucesso', description: 'Horário fixo cadastrado.' });
+        }
 
-        const updated = [...schedules, newSchedule];
-        await storage.saveRecurringSchedules(updated);
-        setSchedules(updated);
         setIsDialogOpen(false);
-        setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '' });
-        toast({ title: 'Sucesso', description: 'Horário fixo cadastrado com sucesso.' });
+        setEditingId(null);
+        setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '', frequency: 'weekly', startDate: startOfDay(new Date()) });
+    };
+
+    const handleEdit = (schedule: RecurringSchedule) => {
+        setEditingId(schedule.id);
+        setFormData({
+            userId: schedule.userId,
+            barberId: schedule.barberId,
+            serviceIds: schedule.serviceIds || (schedule.serviceId ? [schedule.serviceId] : []),
+            dayOfWeek: schedule.dayOfWeek.toString(),
+            time: schedule.time,
+            frequency: schedule.frequency || 'weekly',
+            startDate: schedule.startDate ? parseLocalDate(schedule.startDate) : startOfDay(new Date()),
+        });
+        setIsDialogOpen(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -114,17 +160,28 @@ const RecurringSchedules = () => {
                     <h1 className="text-3xl font-bold">Horários <span className="text-primary">Fixos</span></h1>
                 </div>
 
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) {
+                        setEditingId(null);
+                        setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '', frequency: 'weekly', startDate: startOfDay(new Date()) });
+                    }
+                }}>
                     <DialogTrigger asChild>
-                        <Button className="mb-8 w-full md:w-auto gap-2">
+                        <Button className="mb-8 w-full md:w-auto gap-2" onClick={() => {
+                            setEditingId(null);
+                            setFormData({ userId: '', barberId: '', serviceIds: [], dayOfWeek: '1', time: '', frequency: 'weekly', startDate: startOfDay(new Date()) });
+                        }}>
                             <Plus className="w-4 h-4" /> Novo Horário Fixo
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md w-[95vw] h-auto max-h-[96dvh] overflow-hidden flex flex-col p-0 rounded-3xl border-white/10 bg-zinc-950 shadow-2xl">
                         <DialogHeader className="p-6 pb-0 text-left">
-                            <DialogTitle className="text-2xl font-bold text-white">Cadastrar Horário Fixo</DialogTitle>
+                            <DialogTitle className="text-2xl font-bold text-white">
+                                {editingId ? 'Editar Horário Fixo' : 'Cadastrar Horário Fixo'}
+                            </DialogTitle>
                             <DialogDescription className="text-zinc-400">
-                                Configure um agendamento recorrente para este cliente.
+                                {editingId ? 'Altere as configurações deste agendamento.' : 'Configure um agendamento recorrente para este cliente.'}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -281,11 +338,59 @@ const RecurringSchedules = () => {
                                     </Select>
                                 </div>
                             </div>
+
+                            <div className="space-y-3 pt-2">
+                                <Label className="text-zinc-300 font-medium ml-1">Frequência</Label>
+                                <Select value={formData.frequency} onValueChange={(v: any) => setFormData({ ...formData, frequency: v })}>
+                                    <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
+                                        <SelectItem value="weekly" className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Toda semana</SelectItem>
+                                        <SelectItem value="biweekly" className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Semana sim, semana não</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {formData.frequency === 'biweekly' && (
+                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <Label className="text-zinc-300 font-medium ml-1">Semana de Início (Âncora)</Label>
+                                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className={cn(
+                                                    "w-full justify-start text-left h-14 bg-white/5 border-white/10 rounded-2xl focus:ring-primary/50 text-white text-lg font-normal px-4",
+                                                    !formData.startDate && "text-zinc-500"
+                                                )}
+                                            >
+                                                <CalendarIcon className="mr-2 h-5 w-5 opacity-50" />
+                                                {formData.startDate ? format(formData.startDate, "PPP", { locale: ptBR }) : <span>Selecione a semana</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 bg-zinc-900 border-white/10 rounded-2xl shadow-2xl" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={formData.startDate}
+                                                onSelect={(date) => {
+                                                    if (date) setFormData({ ...formData, startDate: startOfDay(date) });
+                                                    setIsDatePickerOpen(false);
+                                                }}
+                                                initialFocus
+                                                locale={ptBR}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <p className="text-[10px] text-zinc-500 ml-1">
+                                        O horário será ativo nesta semana e em todas as semanas ímpares a partir dela (pulando uma).
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <DialogFooter className="p-6 border-t border-white/5">
-                            <Button onClick={handleCreateSchedule} className="w-full h-16 rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] transition-all duration-300">
-                                Salvar Horário Fixo
+                            <Button onClick={handleSaveSchedule} className="w-full h-16 rounded-[2rem] text-xl font-black shadow-2xl shadow-primary/30 bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-[1.02] transition-all duration-300">
+                                {editingId ? 'Salvar Alterações' : 'Cadastrar Horário'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
@@ -303,9 +408,24 @@ const RecurringSchedules = () => {
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <Calendar className="w-5 h-5 text-primary" />
                                     </div>
-                                    <Button variant="ghost" size="icon" onClick={() => handleDelete(schedule.id)} className="rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-500/10 transition-colors">
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => handleEdit(schedule)} 
+                                            className="rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors w-10 h-10"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => handleDelete(schedule.id)} 
+                                            className="rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors w-10 h-10"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <h3 className="font-bold text-lg mb-1">{getClientName(schedule.userId)}</h3>
@@ -315,6 +435,10 @@ const RecurringSchedules = () => {
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <Clock className="w-4 h-4" />
                                         <span>{getDayName(schedule.dayOfWeek)} às <b>{schedule.time}</b></span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <CalendarDays className="w-4 h-4" />
+                                        <span>{schedule.frequency === 'biweekly' ? 'Semana sim, semana não' : 'Toda semana'}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <User className="w-4 h-4" />

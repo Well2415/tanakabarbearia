@@ -6,8 +6,9 @@ import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp, DollarSign, Check, X, Wallet, UserCog } from 'lucide-react';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { formatCurrency, cn } from '@/lib/utils';
-import { format, subDays } from 'date-fns';
+import { format, subDays, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -28,10 +29,14 @@ const Dashboard = () => {
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === today);
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
+  const currentMonth = new Date();
 
   const totalRevenue = appointments
-    .filter(a => a.status === 'completed')
-    .reduce((sum, a) => sum + (a.finalPrice || a.servicePrice || 0), 0);
+    .filter(a => a.status === 'completed' && isSameMonth(parseLocalDate(a.date), currentMonth))
+    .reduce((sum, a) => {
+      const price = a.finalPrice !== undefined ? a.finalPrice : (a.servicePrice || 0) + (a.extraCharges || 0) - (a.discount || 0);
+      return sum + price;
+    }, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,8 +79,8 @@ const Dashboard = () => {
           <Card className="p-6 border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Receita Total</p>
-                <p className="text-3xl font-bold">{formatCurrency(totalRevenue)}</p>
+                <p className="text-sm text-muted-foreground mb-1">Receita (Mês)</p>
+                <p className="text-3xl font-bold text-green-500">R$ {totalRevenue.toFixed(2).replace('.', ',')}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-primary" />
             </div>

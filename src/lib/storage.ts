@@ -520,7 +520,9 @@ export const storage = {
       active: s.active,
       createdAt: s.createdAt,
       serviceId: s.serviceId,
-      serviceIds: s.serviceIds
+      serviceIds: s.serviceIds,
+      frequency: s.frequency,
+      startDate: s.startDate
     }));
 
     const { error } = await supabase.from('recurring_schedules').upsert(dbPayload);

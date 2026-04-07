@@ -138,7 +138,7 @@ const Finance = () => {
   const activeExpenses = filterCategory === 'revenue' ? [] : filteredExpenses;
 
   // Calculos de Caixa baseados no filtro (The Report)
-  const totalRevenue = activeAppointments.reduce((acc, curr) => acc + (curr.finalPrice || curr.servicePrice || 0), 0);
+  const totalRevenue = activeAppointments.reduce((acc, curr) => acc + (curr.finalPrice !== undefined ? curr.finalPrice : (curr.servicePrice || 0) + (curr.extraCharges || 0) - (curr.discount || 0)), 0);
   const totalExpense = activeExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   const netBalance = totalRevenue - totalExpense;
 

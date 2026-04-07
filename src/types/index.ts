@@ -74,6 +74,7 @@ export interface Appointment {
   discount?: number; // New: For discount amount applied on checkout
   finalPrice?: number; // New: Final price after all adjustments
   amountPaid?: number; // New: Amount already paid (e.g. deposit/signal)
+  isRecurring?: boolean; // Identifica se é um agendamento virtual vindo de horário fixo
 }
 export interface RecurringSchedule {
   id: string;
@@ -83,6 +84,8 @@ export interface RecurringSchedule {
   serviceIds?: string[]; // Novo: Lista de múltiplos serviços
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
   time: string; // "HH:mm"
+  frequency?: 'weekly' | 'biweekly'; // 'weekly' ou 'biweekly'
+  startDate?: string; // Data de início (yyyy-MM-dd) para calcular paridade de semanas
   active: boolean;
   createdAt: string;
 }

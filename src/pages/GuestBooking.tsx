@@ -20,7 +20,7 @@ import { CalendarIcon, Palmtree } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from '@/lib/timeUtils';
 const LogoLoginImg = "/img/logo-tanaka.png";
 
 const GuestBooking = () => {
@@ -67,7 +67,7 @@ const GuestBooking = () => {
         });
 
       recurringSchedules
-        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active)
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);

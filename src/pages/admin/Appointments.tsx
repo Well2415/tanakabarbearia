@@ -32,7 +32,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
+import { useMemo } from 'react';
 
 const Appointments = () => {
   const navigate = useNavigate();
@@ -503,7 +504,47 @@ const Appointments = () => {
     return ids.map(serviceId => services.find(s => s.id === serviceId)?.name).filter(Boolean).join(' + ') || 'N/A';
   };
 
-  const filteredAppointments = appointments
+  const displayAppointments = useMemo(() => {
+    const recurringSchedules = storage.getRecurringSchedules();
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    // Gerar agendamentos virtuais apenas para HOJE por enquanto, para não poluir
+    const virtualToday = recurringSchedules
+      .filter(s => s.active && s.dayOfWeek === today.getDay() && isRecurringActive(s, today))
+      .map(s => {
+        const scheduleServiceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+        const totalPrice = scheduleServiceIds.reduce((sum, id) => {
+          const srv = services.find(serv => serv.id === id);
+          return sum + (srv?.price || 0);
+        }, 0);
+
+        return {
+          id: `recurring-${s.id}`,
+          userId: s.userId,
+          barberId: s.barberId,
+          serviceId: s.serviceId,
+          serviceIds: scheduleServiceIds,
+          date: todayStr,
+          time: s.time,
+          status: 'confirmed' as const,
+          isRecurring: true,
+          servicePrice: totalPrice,
+          createdAt: s.createdAt
+        } as Appointment;
+      });
+
+    // Remove duplicatas se o horário fixo já tiver sido transformado em um agendamento real para hoje
+    const realTodayTimes = appointments
+      .filter(a => a.date === todayStr && a.status !== 'cancelled')
+      .map(a => `${a.barberId}-${a.time}`);
+
+    const uniqueVirtual = virtualToday.filter(v => !realTodayTimes.includes(`${v.barberId}-${v.time}`));
+
+    return [...appointments, ...uniqueVirtual];
+  }, [appointments, services]);
+
+  const filteredAppointments = displayAppointments
     .filter(appt => {
       // Search filter
       const clientName = (appt.guestName || users.find(u => u.id === appt.userId)?.fullName || '').toLowerCase();
@@ -520,7 +561,7 @@ const Appointments = () => {
         case 'today':
           return isSameDay(parseLocalDate(appt.date), today);
         case 'history':
-          return appt.status === 'completed' || appt.status === 'cancelled';
+          return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
         case 'all':
         default:
           return true;

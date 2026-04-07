@@ -9,11 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parseISO, isAfter } from 'date-fns';
+import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
 import { AdminMenu } from '@/components/admin/AdminMenu';
+import { isRecurringActive } from '@/lib/timeUtils';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const MyAppointments = () => {
         
         // 2. Agendamentos fixos (recorrentes) para HOJE
         const todayRecurring = recurringSchedules
-          .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active)
+          .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, today))
           .filter(s => {
             // Evitar duplicados: Se já existe um agendamento real para este cliente neste horário hoje, não mostrar o virtual
             return !barberAppointments.some(appt => 
