@@ -110,11 +110,8 @@ export const InstallPWA = () => {
     // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     if (!isStandalone) {
-      // Remover a restrição de 3 dias para que apareça sempre que entrar (até ser instalado ou minimizado na sessão)
-      const sessionDismissed = sessionStorage.getItem('pwa_prompt_dismissed_session');
-      if (!sessionDismissed) {
-        setShowBanner(true);
-      }
+      // Restaurando o comportamento original: Sempre mostrar se não estiver instalado
+      setShowBanner(true);
     }
   }, []);
 
