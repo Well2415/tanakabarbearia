@@ -320,8 +320,25 @@ const MyAppointments = () => {
         const userToUpdate = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId);
         if (userToUpdate) {
           const updatedUser = { ...userToUpdate };
+
+          // Incrementa contador de cortes
           updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
 
+          // Calcula e incrementa pontos de fidelidade
+          const appServiceIds = currentAppointmentToComplete.serviceIds && currentAppointmentToComplete.serviceIds.length > 0 
+            ? currentAppointmentToComplete.serviceIds 
+            : [currentAppointmentToComplete.serviceId];
+          
+          const pointsEarned = appServiceIds.reduce((total, id) => {
+            const srv = services.find(s => s.id === id);
+            return total + (srv?.loyaltyPoints || 0);
+          }, 0);
+
+          // Garante pelo menos 1 ponto se o serviço não tiver pontos definidos (fallback solicitado)
+          const finalPoints = pointsEarned > 0 ? pointsEarned : 1;
+          updatedUser.loyaltyPoints = (updatedUser.loyaltyPoints || 0) + finalPoints;
+
+          // Atualiza preferências de estilo
           const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
           if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
             updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
