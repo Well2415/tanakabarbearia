@@ -75,6 +75,7 @@ const Appointments = () => {
   const [editedBarberId, setEditedBarberId] = useState('');
   const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [editedExtraCharges, setEditedExtraCharges] = useState(0);
+  const [editedStatus, setEditedStatus] = useState<string>('');
 
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [newBookingData, setNewBookingData] = useState({
@@ -298,14 +299,15 @@ const Appointments = () => {
 
   const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
-      const updatedAppointment = {
+      const updatedAppointment: Appointment = {
         ...appointmentToEdit,
         date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
         time: editedTime,
         serviceId: editedServiceId,
         barberId: editedBarberId,
-        paymentType: editedPaymentType || undefined,
+        paymentType: editedPaymentType as any,
         extraCharges: editedExtraCharges,
+        status: editedStatus as any,
         finalPrice: (appointmentToEdit.servicePrice || 0) + editedExtraCharges,
       };
       await updateAppointmentInStorage(updatedAppointment);
@@ -1045,6 +1047,7 @@ const Appointments = () => {
                           setEditedBarberId(appointment.barberId);
                           setEditedPaymentType(appointment.paymentType || '');
                           setEditedExtraCharges(appointment.extraCharges || 0);
+                          setEditedStatus(appointment.status);
                           setShowEditDialog(true);
                         }}>
                           <Clock className="w-4 h-4 text-primary" />
@@ -1317,6 +1320,23 @@ const Appointments = () => {
                   {barbers.map(barber => (
                     <SelectItem key={barber.id} value={barber.id}>{barber.name}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Status do Agendamento</Label>
+              <Select value={editedStatus} onValueChange={setEditedStatus}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="no_show">Não Compareceu</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -37,6 +37,14 @@ const MyAppointments = () => {
   const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
   const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
+  const [editedDate, setEditedDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [editedTime, setEditedTime] = useState('');
+  const [editedServiceId, setEditedServiceId] = useState('');
+  const [editedStatus, setEditedStatus] = useState<string>('');
+  const [isEditPickerOpen, setIsEditPickerOpen] = useState(false);
+  const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
 
   const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
 
@@ -147,14 +155,79 @@ const MyAppointments = () => {
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
     await storage.updateAppointment(updatedAppointment);
     
-    // Atualiza o estado local para garantir que a UI reflita a mudança imediatamente
+    // Refresh local state
+    const all = storage.getAppointments();
     const barberProfile = storage.getBarbers().find(b => b.id === user?.barberId);
-    if (barberProfile) {
-      const allAppointments = storage.getAppointments();
-      const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
-      setAppointments(barberAppointments);
+    if (barberProfile && startDate && endDate) {
+      const barberAppointments = all.filter(appt => {
+        if (appt.barberId !== barberProfile.id) return false;
+        const apptDate = parseLocalDate(appt.date);
+        return (isSameDay(apptDate, startDate) || isAfter(apptDate, startDate)) && 
+               (isSameDay(apptDate, endDate) || isBefore(apptDate, endDate));
+      });
+      setAppointments(prev => {
+        const virtuals = prev.filter(p => p.isRecurring);
+        return [...barberAppointments, ...virtuals];
+      });
     }
   };
+
+  const handleUpdateAppointment = async () => {
+    if (appointmentToEdit) {
+      const updatedAppointment: Appointment = {
+        ...appointmentToEdit,
+        id: appointmentToEdit.id,
+        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
+        time: editedTime,
+        serviceId: editedServiceId,
+        status: editedStatus as any,
+      };
+      await updateAppointmentInStorage(updatedAppointment);
+      toast({ title: "Agendamento Atualizado", description: "O agendamento foi corrigido com sucesso." });
+      setShowEditDialog(false);
+      setAppointmentToEdit(null);
+    }
+  };
+
+  // Logic to filter times when editing
+  useEffect(() => {
+    if (editedDate && user?.barberId) {
+      const barber = storage.getBarbers().find(b => b.id === user.barberId);
+      if (!barber) return;
+
+      const masterHours = (barber.scheduleByDay && barber.scheduleByDay[editedDate.getDay()]) || barber.availableHours || [];
+      const formattedDate = format(editedDate, 'yyyy-MM-dd');
+      const allAppointments = storage.getAppointments();
+
+      const busySlots: string[] = [];
+      allAppointments
+        .filter(app => app.barberId === barber.id && app.date === formattedDate && app.status !== 'cancelled' && app.status !== 'no_show' && app.id !== appointmentToEdit?.id)
+        .forEach(app => {
+          const sIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const dur = (sIds.map(id => services.find(s => s.id === id)?.duration || 30).reduce((a, b) => a + b, 0));
+          const slots = Math.ceil(dur / 30);
+          for (let i = 0; i < slots; i++) {
+            const [h, m] = app.time.split(':').map(Number);
+            const totalMin = h * 60 + m + i * 30;
+            busySlots.push(`${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`);
+          }
+        });
+
+      const recurring = storage.getRecurringSchedules();
+      recurring
+        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active)
+        .forEach(s => {
+          busySlots.push(s.time);
+        });
+
+      const available = masterHours.filter(h => !busySlots.includes(h) || (appointmentToEdit && h === appointmentToEdit.time && editedDate && format(editedDate, 'yyyy-MM-dd') === appointmentToEdit.date));
+      if (appointmentToEdit && !available.includes(appointmentToEdit.time) && editedDate && format(editedDate, 'yyyy-MM-dd') === appointmentToEdit.date) {
+        available.push(appointmentToEdit.time);
+        available.sort();
+      }
+      setEditFilteredTimes(available);
+    }
+  }, [editedDate, appointmentToEdit, user?.barberId, appointments, services]);
 
   const handleStartService = async (appointment: Appointment) => {
     const now = new Date();
@@ -370,7 +443,24 @@ const MyAppointments = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg">{getClientName(appointment)}</h3>
-                      <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
+                      <div className="flex gap-2 items-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 p-0 rounded-full hover:bg-primary/20 hover:text-primary transition-all" 
+                          onClick={() => {
+                            setAppointmentToEdit(appointment);
+                            setEditedDate(startOfDay(parseISO(appointment.date)));
+                            setEditedTime(appointment.time);
+                            setEditedServiceId(appointment.serviceId);
+                            setEditedStatus(appointment.status);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <Clock className="w-4 h-4 text-primary" />
+                        </Button>
+                        <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
+                      </div>
                       {(appointment as any).isRecurring && <Badge variant="outline" className="border-primary text-primary font-bold">FIXO</Badge>}
                       {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                     </div>
@@ -518,6 +608,84 @@ const MyAppointments = () => {
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0} className="w-full h-12 text-lg">Confirmar</Button>
             <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Edit Appointment Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader><DialogTitle>Corrigir Agendamento</DialogTitle></DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Data</Label>
+              <Popover open={isEditPickerOpen} onOpenChange={setIsEditPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-11", !editedDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editedDate ? format(editedDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={editedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setEditedDate(startOfDay(date));
+                      }
+                      setIsEditPickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label htmlFor="editTime">Hora</Label>
+              <Select value={editedTime} onValueChange={setEditedTime}>
+                <SelectTrigger className="h-11 w-full border-border bg-card">
+                  <SelectValue placeholder="Selecione o horário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {editFilteredTimes.map(time => (
+                    <SelectItem key={time} value={time}>{time}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editService">Serviço</Label>
+              <Select value={editedServiceId} onValueChange={setEditedServiceId}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Selecione um serviço" /></SelectTrigger>
+                <SelectContent>
+                  {services.map(service => (
+                    <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Status</Label>
+              <Select value={editedStatus} onValueChange={setEditedStatus}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="no_show">Não Compareceu</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end mt-4 pb-4">
+            <Button onClick={handleUpdateAppointment} className="w-full sm:w-auto h-11 md:h-10 order-first sm:order-last font-bold">Salvar Alterações</Button>
+            <DialogClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto h-11 md:h-10">Cancelar</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
