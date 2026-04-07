@@ -101,7 +101,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
                           {statusLabels[app.status] || app.status}
                         </span>
                         
-                        {app.status === 'pending' && (
+                        {(app.status === 'pending' || app.status === 'confirmed') && (
                           isCancellable(app.date, app.time) ? (
                             <Button 
                               variant="destructive" 
@@ -113,7 +113,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
                             </Button>
                           ) : (
                             <div className="flex items-center text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md mt-1" title="Cancelamentos só são permitidos com até 2 horas de antecedência.">
-                              <Clock className="w-3 h-3 mr-1" /> Fixo (Falta -2h)
+                              <Clock className="w-3 h-3 mr-1" /> No prazo limite (-2h)
                             </div>
                           )
                         )}
