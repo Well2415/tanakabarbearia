@@ -69,6 +69,15 @@ const RecurringSchedules = () => {
         }
     }, [navigate, formData.barberId]);
 
+    const groupedSchedules = useMemo(() => {
+        const groups: Record<string, RecurringSchedule[]> = {};
+        schedules.forEach(schedule => {
+            if (!groups[schedule.userId]) groups[schedule.userId] = [];
+            groups[schedule.userId].push(schedule);
+        });
+        return groups;
+    }, [schedules]);
+
     const handleSaveSchedule = async () => {
         if (!formData.userId || !formData.barberId || formData.serviceIds.length === 0 || !formData.time) {
             toast({ title: 'Erro', description: 'Preencha todos os campos.', variant: 'destructive' });
@@ -396,54 +405,71 @@ const RecurringSchedules = () => {
                     </DialogContent>
                 </Dialog>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {schedules.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Object.keys(groupedSchedules).length === 0 ? (
                         <Card className="p-8 text-center col-span-full border-dashed bg-muted/20">
                             <p className="text-muted-foreground">Nenhum horário fixo cadastrado.</p>
                         </Card>
                     ) : (
-                        schedules.map(schedule => (
-                            <Card key={schedule.id} className="p-6 relative group border-border hover:border-primary/50 transition-colors">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2 bg-primary/10 rounded-lg">
-                                        <CalendarIcon className="w-5 h-5 text-primary" />
+                        Object.entries(groupedSchedules).map(([userId, userSchedules]) => (
+                            <Card key={userId} className="p-6 relative border-border hover:border-primary/50 transition-all bg-card shadow-sm h-fit">
+                                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-white/5">
+                                    <div className="p-3 bg-primary/10 rounded-2xl">
+                                        <User className="w-6 h-6 text-primary" />
                                     </div>
-                                    <div className="flex gap-2">
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            onClick={() => handleEdit(schedule)} 
-                                            className="rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors w-10 h-10"
-                                        >
-                                            <Pencil className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            onClick={() => handleDelete(schedule.id)} 
-                                            className="rounded-full text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors w-10 h-10"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
+                                    <div>
+                                        <h3 className="font-black text-xl leading-tight">{getClientName(userId)}</h3>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">
+                                            {userSchedules.length} {userSchedules.length === 1 ? 'Horário' : 'Horários'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <h3 className="font-bold text-lg mb-1">{getClientName(schedule.userId)}</h3>
-                                <p className="text-sm text-primary font-medium mb-4">{getServiceName(schedule.serviceIds || schedule.serviceId)}</p>
+                                <div className="space-y-4">
+                                    {userSchedules.map((schedule) => (
+                                        <div key={schedule.id} className="p-4 rounded-2xl bg-zinc-900/50 border border-white/5 relative group/item hover:bg-zinc-900 transition-colors">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2 text-primary font-bold">
+                                                    <Clock className="w-4 h-4" />
+                                                    <span>{getDayName(schedule.dayOfWeek)} às {schedule.time}</span>
+                                                </div>
+                                                <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        onClick={() => handleEdit(schedule)} 
+                                                        className="w-8 h-8 rounded-full hover:bg-primary/20 hover:text-primary"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        onClick={() => handleDelete(schedule.id)} 
+                                                        className="w-8 h-8 rounded-full hover:bg-red-500/20 hover:text-red-500"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{getDayName(schedule.dayOfWeek)} às <b>{schedule.time}</b></span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <CalendarDays className="w-4 h-4" />
-                                        <span>{schedule.frequency === 'biweekly' ? 'Semana sim, semana não' : 'Toda semana'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <User className="w-4 h-4" />
-                                        <span>Barbeiro: {getBarberName(schedule.barberId)}</span>
-                                    </div>
+                                            <div className="space-y-1.5 pl-6 border-l-2 border-primary/20">
+                                                <p className="text-sm font-medium text-zinc-300">
+                                                    {getServiceName(schedule.serviceIds || schedule.serviceId)}
+                                                </p>
+                                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
+                                                        <CalendarDays className="w-3 h-3" />
+                                                        {schedule.frequency === 'biweekly' ? 'Semana sim/não' : 'Semanal'}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
+                                                        <Scissors className="w-3 h-3" />
+                                                        {getBarberName(schedule.barberId)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </Card>
                         ))
