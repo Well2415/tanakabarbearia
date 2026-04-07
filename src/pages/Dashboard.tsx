@@ -109,7 +109,7 @@ const Dashboard = () => {
           
           // Atualiza o estado local do Dashboard para refletir a mudança
           const updatedUser = storage.getCurrentUser();
-          if (updatedUser) setUser(updatedUser);
+          if (updatedUser) setUser({ ...updatedUser });
 
           toast({ title: 'Notificações Ativadas!', description: 'Você receberá avisos de novos agendamentos.' });
         }
@@ -118,7 +118,7 @@ const Dashboard = () => {
         setPushEnabled(false);
         
         const updatedUser = storage.getCurrentUser();
-        if (updatedUser) setUser(updatedUser);
+        if (updatedUser) setUser({ ...updatedUser });
 
         toast({ title: 'Notificações Desativadas', description: 'Você não receberá mais avisos push.' });
       }
