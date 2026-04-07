@@ -284,7 +284,7 @@ const RecurringSchedules = () => {
                                                                     : [...current, service.id];
                                                                 setFormData(prev => ({ ...prev, serviceIds: next }));
                                                             }}
-                                                            className="cursor-pointer px-4 py-3 rounded-xl m-1"
+                                                            className="cursor-pointer px-4 py-3 rounded-xl m-1 aria-selected:bg-primary/20 aria-selected:text-primary group/item transition-colors"
                                                         >
                                                             <div className={cn(
                                                                 "mr-3 flex h-5 w-5 items-center justify-center rounded-md border-2 border-primary",
@@ -295,7 +295,7 @@ const RecurringSchedules = () => {
                                                                 {formData.serviceIds.includes(service.id) && <Check className="h-3.5 w-3.5" />}
                                                             </div>
                                                             <span className="flex-1 text-white font-medium">{service.name}</span>
-                                                            <span className="text-primary font-bold ml-2">R$ {service.price}</span>
+                                                            <span className="text-primary group-aria-selected/item:text-primary-foreground font-bold ml-2">R$ {service.price}</span>
                                                         </CommandItem>
                                                     ))}
                                                 </CommandGroup>
@@ -332,7 +332,7 @@ const RecurringSchedules = () => {
                                                 const dayIdx = parseInt(formData.dayOfWeek);
                                                 return (barber.scheduleByDay && barber.scheduleByDay[dayIdx]) || barber.availableHours || [];
                                             })().map(h => (
-                                                <SelectItem key={h} value={h} className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1 font-bold text-center">{h}</SelectItem>
+                                                <SelectItem key={h} value={h} className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1 font-bold">{h}</SelectItem>
                                             )) || <SelectItem value="0" disabled>Selecione um barbeiro</SelectItem>}
                                         </SelectContent>
                                     </Select>
@@ -346,8 +346,8 @@ const RecurringSchedules = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-white/10 rounded-xl">
-                                        <SelectItem value="weekly" className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Toda semana</SelectItem>
-                                        <SelectItem value="biweekly" className="py-3 px-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Semana sim, semana não</SelectItem>
+                                        <SelectItem value="weekly" className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Toda semana</SelectItem>
+                                        <SelectItem value="biweekly" className="py-3 pl-10 pr-4 focus:bg-primary/20 focus:text-primary rounded-lg m-1">Semana sim, semana não</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
