@@ -162,11 +162,11 @@ const GuestBooking = () => {
       });
 
 
-      // Notificar Barbeiro (Push) - Atualiza usuários para pegar inscrições recentes
+      // Notificar Barbeiro (Push) - A Edge Function agora consulta a tabela multi-dispositivo
       await storage.refreshUsers();
 
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
-      if (barberUser?.pushSubscription) {
+      if (barberUser) {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);
         await notificationManager.sendPushNotification(
           barberUser.id,
@@ -195,7 +195,7 @@ const GuestBooking = () => {
       if (pendingJson) {
         try {
           const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, new Date(savedDateStr));
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
           localStorage.removeItem('pending_guest_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -210,7 +210,7 @@ const GuestBooking = () => {
     try {
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia (Convidado)`;
-      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date?.toISOString() }));
+      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
       const url = await createPreference(depositValue, description, formData.email, window.location.href);
       if (url) {
         window.location.href = url;

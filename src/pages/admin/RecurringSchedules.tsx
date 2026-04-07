@@ -51,22 +51,30 @@ const RecurringSchedules = () => {
     });
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        const currentUser = storage.getCurrentUser();
-        if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'barber')) {
-            navigate('/login');
-            return;
-        }
+        const init = async () => {
+            setLoading(true);
+            const currentUser = storage.getCurrentUser();
+            if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'barber')) {
+                navigate('/login');
+                return;
+            }
 
-        setSchedules(storage.getRecurringSchedules());
-        setUsers(storage.getUsers().filter(u => u.role === 'client'));
-        const barbersList = storage.getBarbers();
-        setBarbers(barbersList);
-        setServices(storage.getServices());
+            await storage.initialize();
+            setSchedules(storage.getRecurringSchedules());
+            setUsers(storage.getUsers().filter(u => u.role === 'client'));
+            const barbersList = storage.getBarbers();
+            setBarbers(barbersList);
+            setServices(storage.getServices());
 
-        if (barbersList.length === 1 && !formData.barberId) {
-            setFormData(prev => ({ ...prev, barberId: barbersList[0].id }));
-        }
+            if (barbersList.length === 1 && !formData.barberId) {
+                setFormData(prev => ({ ...prev, barberId: barbersList[0].id }));
+            }
+            setLoading(false);
+        };
+        init();
     }, [navigate, formData.barberId]);
 
     const groupedSchedules = useMemo(() => {

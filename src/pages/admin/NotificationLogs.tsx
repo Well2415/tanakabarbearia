@@ -26,6 +26,7 @@ const NotificationLogs = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
+            await storage.initialize();
             const { data: logsData, error: logsError } = await supabase
                 .from('notification_logs')
                 .select('*')

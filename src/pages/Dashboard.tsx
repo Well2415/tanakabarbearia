@@ -61,13 +61,13 @@ const Dashboard = () => {
         stylePreferences: currentUser.stylePreferences?.join(', ') || '',
       });
 
-      // Check Push Status
-      notificationManager.isSupported().then(supported => {
+      // Check Push Status de forma mais robusta (verificando o dispositivo, não apenas o banco)
+      notificationManager.isSupported().then(async supported => {
         setIsPushSupported(supported);
         if (supported) {
-          notificationManager.getPermissionStatus().then(status => {
-            setPushEnabled(status === 'granted' && !!currentUser.pushSubscription);
-          });
+          const status = await notificationManager.getPermissionStatus();
+          const sub = await notificationManager.getSubscription();
+          setPushEnabled(status === 'granted' && !!sub);
         }
       });
     }

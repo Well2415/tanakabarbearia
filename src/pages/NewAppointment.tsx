@@ -98,11 +98,11 @@ const NewAppointment = () => {
       });
 
 
-      // Notificar Barbeiro (Push) - Atualiza usuários para pegar inscrições recentes
+      // Notificar Barbeiro (Push) - A Edge Function agora consulta a tabela multi-dispositivo
       await storage.refreshUsers();
 
       const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
-      if (barberUser?.pushSubscription) {
+      if (barberUser) {
         const primaryService = services.find(s => s.id === newAppointment.serviceId);
         await notificationManager.sendPushNotification(
           barberUser.id,

@@ -25,6 +25,17 @@ export const notificationManager = {
     return Notification.permission;
   },
 
+  async getSubscription() {
+    if (!this.isSupported()) return null;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      return await registration.pushManager.getSubscription();
+    } catch (error) {
+      console.error('Erro ao buscar inscrição local:', error);
+      return null;
+    }
+  },
+
   async requestPermission() {
     if (!this.isSupported()) return false;
     const permission = await Notification.requestPermission();
