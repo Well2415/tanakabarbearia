@@ -53,7 +53,6 @@ export const AdminMenu = () => {
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
-        { name: 'Logs Push', path: '/admin/notifications/logs', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
@@ -288,6 +287,12 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                                     <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
                                         <Clock className="w-5 h-5 text-primary" />
                                         Horários Fixos (VIP)
+                                    </Button>
+                                </Link>
+                                <Link to="/admin/notifications/logs">
+                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Bell className="w-5 h-5 text-primary" />
+                                        Logs de Notificações
                                     </Button>
                                 </Link>
                             </>
