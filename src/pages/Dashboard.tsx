@@ -236,7 +236,7 @@ const Dashboard = () => {
                 </Button>
               </Card>
 
-              {pushEnabled && (
+              {pushEnabled && isStaff && (
                 <div className="px-4">
                   <Button 
                     onClick={handleTestPush}
