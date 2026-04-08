@@ -98,19 +98,24 @@ const NewAppointment = () => {
       });
 
 
-      // Notificar Barbeiro (Push) - A Edge Function agora consulta a tabela multi-dispositivo
+      // Notificar Barbeiro e Administradores (Push)
       await storage.refreshUsers();
+      const allUsers = storage.getUsers();
+      const primaryService = services.find(s => s.id === newAppointment.serviceId);
+      const notificationTitle = 'Novo Agendamento! 💈';
+      const notificationBody = `${user.fullName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
 
-      const barberUser = storage.getUsers().find(u => u.barberId === newAppointment.barberId);
+      // 1. Notificar Barbeiro específico da reserva
+      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
       if (barberUser) {
-        const primaryService = services.find(s => s.id === newAppointment.serviceId);
-        await notificationManager.sendPushNotification(
-          barberUser.id,
-          'Novo Agendamento! 💈',
-          `${user.fullName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`,
-          '/admin/appointments'
-        );
+        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
       }
+
+      // 2. Notificar todos os Administradores para que possam confirmar (exceto se o admin for quem agendou)
+      const admins = allUsers.filter(u => u.role === 'admin' && u.id !== user.id);
+      admins.forEach(admin => {
+        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+      });
 
       navigate('/dashboard');
     } catch (error) {
