@@ -103,17 +103,24 @@ export const notificationManager = {
 
   async sendPushNotification(userId: string, title: string, body: string, url: string = '/') {
     try {
-      console.log(`[Push] Tentando enviar notificação para: ${userId}`);
+      console.log(`📡 [Push] Disparando para ID: ${userId} | Título: ${title}`);
       
+      const payload = { userId, title, body, url };
+      console.log('📦 [Push] Payload enviado:', JSON.stringify(payload));
+
       // Chama a Edge Function do Supabase
       const { data, error } = await supabase.functions.invoke('send-push', {
-        body: { userId, title, body, url }
+        body: payload
       });
 
       if (error) {
-        console.error('❌ [Push] Erro retornado pela Edge Function:', error);
+        console.error('❌ [Push] Erro de rede na Edge Function:', error);
       } else {
-        console.log('✅ [Push] Edge Function respondeu com sucesso:', data);
+        console.log('✅ [Push] Resposta da Edge Function:', data);
+        if (data?.success === false) {
+           console.warn('⚠️ [Push] A função respondeu com sucesso de rede, mas falhou no envio:', data.message);
+           console.dir(data);
+        }
       }
 
       // Salva o log no banco de dados (Tente usar o nome de coluna que o app espera)

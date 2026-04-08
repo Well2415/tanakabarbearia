@@ -8,18 +8,20 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
+  console.log(`[HTTP] Recebida requisição ${req.method}`);
+  
   // 1. Tratamento imediato de OPTIONS (Preflight)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // 2. Extrair dados
-    const bodyData = await req.json().catch(() => null);
-    if (!bodyData) throw new Error("Corpo da requisição inválido ou vazio.");
-
+    const bodyText = await req.text();
+    console.log('[HTTP] Corpo Bruto:', bodyText);
+    
+    const bodyData = JSON.parse(bodyText);
     const { userId, title, body, url } = bodyData;
-    console.log(`🔍 Iniciando processo para usuário: ${userId}`);
+    console.log(`🔍 [Push Server] Processando para: ${userId} | Título: ${title}`);
 
     if (!userId) throw new Error("O campo 'userId' é obrigatório.");
 
@@ -71,56 +73,63 @@ Deno.serve(async (req) => {
     }
 
     if (subscriptions.length === 0) {
-      throw new Error(`Nenhum dispositivo de Push encontrado para o usuário ${userId}.`);
+      console.log(`⚠️ Nenhum dispositivo encontrado para o usuário ${userId}. Ignorando silenciosamente.`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `O usuário ${userId} não possui dispositivos cadastrados para Push.` 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // 5. Enviar Notificações em Paralelo
+    // 5. Enviar Notificações (Loop Robusto)
     const payload = JSON.stringify({ title, body, url });
-    const results = await Promise.allSettled(subscriptions.map(async (sub) => {
+    const details = [];
+    let successCount = 0;
+
+    for (const sub of subscriptions) {
       try {
+        console.log(`📡 Enviando para dispositivo ${sub.id || 'fallback'}...`);
         await webpush.sendNotification(sub.data, payload);
-        return { success: true, id: sub.id };
+        successCount++;
+        details.push({ id: sub.id, status: 'sent' });
       } catch (err: any) {
-        // Se o erro for 410 (Gone) ou 404 (Not Found), a inscrição expirou e deve ser removida
+        console.error(`❌ Falha no dispositivo ${sub.id || 'fallback'}:`, err.message);
+        
+        // Trata expiração (Gone/NotFound)
         if (sub.id && (err.statusCode === 410 || err.statusCode === 404)) {
-          console.log(`🗑️ Removendo inscrição expirada: ${sub.id}`);
+          console.log(`🗑️ Removendo dispositivo expirado: ${sub.id}`);
           await supabase.from('user_push_subscriptions').delete().eq('id', sub.id);
         }
-        throw err;
+        
+        details.push({ id: sub.id, status: 'failed', error: err.message });
       }
-    }));
+    }
 
-    const details = results.map((r, i) => ({
-      device: i + 1,
-      status: r.status === 'fulfilled' ? 'sent' : 'failed',
-      error: r.status === 'rejected' ? (r as any).reason.message : null
-    }));
-
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
     console.log(`✅ Processo finalizado. Sucessos: ${successCount}/${subscriptions.length}`);
 
     return new Response(
       JSON.stringify({ 
         success: successCount > 0, 
-        message: `${successCount} notificações enviadas.`,
+        message: `${successCount} notificações enviadas de ${subscriptions.length} dispositivos.`,
         details 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err: any) {
-    console.error('❌ ERRO NA EDGE FUNCTION:', err.message);
+    console.error('❌ ERRO CRÍTICO NA EDGE FUNCTION:', err.message);
     
-    // Identifica se é erro de configuração para retornar 400 em vez de 500
-    const isConfigError = err.message.includes('não encontradas') || err.message.includes('não configuradas');
-    
+    // Retornamos 200 OK com success: false para que o log apareça no console sem "quebrar" a rede
     return new Response(
       JSON.stringify({ 
-        error: true, 
-        message: err.message,
-        details: isConfigError ? '⚠️ ERRO DE CONFIGURAÇÃO: Verifique as Secrets no Painel do Supabase.' : 'Erro interno do servidor.'
+        success: false, 
+        error: true,
+        message: `Erro na Função: ${err.message}`,
+        details: err.stack || 'Sem detalhes técnicos.'
       }),
-      { status: isConfigError ? 400 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
