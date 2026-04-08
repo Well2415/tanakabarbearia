@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { notificationManager } from '@/lib/notifications';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -330,6 +331,20 @@ const MyAppointments = () => {
           // Atribui exatamente 1 ponto por visita (independente dos serviços)
           const pointsEarned = 1;
           updatedUser.loyaltyPoints = (updatedUser.loyaltyPoints || 0) + pointsEarned;
+
+          // Verifica se atingiu a meta de fidelidade e notifica admins
+          const loyaltyTarget = storage.getLoyaltyTarget();
+          if (updatedUser.loyaltyPoints >= loyaltyTarget) {
+            const allAdmins = storage.getUsers().filter(u => u.role === 'admin');
+            allAdmins.forEach(admin => {
+              notificationManager.sendPushNotification(
+                admin.id,
+                "Meta de Fidelidade Atingida! 🏆",
+                `O cliente ${updatedUser.fullName} completou ${updatedUser.loyaltyPoints} pontos e já pode ganhar um prêmio!`,
+                "/admin/clients"
+              ).catch(err => console.error('Erro ao notificar admin:', err));
+            });
+          }
 
           // Atualiza preferências de estilo
           const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);

@@ -719,6 +719,20 @@ const Appointments = () => {
                 const pointsEarned = 1;
                 updatedUser.loyaltyPoints = (updatedUser.loyaltyPoints || 0) + pointsEarned;
 
+                // Verifica se atingiu a meta de fidelidade e notifica admins
+                const loyaltyTarget = storage.getLoyaltyTarget();
+                if (updatedUser.loyaltyPoints >= loyaltyTarget) {
+                    const allAdmins = allUsers.filter(u => u.role === 'admin');
+                    allAdmins.forEach(admin => {
+                        notificationManager.sendPushNotification(
+                            admin.id,
+                            "Meta de Fidelidade Atingida! 🏆",
+                            `O cliente ${updatedUser.fullName} completou ${updatedUser.loyaltyPoints} pontos e já pode ganhar um prêmio!`,
+                            "/admin/clients"
+                        ).catch(err => console.error('Erro ao notificar admin:', err));
+                    });
+                }
+
                 // Atualiza preferências de estilo
                 const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
                 if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {

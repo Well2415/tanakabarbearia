@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { CreateClientDialog } from '@/components/admin/CreateClientDialog';
 import { useSearchParams } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const Clients = () => {
   const itemsPerPage = 10;
   const [searchParams] = useSearchParams();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'points_desc' | 'points_asc'>('name');
 
   useEffect(() => {
     if (searchParams.get('action') === 'new-client') {
@@ -41,14 +43,20 @@ const Clients = () => {
   }, [searchParams]);
 
   const filteredClients = useMemo(() => {
-    return clients.filter(client => {
+    const filtered = clients.filter(client => {
       const search = searchTerm.toLowerCase();
       const nameMatch = client.fullName.toLowerCase().includes(search);
       const emailMatch = client.email?.toLowerCase().includes(search);
       const phoneMatch = client.phone?.includes(search);
       return nameMatch || emailMatch || phoneMatch;
     });
-  }, [clients, searchTerm]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'points_desc') return (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0);
+      if (sortBy === 'points_asc') return (a.loyaltyPoints || 0) - (b.loyaltyPoints || 0);
+      return a.fullName.localeCompare(b.fullName);
+    });
+  }, [clients, searchTerm, sortBy]);
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
   const displayedClients = filteredClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -165,18 +173,32 @@ const Clients = () => {
           </CardFooter>
         </Card>
 
-        {/* Barra de Pesquisa */}
-        <div className="relative w-full mb-6 mt-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar por nome, e-mail ou telefone..." 
-            className="pl-11 h-12 bg-card border-border rounded-xl w-full text-base"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-          />
+        {/* Barra de Pesquisa e Ordenação */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6 mt-2">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar por nome, e-mail ou telefone..." 
+              className="pl-11 h-12 bg-card border-border rounded-xl w-full text-base"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+          <div className="w-full md:w-64">
+            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <SelectTrigger className="h-12 bg-card border-border rounded-xl">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Nome (A-Z)</SelectItem>
+                <SelectItem value="points_desc">Mais Pontos</SelectItem>
+                <SelectItem value="points_asc">Menos Pontos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
