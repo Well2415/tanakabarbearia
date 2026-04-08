@@ -16,7 +16,21 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export const notificationManager = {
+  isIOS() {
+    return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+  },
+
+  isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+  },
+
   async isSupported() {
+    const isIOS = this.isIOS();
+    const isStandalone = this.isStandalone();
+    
+    // No iOS, Push só existe se estiver em modo Standalone (PWA Instalado)
+    if (isIOS) return isStandalone && 'serviceWorker' in navigator && 'PushManager' in window;
+    
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   },
 

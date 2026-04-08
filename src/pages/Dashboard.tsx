@@ -40,6 +40,8 @@ const Dashboard = () => {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [isPushSupported, setIsPushSupported] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   // Placeholder for My Best Barber
   const bestBarber: Barber | null = storage.getBarbers().find(barber => barber.name === 'João Silva') || null; // Example: picking João Silva
@@ -61,9 +63,14 @@ const Dashboard = () => {
         stylePreferences: currentUser.stylePreferences?.join(', ') || '',
       });
 
-      // Check Push Status de forma mais robusta (verificando o dispositivo, não apenas o banco)
+      // Check Push Status de forma mais robusta
       notificationManager.isSupported().then(async supported => {
         setIsPushSupported(supported);
+        const ios = notificationManager.isIOS();
+        const standalone = notificationManager.isStandalone();
+        setIsIOS(ios);
+        setIsStandalone(standalone);
+
         if (supported) {
           const status = await notificationManager.getPermissionStatus();
           const sub = await notificationManager.getSubscription();
@@ -159,6 +166,23 @@ const Dashboard = () => {
           </div>
 
           {/* Notificações Push Seção */}
+          {isIOS && !isStandalone && (
+            <Card className="mb-8 p-6 border-amber-500/20 bg-amber-500/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                <BellOff className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-amber-500">Notificações no iPhone</h3>
+                <p className="text-xs text-muted-foreground">
+                  Para ativar as notificações, você precisa: <br />
+                  1. Toque no ícone de compartilhar <span className="font-bold text-white">[↑]</span> no Safari <br />
+                  2. Role e selecione <span className="font-bold text-white">"Adicionar à Tela de Início"</span> <br />
+                  3. Abra o app pela tela de início e ative aqui.
+                </p>
+              </div>
+            </Card>
+          )}
+
           {isPushSupported && (
             <Card className="mb-8 p-6 border-primary/20 bg-primary/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center sm:text-left">
