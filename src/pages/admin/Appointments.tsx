@@ -617,20 +617,23 @@ const Appointments = () => {
       const matchesSearch = clientName.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // Date range filter
+      // Date range filter - Pending appointments bypass this filter for visibility
       const apptDate = parseLocalDate(appt.date);
-      if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
-      if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
+      if (appt.status !== 'pending') {
+        if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
+        if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
+      }
 
       // Tab filter
-      const today = new Date();
+      const todayFilter = new Date();
       switch (activeTab) {
         case 'pending':
           return appt.status === 'pending';
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          return isSameDay(apptDate, today);
+          // Show today's appointments OR any pending appointment
+          return isSameDay(apptDate, todayFilter) || appt.status === 'pending';
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
         case 'all':
@@ -639,6 +642,10 @@ const Appointments = () => {
       }
     })
     .sort((a, b) => {
+      // Pending first
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      
       const dateA = new Date(`${a.date}T${a.time}`).getTime();
       const dateB = new Date(`${b.date}T${b.time}`).getTime();
       return dateB - dateA; // Newest first

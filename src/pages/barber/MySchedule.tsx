@@ -71,6 +71,9 @@ const MyAppointments = () => {
         // 1. Agendamentos reais do barbeiro NO INTERVALO
         const barberAppointments = allAppointments.filter(appt => {
           if (appt.barberId !== barberProfile.id) return false;
+          // Pending appointments always show up for the barber, even outside the selected date range
+          if (appt.status === 'pending') return true;
+
           const apptDate = parseLocalDate(appt.date);
           return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
                  (isSameDay(apptDate, end) || isBefore(apptDate, end));
@@ -478,7 +481,13 @@ const MyAppointments = () => {
           {appointments.length === 0 ? (
             <Card className="p-8 text-center border-border"><p className="text-muted-foreground">Nenhum agendamento encontrado para você.</p></Card>
           ) : (
-            appointments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((appointment) => (
+            appointments.sort((a, b) => {
+              // Pending first
+              if (a.status === 'pending' && b.status !== 'pending') return -1;
+              if (a.status !== 'pending' && b.status === 'pending') return 1;
+              // Then newest date first
+              return new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime();
+            }).map((appointment) => (
               <Card key={appointment.id} className="p-6 border-border">
                 <div className="flex flex-col md:flex-row justify-between gap-4">
                   <div className="space-y-2">
