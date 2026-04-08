@@ -111,8 +111,8 @@ const NewAppointment = () => {
         await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
       }
 
-      // 2. Notificar todos os Administradores para que possam confirmar (exceto se o admin for quem agendou)
-      const admins = allUsers.filter(u => u.role === 'admin' && u.id !== user.id);
+      // 2. Notificar todos os Administradores para que possam confirmar
+      const admins = allUsers.filter(u => u.role === 'admin');
       admins.forEach(admin => {
         notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
       });

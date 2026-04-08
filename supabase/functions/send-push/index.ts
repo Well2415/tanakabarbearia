@@ -110,13 +110,17 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error('❌ ERRO NA EDGE FUNCTION:', err.message);
+    
+    // Identifica se é erro de configuração para retornar 400 em vez de 500
+    const isConfigError = err.message.includes('não encontradas') || err.message.includes('não configuradas');
+    
     return new Response(
       JSON.stringify({ 
         error: true, 
         message: err.message,
-        details: 'Verifique os logs no dashboard do Supabase para mais detalhes.'
+        details: isConfigError ? '⚠️ ERRO DE CONFIGURAÇÃO: Verifique as Secrets no Painel do Supabase.' : 'Erro interno do servidor.'
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: isConfigError ? 400 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

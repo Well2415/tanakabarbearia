@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { storage } from './storage';
 
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
-const VAPID_PUBLIC_KEY = 'BM85bcqG2nbHO_6fLZ2PPtiNQnI0DdAuO2EGXs2MKbnnT73b7O1UX_ztkcSRWT610rhiVOTVKMURO-wny3762_M';
+const VAPID_PUBLIC_KEY = 'BMh3k1YCD3Ur162NEJxTl9lWj8cHUFeLZmu_KE5lR0wrShhmdKqxeRsJB77nSkGp9WgEFT7CZrDgDYHYkUujVu4';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -82,42 +82,62 @@ export const notificationManager = {
     if (!userId) return;
 
     try {
+      console.log(`[Push] Sincronizando inscrição para usuário: ${userId}`);
       const subString = subscription ? JSON.stringify(subscription) : null;
       
       if (subString) {
         // Agora registramos na nova tabela para suportar múltiplos dispositivos
         await storage.registerPushSubscription(userId, subString);
         console.log('✅ [Push] Inscrição multi-device registrada com sucesso.');
+      } else {
+        console.warn('⚠️ [Push] Tentativa de sincronizar uma inscrição nula.');
       }
 
       // Mantemos a sincronização com a coluna antiga por compatibilidade temporária
       await storage.updateUserPushSubscription(userId, subString);
-      console.log('Inscrição sincronizada com sucesso via Storage.');
+      console.log('✅ [Push] Sincronização concluída via Storage.');
     } catch (error) {
-      console.error('Erro ao sincronizar inscrição:', error);
+      console.error('❌ [Push] Erro crítico na sincronização:', error);
     }
   },
 
   async sendPushNotification(userId: string, title: string, body: string, url: string = '/') {
     try {
+      console.log(`[Push] Tentando enviar notificação para: ${userId}`);
+      
       // Chama a Edge Function do Supabase
       const { data, error } = await supabase.functions.invoke('send-push', {
         body: { userId, title, body, url }
       });
 
-      // Salva o log no banco de dados
-      await supabase.from('notification_logs').insert({
+      if (error) {
+        console.error('❌ [Push] Erro retornado pela Edge Function:', error);
+      } else {
+        console.log('✅ [Push] Edge Function respondeu com sucesso:', data);
+      }
+
+      // Salva o log no banco de dados (Tente usar o nome de coluna que o app espera)
+      const logEntry = {
         userId,
         title,
         body,
         status: error ? 'error' : 'success',
         errorMessage: error ? (error.message || JSON.stringify(error)) : (data?.status === 'error' ? data?.message : null)
-      });
+      };
 
-      if (error) throw error;
+      console.log('[Push] Salvando log na tabela notification_logs...', logEntry);
+      
+      const { error: logError } = await supabase.from('notification_logs').insert(logEntry);
+      
+      if (logError) {
+        console.error('❌ [Push] Erro ao gravar na tabela notification_logs:', logError);
+      } else {
+        console.log('✅ [Push] Log gravado com sucesso.');
+      }
+
       return data;
     } catch (error: any) {
-      console.error('Erro ao disparar Edge Function de Push:', error);
+      console.error('❌ [Push] Erro de rede ou exceção ao disparar Push:', error);
       
       // Tenta logar o erro caso a inserção acima não tenha ocorrido por falha na função
       try {

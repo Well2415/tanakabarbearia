@@ -137,6 +137,31 @@ const Dashboard = () => {
     }
   };
 
+  const handleTestPush = async () => {
+    if (!user) return;
+    setIsProcessing(true);
+    try {
+      console.log('--- INICIANDO TESTE DE PUSH ---');
+      const result = await notificationManager.sendPushNotification(
+        user.id, 
+        'Teste de Sistema 🛠️', 
+        `Olá ${user.fullName}, este é um teste manual de notificação.`,
+        '/dashboard'
+      );
+      
+      if (result) {
+        toast({ title: 'Teste Enviado!', description: 'Verifique se a notificação chegou no seu celular.' });
+      } else {
+        toast({ title: 'Falha no Teste', description: 'A Edge Function não retornou sucesso. Verifique o console (F12).', variant: 'destructive' });
+      }
+    } catch (error) {
+       console.error('Erro no teste de Push:', error);
+       toast({ title: 'Erro Crítico', description: 'Houve uma falha ao tentar disparar o teste.', variant: 'destructive' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (!user) {
     return null; // Or a loading spinner
   }
@@ -184,30 +209,47 @@ const Dashboard = () => {
           )}
 
           {isPushSupported && (
-            <Card className="mb-8 p-6 border-primary/20 bg-primary/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 text-center sm:text-left">
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
-                  pushEnabled ? "bg-primary/20 text-primary" : "bg-zinc-800 text-zinc-500"
-                )}>
-                  {pushEnabled ? <Bell className="w-6 h-6 animate-pulse" /> : <BellOff className="w-6 h-6" />}
+            <div className="flex flex-col gap-4 mb-8">
+              <Card className="p-6 border-primary/20 bg-primary/5 backdrop-blur-sm rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4 text-center sm:text-left">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                    pushEnabled ? "bg-primary/20 text-primary" : "bg-zinc-800 text-zinc-500"
+                  )}>
+                    {pushEnabled ? <Bell className="w-6 h-6 animate-pulse" /> : <BellOff className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Notificações no Celular</h3>
+                    <p className="text-xs text-muted-foreground">Receba avisos de confirmação e lembretes 2h antes.</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">Notificações no Celular</h3>
-                  <p className="text-xs text-muted-foreground">Receba avisos de confirmação e lembretes 2h antes.</p>
+                <Button 
+                  onClick={handleTogglePush}
+                  disabled={isProcessing}
+                  variant={pushEnabled ? "outline" : "default"}
+                  className={cn(
+                    "rounded-xl font-bold px-8 h-12 min-w-[160px]",
+                    pushEnabled ? "border-primary/50 text-primary" : "bg-primary text-primary-foreground"
+                  )}
+                >
+                  {isProcessing ? "PROCESSANDO..." : (pushEnabled ? "DESATIVAR" : "ATIVAR AGORA")}
+                </Button>
+              </Card>
+
+              {pushEnabled && (
+                <div className="px-4">
+                  <Button 
+                    onClick={handleTestPush}
+                    disabled={isProcessing}
+                    variant="ghost" 
+                    size="sm"
+                    className="text-[10px] uppercase tracking-widest font-black text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                  >
+                    {isProcessing ? "TESTANDO..." : "Disparar Notificação de Teste 🛠️"}
+                  </Button>
                 </div>
-              </div>
-              <Button 
-                onClick={handleTogglePush}
-                variant={pushEnabled ? "outline" : "default"}
-                className={cn(
-                  "rounded-xl font-bold px-8 h-12",
-                  pushEnabled ? "border-primary/50 text-primary" : "bg-primary text-primary-foreground"
-                )}
-              >
-                {pushEnabled ? "DESATIVAR" : "ATIVAR AGORA"}
-              </Button>
-            </Card>
+              )}
+            </div>
           )}
 
           <div className="flex flex-col gap-8 mt-8">

@@ -26,17 +26,44 @@ const NotificationLogs = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
+            console.log('[Logs] Buscando registros na tabela notification_logs...');
             await storage.initialize();
-            const { data: logsData, error: logsError } = await supabase
+            
+            // Tenta buscar com createdAt (padrão camelCase)
+            let { data: logsData, error: logsError } = await supabase
                 .from('notification_logs')
                 .select('*')
                 .order('createdAt', { ascending: false });
 
-            if (logsError) throw logsError;
-            setLogs(logsData || []);
+            // Se der erro de coluna não encontrada, tenta created_at (padrão snake_case)
+            if (logsError && logsError.message.includes('createdAt')) {
+                console.warn('[Logs] Coluna createdAt não encontrada, tentando created_at...');
+                const { data, error } = await supabase
+                    .from('notification_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                logsData = data;
+                logsError = error;
+            }
+
+            if (logsError) {
+                console.error('❌ [Logs] Erro ao buscar logs:', logsError);
+                throw logsError;
+            }
+            
+            console.log(`✅ [Logs] ${logsData?.length || 0} registros carregados.`);
+            
+            // Adaptar dados caso venham com snake_case do banco
+            const normalizedLogs = (logsData || []).map(log => ({
+                ...log,
+                createdAt: log.createdAt || log.created_at || new Date().toISOString()
+            }));
+
+            setLogs(normalizedLogs);
             setUsers(storage.getUsers());
         } catch (error) {
-            console.error('Erro ao buscar logs:', error);
+            console.error('❌ [Logs] Falha crítica ao carregar página de logs:', error);
         } finally {
             setLoading(false);
         }
