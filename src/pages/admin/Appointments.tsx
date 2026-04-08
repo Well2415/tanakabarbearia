@@ -90,13 +90,22 @@ const Appointments = () => {
     userId: null as string | null
   });
 
-  const initStorage = async (silent = false) => {
-    if (!silent) setIsSyncing(true);
+  const initStorage = async (force = false) => {
+    // Se for forçado (Realtime), mostramos o pulso de "Sincronizando"
+    if (force) setIsSyncing(true);
+    else setIsSyncing(true); // Sempre mostra no início também
+
     try {
-      await storage.initialize();
+      // Passa o parâmetro 'force' para o storage buscar dados novos no Supabase
+      await storage.initialize(force);
       setAppointments(storage.getAppointments());
     } finally {
-      if (!silent) setIsSyncing(false);
+      // Pequeno delay para o usuário ver o feedback de "Sincronizando"
+      if (force) {
+        setTimeout(() => setIsSyncing(false), 2000);
+      } else {
+        setIsSyncing(false);
+      }
     }
   };
 

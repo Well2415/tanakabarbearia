@@ -71,8 +71,8 @@ export const storage = {
    * Deve ser chamado uma única vez no início do carregamento do App.
    */
     isInitialized: false,
-    async initialize() {
-    if (this.isInitialized) return;
+    async initialize(force = false) {
+    if (this.isInitialized && !force) return;
 
     try {
       // 1. Carregar Configurações (Settings)
