@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/command";
 import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
 
+import { supabase } from '@/lib/supabase';
+
 const Appointments = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -42,6 +44,8 @@ const Appointments = () => {
   const barbers = storage.getBarbers();
   const services = storage.getServices();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [currentAppointmentToComplete, setCurrentAppointmentToComplete] = useState<Appointment | null>(null);
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
@@ -50,7 +54,6 @@ const Appointments = () => {
   const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
-
 
   const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
   const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
@@ -87,17 +90,46 @@ const Appointments = () => {
     userId: null as string | null
   });
 
-  useEffect(() => {
-    const initStorage = async () => {
+  const initStorage = async (silent = false) => {
+    if (!silent) setIsSyncing(true);
+    try {
       await storage.initialize();
-      const barbersList = storage.getBarbers();
-      if (barbersList.length === 1 && !newBookingData.barberId) {
-        setNewBookingData(prev => ({ ...prev, barberId: barbersList[0].id }));
-      }
       setAppointments(storage.getAppointments());
-    };
+    } finally {
+      if (!silent) setIsSyncing(false);
+    }
+  };
+
+  // Carregamento inicial
+  useEffect(() => {
     initStorage();
   }, [newBookingData.barberId]);
+
+  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
+  useEffect(() => {
+    // Configura a escuta da tabela de agendamentos
+    const channel = supabase
+      .channel('appointments-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Escuta INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('🔄 [Realtime] Mudança detectada nos agendamentos:', payload.eventType);
+          // Recarrega os dados do storage para garantir sincronia total
+          initStorage(true);
+        }
+      )
+      .subscribe();
+
+    // Limpeza da conexão ao sair da tela
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
   const [isManualCalendarOpen, setIsManualCalendarOpen] = useState(false);
@@ -856,7 +888,19 @@ const Appointments = () => {
 
       <div className="container mx-auto px-4 py-8 pb-32">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <h2 className="text-3xl font-bold">Agendamentos</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold">Agendamentos</h2>
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500",
+              isSyncing ? "bg-primary/20 text-primary animate-pulse" : "bg-green-500/10 text-green-500"
+            )}>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isSyncing ? "bg-primary" : "bg-green-500 animate-pulse"
+              )} />
+              {isSyncing ? 'Sincronizando...' : 'Ao Vivo'}
+            </div>
+          </div>
           <div className="flex gap-2 w-full md:w-auto">
             <Link to="/admin/recurring-schedules" className="flex-1 md:flex-none">
               <Button variant="outline" className="w-full gap-2 h-12 md:h-10 text-lg md:text-base border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
