@@ -558,7 +558,7 @@ const MyAppointments = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
           <div className="py-2 space-y-4">
             <p className="mb-2 text-sm text-muted-foreground">
@@ -680,7 +680,7 @@ const MyAppointments = () => {
       </Dialog>
       {/* Edit Appointment Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Corrigir Agendamento</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
             <div>

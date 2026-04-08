@@ -127,7 +127,6 @@ const Appointments = () => {
           table: 'appointments'
         },
         (payload) => {
-          console.log('🔄 [Realtime] Mudança detectada nos agendamentos:', payload.eventType);
           // Recarrega os dados do storage para garantir sincronia total
           initStorage(true);
         }
@@ -1217,7 +1216,7 @@ const Appointments = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-1">
@@ -1373,7 +1372,7 @@ const Appointments = () => {
 
       {/* Edit Appointment Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Editar Agendamento</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
             <div>
@@ -1511,7 +1510,7 @@ const Appointments = () => {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
           <div className="py-4">
             <p>Tem certeza que deseja excluir o agendamento de <span className="font-bold">{getClientName(appointmentToDelete!)}</span>?</p>
@@ -1526,7 +1525,7 @@ const Appointments = () => {
 
       {/* Manual Booking Dialog */}
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md p-6 outline-none pb-28 md:pb-6 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-md p-6 outline-none pb-28 md:pb-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Marcar Horário Manualmente</DialogTitle>
           </DialogHeader>
