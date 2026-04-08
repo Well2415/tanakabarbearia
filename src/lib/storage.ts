@@ -308,7 +308,9 @@ export const storage = {
     localStorage.setItem('appointments', JSON.stringify(cache.appointments));
 
     // 2. Persistir no Supabase
-    const { error } = await supabase.from('appointments').upsert(appointment);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { isRecurring, ...dbAppointment } = appointment as any;
+    const { error } = await supabase.from('appointments').upsert(dbAppointment);
     if (error) {
       console.error('❌ [Storage] Erro ao atualizar agendamento granular:', error);
       throw error;
@@ -323,7 +325,14 @@ export const storage = {
     cache.appointments = appointments;
     localStorage.setItem('appointments', JSON.stringify(appointments));
 
-    const { error } = await supabase.from('appointments').upsert(appointments);
+    // Limpar flags de UI antes do upsert
+    const dbAppointments = appointments.map(appt => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { isRecurring, ...dbAppt } = appt as any;
+      return dbAppt;
+    });
+
+    const { error } = await supabase.from('appointments').upsert(dbAppointments);
     if (error) console.error('Error saving appointments:', error);
 
     if (deletedIds.length > 0) {
