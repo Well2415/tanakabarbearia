@@ -119,7 +119,8 @@ export const notificationManager = {
         console.log('✅ [Push] Resposta da Edge Function:', data);
         if (data?.success === false) {
            console.warn('⚠️ [Push] A função respondeu com sucesso de rede, mas falhou no envio:', data.message);
-           console.dir(data);
+        } else if (data?.message?.includes("PING OK")) {
+           console.log("🚀 SUCESSO: O site e o servidor estão conversando perfeitamente!");
         }
       }
 
