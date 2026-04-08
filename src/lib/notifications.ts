@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { storage } from './storage';
 
+console.log('🚀 [Notifications] SISTEMA VERSÃO 2.0 CARREGADO');
+
 // Substitua por sua chave pública VAPID (Gerada via CLI do web-push)
 const VAPID_PUBLIC_KEY = 'BMh3k1YCD3Ur162NEJxTl9lWj8cHUFeLZmu_KE5lR0wrShhmdKqxeRsJB77nSkGp9WgEFT7CZrDgDYHYkUujVu4';
 
