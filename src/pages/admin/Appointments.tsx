@@ -658,9 +658,12 @@ const Appointments = () => {
       const matchesSearch = clientName.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // Date range filter - Pending appointments bypass this filter for visibility
+      // Date range filter - Pending appointments and those with signals paid bypass this filter for visibility
       const apptDate = parseLocalDate(appt.date);
-      if (appt.status !== 'pending') {
+      const hasSignal = appt.amountPaid && appt.amountPaid > 0;
+      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+      
+      if (!isImportant) {
         if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
         if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
       }
@@ -1096,6 +1099,13 @@ const Appointments = () => {
                             <DollarSign className="w-4 h-4 text-green-600/70" />
                             <span>Pago via <span className="font-medium text-foreground uppercase">{paymentTypeLabels[appointment.paymentType] || appointment.paymentType}</span></span>
                           </p>
+                        )}
+                        {appointment.amountPaid > 0 && appointment.status !== 'completed' && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 font-bold">
+                              SINAL PAGO: R$ {appointment.amountPaid.toFixed(2)}
+                            </Badge>
+                          </div>
                         )}
                       </div>
                     </div>

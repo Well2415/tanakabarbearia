@@ -390,6 +390,9 @@ const GuestBooking = () => {
                   : `Pagar Sinal 50% (R$ ${depositValue.toFixed(2).replace('.', ',')})`
                 }
               </Button>
+              <p className="text-[10px] text-center text-muted-foreground mt-2 animate-pulse font-medium">
+                ⚠️ NÃO FECHE A PÁGINA: Após o pagamento, aguarde o redirecionamento automático para confirmar seu horário.
+              </p>
             </form>
           </Card>
         </div>

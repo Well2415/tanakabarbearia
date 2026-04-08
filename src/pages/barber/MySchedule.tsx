@@ -47,7 +47,7 @@ const MyAppointments = () => {
   const [isEditPickerOpen, setIsEditPickerOpen] = useState(false);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
 
-  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
+  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput - (currentAppointmentToComplete?.amountPaid || 0));
 
   useEffect(() => {
     const initAndFetch = async () => {
@@ -72,8 +72,12 @@ const MyAppointments = () => {
         // 1. Agendamentos reais do barbeiro NO INTERVALO
         const barberAppointments = allAppointments.filter(appt => {
           if (appt.barberId !== barberProfile.id) return false;
-          // Pending appointments always show up for the barber, even outside the selected date range
-          if (appt.status === 'pending') return true;
+          
+          // Agendamentos pendentes OU com sinal pago sempre aparecem para o barbeiro
+          const hasSignal = appt.amountPaid && appt.amountPaid > 0;
+          const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+          
+          if (isImportant) return true;
 
           const apptDate = parseLocalDate(appt.date);
           return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
@@ -524,6 +528,11 @@ const MyAppointments = () => {
                     {appointment.startTime && <p className="text-muted-foreground"><span className="font-medium">Início:</span> {appointment.startTime}</p>}
                     {appointment.endTime && <p className="text-muted-foreground"><span className="font-medium">Fim:</span> {appointment.endTime}</p>}
                     {appointment.paymentType && <p className="text-muted-foreground"><span className="font-medium">Pagamento:</span> {paymentTypeLabels[appointment.paymentType] || appointment.paymentType}</p>}
+                    {appointment.amountPaid > 0 && appointment.status !== 'completed' && (
+                      <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-600 border-green-200">
+                        Sinal Pago: R$ {appointment.amountPaid.toFixed(2)}
+                      </Badge>
+                    )}
                     {appointment.status === 'completed' && appointment.finalPrice && <p className="text-muted-foreground"><span className="font-medium">Valor Pago:</span> R$ {appointment.finalPrice.toFixed(2)}</p>}
                   </div>
                   <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-border">
@@ -553,8 +562,11 @@ const MyAppointments = () => {
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
           <div className="py-2 space-y-4">
             <p className="mb-2 text-sm text-muted-foreground">
-              Finalizando atemdimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
+              Finalizando atendimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
               Valor do Serviço: R$ {currentAppointmentToComplete?.servicePrice?.toFixed(2)}
+              {currentAppointmentToComplete?.amountPaid ? (
+                <span className="block text-green-600 font-medium">Sinal já pago: - R$ {currentAppointmentToComplete.amountPaid.toFixed(2)}</span>
+              ) : null}
             </p>
 
             <div>
