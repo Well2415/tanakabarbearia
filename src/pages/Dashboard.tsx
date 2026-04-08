@@ -141,7 +141,6 @@ const Dashboard = () => {
     if (!user) return;
     setIsProcessing(true);
     try {
-      console.log('--- INICIANDO TESTE DE PUSH ---');
       const result = await notificationManager.sendPushNotification(
         user.id, 
         'Teste de Sistema 🛠️', 

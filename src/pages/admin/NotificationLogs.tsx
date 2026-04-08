@@ -26,7 +26,6 @@ const NotificationLogs = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            console.log('[Logs] Buscando registros na tabela notification_logs...');
             await storage.initialize();
             
             // Tenta buscar com createdAt (padrão camelCase)
@@ -37,7 +36,6 @@ const NotificationLogs = () => {
 
             // Se der erro de coluna não encontrada, tenta created_at (padrão snake_case)
             if (logsError && logsError.message.includes('createdAt')) {
-                console.warn('[Logs] Coluna createdAt não encontrada, tentando created_at...');
                 const { data, error } = await supabase
                     .from('notification_logs')
                     .select('*')
@@ -48,11 +46,8 @@ const NotificationLogs = () => {
             }
 
             if (logsError) {
-                console.error('❌ [Logs] Erro ao buscar logs:', logsError);
                 throw logsError;
             }
-            
-            console.log(`✅ [Logs] ${logsData?.length || 0} registros carregados.`);
             
             // Adaptar dados caso venham com snake_case do banco
             const normalizedLogs = (logsData || []).map(log => ({
