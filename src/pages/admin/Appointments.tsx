@@ -719,10 +719,13 @@ const Appointments = () => {
 
       // 3. Date range filter
       const apptDate = parseLocalDate(appt.date);
+      const isPending = appt.status === 'pending';
       
-      // Filtro estrito por data
-      if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
-      if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
+      // Filtro por data (ignora para pendentes)
+      if (!isPending) {
+        if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
+        if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
+      }
 
       // 4. Tab filter
       const todayFilter = new Date();
@@ -732,8 +735,8 @@ const Appointments = () => {
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          // Mostra apenas os agendamentos do dia atual
-          return isSameDay(apptDate, todayFilter);
+          // Mostra agendamentos do dia OU qualquer agendamento pendente
+          return isSameDay(apptDate, todayFilter) || appt.status === 'pending';
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
         case 'all':

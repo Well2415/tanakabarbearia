@@ -76,8 +76,8 @@ const MyAppointments = () => {
           500, 
           0, 
           undefined, 
-          barberProfile.id,
-          false // includeImportant = false (mostrar apenas o dia selecionado)
+          user.barberId,
+          true // includeImportant = true (para mostrar pendentes de outras datas)
         );
         
         const recurringSchedules = storage.getRecurringSchedules();
@@ -196,7 +196,7 @@ const MyAppointments = () => {
         0, 
         undefined, 
         user.barberId,
-        false // includeImportant = false
+        true // includeImportant = true
       );
       
       setAppointments(prev => {
