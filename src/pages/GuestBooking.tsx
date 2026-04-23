@@ -79,7 +79,8 @@ const GuestBooking = () => {
 
       // Filtra horários que já passaram (se for hoje)
       const now = new Date();
-      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const todayStr = format(now, 'yyyy-MM-dd');
+      const isToday = formattedDate === todayStr;
       const currentHour = now.getHours();
       const currentMin = now.getMinutes();
 
