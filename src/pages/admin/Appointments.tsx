@@ -66,6 +66,11 @@ const Appointments = () => {
     link: number;
   } | null>(null);
 
+  const [filters, setFilters] = useState({
+    userId: null as string | null,
+    barberId: null as string | null
+  });
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
 
@@ -381,6 +386,8 @@ const Appointments = () => {
       if (start && isBefore(apptDate, start)) return false;
       if (end && isAfter(apptDate, end)) return false;
       if (paymentTypeFilter !== 'all' && appt.paymentType !== paymentTypeFilter) return false;
+      if (filters.userId && appt.userId !== filters.userId) return false;
+      if (filters.barberId && appt.barberId !== filters.barberId) return false;
       return true;
     });
 
@@ -578,7 +585,12 @@ const Appointments = () => {
           const dayOfWeek = d.getDay();
           
           const dayVirtuals = recurringSchedules
-            .filter(s => s.active && s.dayOfWeek === dayOfWeek && isRecurringActive(s, d))
+            .filter(s => {
+              if (!s.active || s.dayOfWeek !== dayOfWeek || !isRecurringActive(s, d)) return false;
+              if (filters.userId && s.userId !== filters.userId) return false;
+              if (filters.barberId && s.barberId !== filters.barberId) return false;
+              return true;
+            })
             .map(s => {
               const scheduleServiceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
               const totalPrice = scheduleServiceIds.reduce((sum, id) => {
@@ -662,16 +674,20 @@ const Appointments = () => {
     const uniqueVirtual = finalVirtual.filter(v => !realBusySlots.has(`${v.userId || v.guestName}-${v.date}-${v.barberId}`));
 
     return [...appointments, ...uniqueVirtual];
-  }, [appointments, services, startDate, endDate, users]);
+  }, [appointments, services, startDate, endDate, users, filters]);
 
   const filteredAppointments = displayAppointments
     .filter(appt => {
-      // Search filter
+      // 1. Barber and User Filters
+      if (filters.userId && appt.userId !== filters.userId) return false;
+      if (filters.barberId && appt.barberId !== filters.barberId) return false;
+
+      // 2. Search filter
       const clientName = (appt.guestName || users.find(u => u.id === appt.userId)?.fullName || '').toLowerCase();
       const matchesSearch = clientName.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // Date range filter - Pending appointments and those with signals paid bypass this filter for visibility
+      // 3. Date range filter
       const apptDate = parseLocalDate(appt.date);
       const hasSignal = appt.amountPaid && appt.amountPaid > 0;
       const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
@@ -681,7 +697,7 @@ const Appointments = () => {
         if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
       }
 
-      // Tab filter
+      // 4. Tab filter
       const todayFilter = new Date();
       switch (activeTab) {
         case 'pending':
@@ -1005,6 +1021,75 @@ const Appointments = () => {
             </div>
             <div className="flex items-end">
               <Button onClick={handleGenerateReport} className="w-full">Gerar Relatório</Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+              <Label>Filtrar por Barbeiro</Label>
+              <Select 
+                value={filters.barberId || 'all'} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, barberId: value === 'all' ? null : value }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Todos os Barbeiros" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Barbeiros</SelectItem>
+                  {barbers.map(b => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Filtrar por Cliente</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {filters.userId ? storage.getUsers().find(u => u.id === filters.userId)?.fullName : "Todos os Clientes"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar cliente..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem 
+                          value="all"
+                          onSelect={() => {
+                            setFilters(prev => ({ ...prev, userId: null }));
+                          }}
+                        >
+                          <CheckIcon className={cn("mr-2 h-4 w-4", !filters.userId ? "opacity-100" : "opacity-0")} />
+                          Todos os Clientes
+                        </CommandItem>
+                        {storage.getUsers().filter(u => u.role === 'client').map(client => (
+                          <CommandItem
+                            key={client.id}
+                            value={client.fullName}
+                            onSelect={() => {
+                              setFilters(prev => ({ ...prev, userId: client.id }));
+                            }}
+                          >
+                            <CheckIcon className={cn("mr-2 h-4 w-4", filters.userId === client.id ? "opacity-100" : "opacity-0")} />
+                            {client.fullName}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex items-end">
+              <Button 
+                variant="ghost" 
+                onClick={() => setFilters({ userId: null, barberId: null })}
+                className="w-full text-muted-foreground"
+              >
+                Limpar Filtros
+              </Button>
             </div>
           </div>
 
