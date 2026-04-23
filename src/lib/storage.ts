@@ -657,6 +657,22 @@ export const storage = {
   saveMPPublicKey: async (key: string) => await storage.saveSetting('mp_public_key', key),
 
   getExpenses: (): Expense[] => cache.expenses,
+  async fetchExpenses(startDate?: string, endDate?: string) {
+    let query = supabase.from('expenses').select('*');
+    
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate) query = query.lte('date', endDate);
+    
+    const { data, error } = await query.order('date', { ascending: false });
+    
+    if (error) {
+      console.error('❌ [Storage] Erro ao buscar despesas:', error);
+      return [];
+    }
+    
+    cache.expenses = data || [];
+    return cache.expenses;
+  },
   async saveExpenses(expenses: Expense[]) {
     cache.expenses = expenses;
     await supabase.from('expenses').upsert(expenses);

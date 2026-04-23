@@ -90,8 +90,22 @@ const Finance = () => {
       setUsers(storage.getUsers());
       setCategories(storage.getExpenseCategories());
       
-      const allAppointments = storage.getAppointments();
-      const allExpenses = storage.getExpenses();
+      // Define o intervalo de busca baseado nos filtros
+      let startStr: string | undefined;
+      let endStr: string | undefined;
+
+      if (filterPeriod === 'month') {
+        startStr = `${filterMonth}-01`;
+        endStr = `${filterMonth}-31`; // Supabase lida bem com 31 mesmo em meses de 30
+      } else if (filterPeriod === 'year') {
+        startStr = `${filterYear}-01-01`;
+        endStr = `${filterYear}-12-31`;
+      }
+
+      // Busca dados reais do Supabase
+      const { data: allAppointments } = await storage.fetchAppointments(startStr, endStr, 1000);
+      const allExpenses = await storage.fetchExpenses(startStr, endStr);
+      
       const targetBarberId = currentUser.role === 'admin' ? null : (currentUser.barberId || currentUser.id);
       
       setAppointments(targetBarberId ? allAppointments.filter(a => a.barberId === targetBarberId) : allAppointments);
@@ -99,7 +113,7 @@ const Finance = () => {
     };
     
     initFinance();
-  }, [navigate]);
+  }, [navigate, filterPeriod, filterMonth, filterYear]);
 
   // Reset pagination when filters change
   useEffect(() => {
