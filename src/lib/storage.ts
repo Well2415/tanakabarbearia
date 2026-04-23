@@ -88,6 +88,11 @@ export const storage = {
         supabase.from('expense_categories').select('*')
       ]);
 
+      if (settingsRes.error) console.error('❌ [Storage] Erro settings:', settingsRes.error);
+      if (barbersRes.error) console.error('❌ [Storage] Erro barbers:', barbersRes.error);
+
+      console.log(`📡 [Storage] Dados recebidos: ${barbersRes.data?.length || 0} barbeiros, ${servicesRes.data?.length || 0} serviços.`);
+
       const settingsMap: Record<string, any> = {};
       settingsRes.data?.forEach(s => {
         settingsMap[s.key] = s.value;
@@ -117,6 +122,19 @@ export const storage = {
    * Não carrega mais agendamentos e usuários por padrão.
    */
   async initialize(force = false) {
+    // Se mudamos de projeto (URL do Supabase diferente da salva no cache), limpamos tudo
+    const lastUrl = localStorage.getItem('last_supabase_url');
+    const currentUrl = import.meta.env.VITE_SUPABASE_URL;
+    
+    if (lastUrl && lastUrl !== currentUrl) {
+      console.log('🔄 [Storage] Detectada troca de projeto Supabase. Limpando cache local...');
+      localStorage.clear();
+      cache = getInitialCache();
+      localStorage.setItem('last_supabase_url', currentUrl);
+    } else if (!lastUrl) {
+      localStorage.setItem('last_supabase_url', currentUrl);
+    }
+
     if (this.isInitialized && !force) return;
     await this.initializeConfig(force);
     
