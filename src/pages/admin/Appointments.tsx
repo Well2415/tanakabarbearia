@@ -719,14 +719,10 @@ const Appointments = () => {
 
       // 3. Date range filter
       const apptDate = parseLocalDate(appt.date);
-      const todayStr = format(new Date(), 'yyyy-MM-dd');
-      const hasSignal = appt.amountPaid && appt.amountPaid > 0;
-      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed') || appt.date > todayStr;
       
-      if (!isImportant) {
-        if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
-        if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
-      }
+      // Filtro estrito por data
+      if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
+      if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
 
       // 4. Tab filter
       const todayFilter = new Date();
@@ -736,8 +732,8 @@ const Appointments = () => {
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          // Show today's appointments OR any pending appointment
-          return isSameDay(apptDate, todayFilter) || appt.status === 'pending';
+          // Mostra apenas os agendamentos do dia atual
+          return isSameDay(apptDate, todayFilter);
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
         case 'all':
@@ -746,13 +742,27 @@ const Appointments = () => {
       }
     })
     .sort((a, b) => {
-      // Pending first
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      // Prioridade de Status
+      const statusPriority: Record<string, number> = {
+        'pending': 1,
+        'in_progress': 2,
+        'confirmed': 3,
+        'completed': 4,
+        'cancelled': 5,
+        'no_show': 6
+      };
+
+      const priorityA = statusPriority[a.status] || 99;
+      const priorityB = statusPriority[b.status] || 99;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
       
+      // Se tiverem a mesma prioridade de status, ordena por hora (mais cedo primeiro)
       const dateA = new Date(`${a.date}T${a.time}`).getTime();
       const dateB = new Date(`${b.date}T${b.time}`).getTime();
-      return dateB - dateA; // Newest first
+      return dateA - dateB;
     });
 
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);

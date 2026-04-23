@@ -77,7 +77,7 @@ const MyAppointments = () => {
           0, 
           undefined, 
           barberProfile.id,
-          true // includeImportant
+          false // includeImportant = false (mostrar apenas o dia selecionado)
         );
         
         const recurringSchedules = storage.getRecurringSchedules();
@@ -196,7 +196,7 @@ const MyAppointments = () => {
         0, 
         undefined, 
         user.barberId,
-        true // includeImportant
+        false // includeImportant = false
       );
       
       setAppointments(prev => {
@@ -509,11 +509,27 @@ const MyAppointments = () => {
             <Card className="p-8 text-center border-border"><p className="text-muted-foreground">Nenhum agendamento encontrado para você.</p></Card>
           ) : (
             appointments.sort((a, b) => {
-              // Pending first
-              if (a.status === 'pending' && b.status !== 'pending') return -1;
-              if (a.status !== 'pending' && b.status === 'pending') return 1;
-              // Then newest date first
-              return new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime();
+              // Prioridade de Status
+              const statusPriority: Record<string, number> = {
+                'pending': 1,
+                'in_progress': 2,
+                'confirmed': 3,
+                'completed': 4,
+                'cancelled': 5,
+                'no_show': 6
+              };
+
+              const priorityA = statusPriority[a.status] || 99;
+              const priorityB = statusPriority[b.status] || 99;
+
+              if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+              }
+
+              // Se tiverem a mesma prioridade, ordena por hora (mais cedo primeiro)
+              const dateA = new Date(`${a.date}T${a.time}`).getTime();
+              const dateB = new Date(`${b.date}T${b.time}`).getTime();
+              return dateA - dateB;
             }).map((appointment) => (
               <Card key={appointment.id} className="p-6 border-border">
                 <div className="flex flex-col md:flex-row justify-between gap-4">
