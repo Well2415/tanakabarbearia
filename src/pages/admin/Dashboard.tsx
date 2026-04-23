@@ -29,8 +29,8 @@ const Dashboard = () => {
       try {
         await storage.initializeConfig();
         
-        const today = new Date().toISOString().split('T')[0];
         const now = new Date();
+        const today = format(now, 'yyyy-MM-dd');
         const startOfMonth = format(now, 'yyyy-MM-01');
         
         // Buscas paralelas otimizadas (usando head: true quando possível para evitar download de linhas)
