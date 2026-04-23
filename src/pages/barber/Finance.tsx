@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowDownRight, ArrowUpRight, DollarSign, Wallet, Plus, Calendar as CalendarIcon, Filter, Layers, Settings, Trash2, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, parseISO, isSameMonth, isSameYear, startOfToday } from 'date-fns';
+import { format, parseISO, isSameMonth, isSameYear, startOfToday, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -95,8 +95,9 @@ const Finance = () => {
       let endStr: string | undefined;
 
       if (filterPeriod === 'month') {
+        const monthDate = parseISO(`${filterMonth}-01`);
         startStr = `${filterMonth}-01`;
-        endStr = `${filterMonth}-31`; // Supabase lida bem com 31 mesmo em meses de 30
+        endStr = format(endOfMonth(monthDate), 'yyyy-MM-dd');
       } else if (filterPeriod === 'year') {
         startStr = `${filterYear}-01-01`;
         endStr = `${filterYear}-12-31`;
