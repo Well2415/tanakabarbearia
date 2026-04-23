@@ -158,21 +158,52 @@ export const storage = {
   },
 
   /**
+   * Assina eventos em tempo real para a tabela de agendamentos.
+   */
+  subscribeToAppointments(callback: (payload: any) => void) {
+    return supabase
+      .channel('appointments-realtime-global')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        callback
+      )
+      .subscribe();
+  },
+
+  /**
    * Busca agendamentos em um intervalo de datas específico.
    * Crucial para evitar carregar o histórico inteiro.
    */
-  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0, userId?: string, barberId?: string, includePending = false) {
+  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0, userId?: string, barberId?: string, includeImportant = false) {
     try {
       let query = supabase.from('appointments').select('*', { count: 'exact' });
       
-      if (includePending && startDate && endDate) {
-        // Busca agendamentos no intervalo OU que estejam pendentes
-        query = query.or(`and(date.gte.${startDate},date.lte.${endDate}),status.eq.pending`);
+      if (includeImportant) {
+        // Se includeImportant for true, buscamos (dentro do intervalo OU pendente OU com sinal OU futuro)
+        let filterStr = "";
+        if (startDate && endDate) {
+            filterStr = `and(date.gte.${startDate},date.lte.${endDate})`;
+        } else if (startDate) {
+            filterStr = `date.gte.${startDate}`;
+        } else if (endDate) {
+            filterStr = `date.lte.${endDate}`;
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const orConditions = [
+            "status.eq.pending",
+            "amountPaid.gt.0",
+            `date.gt.${todayStr}`
+        ];
+        if (filterStr) orConditions.push(filterStr);
+        
+        query = query.or(orConditions.join(','));
       } else {
         if (startDate) query = query.gte('date', startDate);
         if (endDate) query = query.lte('date', endDate);
       }
-      
+
       if (userId) query = query.eq('userId', userId);
       if (barberId) query = query.eq('barberId', barberId);
       

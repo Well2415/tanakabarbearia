@@ -115,7 +115,7 @@ const GuestBooking = () => {
   }, 0);
   const depositValue = totalValue / 2;
 
-  const saveAppointment = async (isPaid: boolean = false, method: 'pix' | 'card' = 'pix', restoredForm?: typeof formData, restoredDate?: Date) => {
+  const saveAppointment = async (isPaid: boolean = false, method: 'pix' | 'card' = 'pix', restoredForm?: typeof formData, restoredDate?: Date, existingId?: string) => {
     setIsProcessing(true);
     const finalForm = restoredForm || formData;
     const finalDate = restoredDate || date;
@@ -128,8 +128,10 @@ const GuestBooking = () => {
         return sum + (s?.price || 0);
       }, 0);
 
+      const appointmentId = existingId || Date.now().toString();
+
       const newAppointment: Appointment = {
-        id: Date.now().toString(),
+        id: appointmentId,
         userId: null,
         guestName: finalForm.name,
         guestEmail: finalForm.email,
@@ -146,7 +148,12 @@ const GuestBooking = () => {
         createdAt: new Date().toISOString()
       };
 
-      await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
+      // Se já existe, usamos updateAppointment para não arriscar duplicar ou limpar cache indevidamente
+      if (existingId) {
+        await storage.updateAppointment(newAppointment);
+      } else {
+        await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
+      }
 
       if (isPaid) {
         const selectedBarber = barbers.find(b => b.id === finalForm.barberId);
@@ -154,39 +161,37 @@ const GuestBooking = () => {
         if (selectedBarber && service) {
           await sendWhatsAppConfirmation(newAppointment, selectedBarber, service);
         }
+
+        toast({
+          title: 'Agendamento Confirmado!',
+          description: 'Pagamento aprovado. Seu horário está garantido!',
+        });
+
+        // Notificar Barbeiro e Administradores (Push) apenas na confirmação de pagamento
+        await storage.refreshUsers();
+        const allUsers = storage.getUsers();
+        const primaryService = services.find(s => s.id === newAppointment.serviceId);
+        const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
+        const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+
+        const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
+        if (barberUser) {
+          await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+        }
+
+        const admins = allUsers.filter(u => u.role === 'admin');
+        admins.forEach(admin => {
+          notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+        });
+
+        navigate('/');
       }
-
-      toast({
-        title: 'Agendamento Confirmado!',
-        description: isPaid
-          ? 'Pagamento aprovado. Seu horário está garantido!'
-          : 'Seu agendamento foi registrado e aguarda confirmação.',
-      });
-
-
-      // Notificar Barbeiro e Administradores (Push)
-      await storage.refreshUsers();
-      const allUsers = storage.getUsers();
-      const primaryService = services.find(s => s.id === newAppointment.serviceId);
-      const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
-      const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
-
-      // 1. Notificar Barbeiro específico da reserva
-      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
-      if (barberUser) {
-        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
-      }
-
-      // 2. Notificar todos os Administradores para que possam confirmar
-      const admins = allUsers.filter(u => u.role === 'admin');
-      admins.forEach(admin => {
-        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
-      });
-
-      navigate('/');
+      
+      return appointmentId;
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({ title: 'Erro', description: 'Erro ao registrar agendamento.', variant: 'destructive' });
+      return null;
     } finally {
       setIsProcessing(false);
     }
@@ -201,8 +206,8 @@ const GuestBooking = () => {
       const pendingJson = localStorage.getItem('pending_guest_booking');
       if (pendingJson) {
         try {
-          const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
+          const { formData: savedForm, date: savedDateStr, appointmentId } = JSON.parse(pendingJson);
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr), appointmentId);
           localStorage.removeItem('pending_guest_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -215,9 +220,24 @@ const GuestBooking = () => {
   const handleCheckout = async () => {
     setIsLoadingCheckout(true);
     try {
+      // 1. Salva como PENDENTE no banco de dados ANTES de redirecionar
+      // Isso garante que o admin veja a tentativa e o horário fique bloqueado
+      const appointmentId = await saveAppointment(false);
+      
+      if (!appointmentId) {
+        throw new Error("Falha ao pré-registrar agendamento");
+      }
+
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia (Convidado)`;
-      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
+      
+      // Armazena no localStorage incluindo o ID gerado para atualização posterior
+      localStorage.setItem('pending_guest_booking', JSON.stringify({ 
+        formData, 
+        date: date ? format(date, 'yyyy-MM-dd') : null,
+        appointmentId 
+      }));
+
       const url = await createPreference(depositValue, description, formData.email, window.location.href);
       if (url) {
         window.location.href = url;
@@ -227,6 +247,7 @@ const GuestBooking = () => {
       }
     } catch (error) {
       console.error('Erro ao gerar checkout:', error);
+      toast({ title: 'Erro', description: 'Não foi possível processar seu agendamento. Tente novamente.', variant: 'destructive' });
     } finally {
       setIsLoadingCheckout(false);
     }

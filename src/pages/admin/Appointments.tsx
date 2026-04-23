@@ -114,7 +114,7 @@ const Appointments = () => {
         0, 
         filters.userId || undefined, 
         filters.barberId || undefined,
-        true
+        true // includeImportant = true
       );
       setAppointments(appts);
       
@@ -690,8 +690,9 @@ const Appointments = () => {
 
       // 3. Date range filter
       const apptDate = parseLocalDate(appt.date);
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
       const hasSignal = appt.amountPaid && appt.amountPaid > 0;
-      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed') || appt.date > todayStr;
       
       if (!isImportant) {
         if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
