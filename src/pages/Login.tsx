@@ -41,6 +41,10 @@ const Login = () => {
       const typedUsername = formData.username.trim();
       const typedPassword = formData.password.trim();
 
+      console.log('--- DEBUG LOGIN ---');
+      console.log('Usuários carregados:', users.length);
+      console.log('Tentando login com:', typedUsername);
+      
       const user = users.find(u => {
         const matchUsername = (u.username || "").trim().toLowerCase() === typedUsername.toLowerCase();
         const matchPassword = (u.password || "").trim() === typedPassword;
@@ -48,6 +52,7 @@ const Login = () => {
       });
 
       if (user) {
+        console.log('✅ Usuário encontrado!', user.username);
         storage.loginUser(user.id);
         toast({
           title: 'Login bem-sucedido!',

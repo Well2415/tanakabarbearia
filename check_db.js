@@ -1,30 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_SERVICE_ROLE);
+const supabase = createClient(
+    'https://ipdosmdjbcftcbqhxqle.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwZG9zbWRqYmNmdGNicWh4cWxlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Njg5OTgzNCwiZXhwIjoyMDkyNDc1ODM0fQ.oayb3Elob4f9QR2QfkXiJnzyDLPO5VH_yQaN0E1jKBw'
+);
 
-async function checkUsers() {
-    const { count, error } = await supabase
+async function checkUser() {
+    const { data: user, error } = await supabase
         .from('users')
-        .select('*', { count: 'exact', head: true });
+        .select('*')
+        .eq('username', 'MICHELE')
+        .single();
     
     if (error) {
-        console.error('❌ Erro ao contar usuários:', error);
+        console.log('❌ Usuário MICHELE não encontrado via exact match:', error.message);
+        const { data: search, error: err2 } = await supabase
+            .from('users')
+            .select('username, password')
+            .ilike('username', '%michele%');
+        console.log('Busca aproximada por michele:', search);
     } else {
-        console.log(`✅ Total de usuários no banco: ${count}`);
-    }
-
-    const { data: latestUsers, error: listError } = await supabase
-        .from('users')
-        .select('username, email')
-        .limit(5);
-
-    if (listError) {
-        console.error('❌ Erro ao listar usuários:', listError);
-    } else {
-        console.log('Últimos usuários:', latestUsers);
+        console.log('✅ Usuário MICHELE encontrado:', user.username, 'Senha:', user.password);
     }
 }
 
-checkUsers();
+checkUser();
