@@ -18,8 +18,8 @@ export const StaffView = ({ user }: StaffViewProps) => {
   const clients = storage.getUsers().filter(u => u.role === 'client');
   
   const fetchData = async () => {
-    // Busca agendamentos do barbeiro no Supabase
-    const targetBarberId = user.barberId || user.id;
+    // Busca agendamentos do barbeiro no Supabase (ou todos se for admin)
+    const targetBarberId = user.role === 'admin' ? undefined : (user.barberId || user.id);
     const { data } = await storage.fetchAppointments(undefined, undefined, 500, 0, undefined, targetBarberId, true);
     setAppointments(data);
   };
