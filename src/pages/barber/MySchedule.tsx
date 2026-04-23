@@ -76,7 +76,8 @@ const MyAppointments = () => {
           500, 
           0, 
           undefined, 
-          barberProfile.id
+          barberProfile.id,
+          true
         );
         
         const recurringSchedules = storage.getRecurringSchedules();
@@ -194,7 +195,8 @@ const MyAppointments = () => {
         500, 
         0, 
         undefined, 
-        user.barberId
+        user.barberId,
+        true
       );
       
       setAppointments(prev => {

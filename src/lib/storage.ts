@@ -161,11 +161,18 @@ export const storage = {
    * Busca agendamentos em um intervalo de datas específico.
    * Crucial para evitar carregar o histórico inteiro.
    */
-  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0, userId?: string, barberId?: string) {
+  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0, userId?: string, barberId?: string, includePending = false) {
     try {
       let query = supabase.from('appointments').select('*', { count: 'exact' });
-      if (startDate) query = query.gte('date', startDate);
-      if (endDate) query = query.lte('date', endDate);
+      
+      if (includePending && startDate && endDate) {
+        // Busca agendamentos no intervalo OU que estejam pendentes
+        query = query.or(`and(date.gte.${startDate},date.lte.${endDate}),status.eq.pending`);
+      } else {
+        if (startDate) query = query.gte('date', startDate);
+        if (endDate) query = query.lte('date', endDate);
+      }
+      
       if (userId) query = query.eq('userId', userId);
       if (barberId) query = query.eq('barberId', barberId);
       

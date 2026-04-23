@@ -113,7 +113,8 @@ const Appointments = () => {
         1000, 
         0, 
         filters.userId || undefined, 
-        filters.barberId || undefined
+        filters.barberId || undefined,
+        true
       );
       setAppointments(appts);
       
@@ -146,7 +147,7 @@ const Appointments = () => {
           const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           
           setIsSyncing(true);
-          const { data: appts } = await storage.fetchAppointments(startStr, endStr);
+          const { data: appts } = await storage.fetchAppointments(startStr, endStr, 1000, 0, undefined, undefined, true);
           setAppointments(appts);
           setIsSyncing(false);
         }
