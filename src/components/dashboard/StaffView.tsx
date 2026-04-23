@@ -20,8 +20,16 @@ export const StaffView = ({ user }: StaffViewProps) => {
   const fetchData = async () => {
     // Busca agendamentos do barbeiro no Supabase (ou todos se for admin)
     const targetBarberId = user.role === 'admin' ? undefined : (user.barberId || user.id);
-    const { data } = await storage.fetchAppointments(undefined, undefined, 500, 0, undefined, targetBarberId, true);
+    
+    // Garantir que buscamos os dados de hoje explicitamente para os contadores
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const { data } = await storage.fetchAppointments(todayStr, todayStr, 500, 0, undefined, targetBarberId, true);
     setAppointments(data);
+
+    // Se for admin, precisamos carregar os usuários para o contador de clientes
+    if (user.role === 'admin') {
+      await storage.fetchUsers(1000);
+    }
   };
 
   useEffect(() => {
@@ -35,7 +43,7 @@ export const StaffView = ({ user }: StaffViewProps) => {
     return () => {
       channel.unsubscribe();
     };
-  }, [user.id, user.barberId]);
+  }, [user.id, user.barberId, user.role]);
 
   const now = new Date();
   const today = format(now, 'yyyy-MM-dd');

@@ -77,7 +77,7 @@ export const Navigation = () => {
             {user ? (
               <div className="flex items-center gap-4 ml-4">
                 <span className="text-muted-foreground text-sm">Olá, {user.fullName.split(' ')[0]}</span>
-                <Link to="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-md border border-zinc-700 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
+                <Link to={user.role === 'admin' ? "/admin/dashboard" : "/dashboard"} className="flex items-center gap-2 px-4 py-2 rounded-md border border-zinc-700 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
                   <LayoutDashboard className="w-4 h-4" />
                   Painel Central
                 </Link>
@@ -144,7 +144,7 @@ export const Navigation = () => {
                     {user ? (
                       <>
                         <span className="text-muted-foreground text-sm">Logado como {user.fullName}</span>
-                        <Link to="/dashboard" onClick={() => setIsSheetOpen(false)} className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
+                        <Link to={user.role === 'admin' ? "/admin/dashboard" : "/dashboard"} onClick={() => setIsSheetOpen(false)} className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
                           <LayoutDashboard className="w-5 h-5" />
                           Acessar Painel
                         </Link>
