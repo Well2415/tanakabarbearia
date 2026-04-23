@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp } from 'lucide-react';
 import { User } from '@/types';
+import { format } from 'date-fns';
 
 interface StaffViewProps {
   user: User;
@@ -13,7 +14,8 @@ export const StaffView = ({ user }: StaffViewProps) => {
   const services = storage.getServices();
   const clients = storage.getUsers().filter(u => u.role === 'client');
   
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = format(now, 'yyyy-MM-dd');
   const todayAppointments = appointments.filter(a => a.date === today);
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
   

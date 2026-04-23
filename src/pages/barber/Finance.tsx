@@ -184,7 +184,7 @@ const Finance = () => {
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      days.push(date.toISOString().split('T')[0]);
+      days.push(format(date, 'yyyy-MM-dd'));
     }
     
     return days.map(dateStr => {
