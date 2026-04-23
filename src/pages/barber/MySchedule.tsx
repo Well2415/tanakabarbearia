@@ -166,6 +166,61 @@ const MyAppointments = () => {
     initAndFetch();
   }, [navigate, toast, startDate, endDate, user?.barberId]);
 
+  // Refs para manter os valores atuais acessíveis dentro da assinatura realtime estável
+  const startDateRef = useRef(startDate);
+  const endDateRef = useRef(endDate);
+  
+  useEffect(() => { startDateRef.current = startDate; }, [startDate]);
+  useEffect(() => { endDateRef.current = endDate; }, [endDate]);
+
+  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO) - Estável, criada apenas uma vez
+  useEffect(() => {
+    if (!user?.barberId) return;
+
+    console.log('🔌 [Realtime] Inicializando canal do barbeiro...');
+    
+    const channel = supabase
+      .channel(`barber-schedule-${user.barberId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments',
+          filter: `barberId=eq.${user.barberId}`
+        },
+        async (payload) => {
+          console.log('🔄 [Realtime] Nova mudança no banco detectada:', payload.eventType);
+          
+          const startStr = startDateRef.current ? format(startOfDay(startDateRef.current), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          const endStr = endDateRef.current ? format(startOfDay(endDateRef.current), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          
+          const { data: barberAppointments } = await storage.fetchAppointments(
+            startStr, 
+            endStr, 
+            500, 
+            0, 
+            undefined, 
+            user.barberId,
+            true // includeImportant = true para garantir que veja pendentes
+          );
+
+          // Agendamentos fixos (virtuais) precisam ser re-calculados se a data mudou, 
+          // mas aqui apenas mesclamos os reais novos com o que já temos de virtual
+          setAppointments(prev => {
+            const virtuals = prev.filter(a => a.isRecurring);
+            return [...barberAppointments, ...virtuals];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 [Realtime] Desconectando canal do barbeiro.');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.barberId]);
+
   if (!user || user.role !== 'barber') return null;
 
   const users = storage.getUsers();

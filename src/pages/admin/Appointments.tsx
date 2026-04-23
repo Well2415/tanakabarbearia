@@ -130,10 +130,21 @@ const Appointments = () => {
     initStorage();
   }, [startDate, endDate, filters.userId, filters.barberId]);
 
-  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
+  // Refs para manter os valores atuais acessíveis dentro da assinatura realtime estável
+  const startDateRef = useRef(startDate);
+  const endDateRef = useRef(endDate);
+  const filtersRef = useRef(filters);
+
+  useEffect(() => { startDateRef.current = startDate; }, [startDate]);
+  useEffect(() => { endDateRef.current = endDate; }, [endDate]);
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
+
+  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO) - Estável, criada apenas uma vez
   useEffect(() => {
+    console.log('🔌 [Realtime] Inicializando canal de agendamentos...');
+    
     const channel = supabase
-      .channel('appointments-realtime')
+      .channel('appointments-admin-realtime')
       .on(
         'postgres_changes',
         {
@@ -142,22 +153,42 @@ const Appointments = () => {
           table: 'appointments'
         },
         async (payload) => {
-          // Em vez de re-inicializar tudo, buscamos apenas o período visível novamente
-          const startStr = startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-          const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          console.log('🔄 [Realtime] Mudança detectada, atualizando dados...', payload.eventType);
           
+          const startStr = startDateRef.current ? format(startDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          const endStr = endDateRef.current ? format(endDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+          
+          // Re-busca apenas se não estivermos já sincronizando
           setIsSyncing(true);
-          const { data: appts } = await storage.fetchAppointments(startStr, endStr, 1000, 0, undefined, undefined, true);
-          setAppointments(appts);
-          setIsSyncing(false);
+          try {
+            const { data: appts } = await storage.fetchAppointments(
+              startStr, 
+              endStr, 
+              1000, 
+              0, 
+              filtersRef.current.userId || undefined, 
+              filtersRef.current.barberId || undefined, 
+              true
+            );
+            setAppointments(appts);
+          } catch (err) {
+            console.error('❌ [Realtime] Erro ao atualizar:', err);
+          } finally {
+            setIsSyncing(false);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('✅ [Realtime] Inscrito com sucesso.');
+        if (status === 'CLOSED') console.log('⚠️ [Realtime] Conexão fechada.');
+        if (status === 'CHANNEL_ERROR') console.error('❌ [Realtime] Erro no canal.');
+      });
 
     return () => {
+      console.log('🔌 [Realtime] Removendo canal.');
       supabase.removeChannel(channel);
     };
-  }, [startDate, endDate]);
+  }, []); // Dependência vazia: roda apenas uma vez
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
   const [isManualCalendarOpen, setIsManualCalendarOpen] = useState(false);
