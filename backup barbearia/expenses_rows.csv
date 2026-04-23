@@ -1,0 +1,4 @@
+id,description,amount,date,category,status,createdAt,barberId
+exp_1776879530777,Energia 01,245.00,2026-04-22,Energia/Luz,paid,2026-04-22 17:38:50.777,admin
+exp_1776879557540,"Copos, papel, sabão...",100.00,2026-04-22,Outros,paid,2026-04-22 17:39:17.54,admin
+exp_1776879569657,"Copos, papel, sabão...",100.00,2026-04-22,Outros,paid,2026-04-22 17:39:29.657,admin

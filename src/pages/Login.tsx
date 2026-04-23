@@ -23,26 +23,55 @@ const Login = () => {
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // Força uma atualização dos dados do banco antes de tentar o login
+      storage.isInitialized = false; 
+      await storage.initialize();
+      
+      const users = storage.getUsers();
+      const typedUsername = formData.username.trim();
+      const typedPassword = formData.password.trim();
 
-    const users = storage.getUsers();
-    const user = users.find(u => u.username === formData.username && u.password === formData.password);
-
-    if (user) {
-      storage.loginUser(user.id);
-      toast({
-        title: 'Login bem-sucedido!',
-        description: `Bem-vindo de volta, ${user.fullName}!`,
+      const user = users.find(u => {
+        const matchUsername = (u.username || "").trim().toLowerCase() === typedUsername.toLowerCase();
+        const matchPassword = (u.password || "").trim() === typedPassword;
+        return matchUsername && matchPassword;
       });
-      navigate('/');
-    } else {
+
+      if (user) {
+        storage.loginUser(user.id);
+        toast({
+          title: 'Login bem-sucedido!',
+          description: `Bem-vindo de volta, ${user.fullName || user.username}!`,
+        });
+
+        if (user.role === 'admin' || user.role === 'barber') {
+          navigate('/admin');
+        } else {
+          navigate('/new-appointment');
+        }
+      } else {
+        toast({
+          title: 'Erro de Login',
+          description: 'Nome de usuário ou senha incorretos.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Login error:', err);
       toast({
         title: 'Erro de Login',
-        description: 'Usuário ou senha inválidos.',
+        description: 'Não foi possível completar o login. Tente novamente.',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,6 +164,8 @@ const Login = () => {
                   id="username"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   required
                 />
               </div>
@@ -158,8 +189,8 @@ const Login = () => {
                 />
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Entrar
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
             <p className="text-center text-sm text-muted-foreground mt-6">

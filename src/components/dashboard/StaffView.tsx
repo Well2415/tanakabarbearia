@@ -3,6 +3,8 @@ import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp, Clock, UserCog, Star, Wallet } from 'lucide-react';
 import { User } from '@/types';
+import { isSameMonth } from 'date-fns';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 interface StaffViewProps {
   user: User;
@@ -17,11 +19,12 @@ export const StaffView = ({ user }: StaffViewProps) => {
   const todayAppointments = appointments.filter(a => a.date === today);
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
   
+  const currentMonth = new Date();
+  
   const totalRevenue = appointments
-    .filter(a => a.status === 'completed')
+    .filter(a => a.status === 'completed' && isSameMonth(parseLocalDate(a.date), currentMonth))
     .reduce((sum, a) => {
-      // Use finalPrice if available, otherwise calculate from servicePrice and extraCharges
-      const price = a.finalPrice !== undefined ? a.finalPrice : (a.servicePrice || 0) + (a.extraCharges || 0);
+      const price = a.finalPrice !== undefined ? a.finalPrice : (a.servicePrice || 0) + (a.extraCharges || 0) - (a.discount || 0);
       return sum + price;
     }, 0);
 
@@ -35,7 +38,15 @@ export const StaffView = ({ user }: StaffViewProps) => {
         {user.role === 'admin' && (
           <>
             <Card className="p-6 border-border h-full flex flex-col justify-between"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground mb-1">Total Clientes</p><p className="text-3xl font-bold">{clients.length}</p></div><Users className="w-10 h-10 text-primary" /></div></Card>
-            <Card className="p-6 border-border h-full flex flex-col justify-between"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground mb-1">Receita Total</p><p className="text-3xl font-bold whitespace-nowrap">R$ {totalRevenue}</p></div><TrendingUp className="w-10 h-10 text-primary" /></div></Card>
+            <Card className="p-6 border-border h-full flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Receita (Mês)</p>
+                  <p className="text-3xl font-bold whitespace-nowrap text-green-500">R$ {totalRevenue.toFixed(2).replace('.', ',')}</p>
+                </div>
+                <TrendingUp className="w-10 h-10 text-primary" />
+              </div>
+            </Card>
           </>
         )}
       </div>

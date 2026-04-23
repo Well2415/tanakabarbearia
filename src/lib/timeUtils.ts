@@ -1,3 +1,19 @@
+import { RecurringSchedule, Service } from '../types';
+import { differenceInCalendarWeeks } from 'date-fns';
+
+/**
+ * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 
+ * sem sofrer deslocamento de fuso horário UTC.
+ */
+export const parseLocalDate = (dateStr: string | undefined): Date => {
+  if (!dateStr || typeof dateStr !== 'string') return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return new Date();
+  const [year, month, day] = parts.map(Number);
+  // O mês no construtor de Date é 0-indexado (0 = Janeiro)
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
 /**
  * Normaliza uma string de horário para o formato "HH:mm".
  * Exemplo: "8:30" -> "08:30", "09:5" -> "09:05"
@@ -32,7 +48,32 @@ export const sortTimes = (times: string[]): string[] => {
     });
 };
 
-import { Service } from '../types';
+/**
+ * Verifica se um horário fixo está ativo em uma data específica,
+ * considerando a frequência (semanal ou bi-semanal).
+ */
+export const isRecurringActive = (schedule: RecurringSchedule, date: Date | string): boolean => {
+  if (!schedule.active) return false;
+  
+  const targetDate = typeof date === 'string' ? parseLocalDate(date) : date;
+  
+  // Se não houver frequência definida ou for semanal, está sempre ativo
+  if (!schedule.frequency || schedule.frequency === 'weekly') {
+    return true;
+  }
+
+  // Para frequências bi-semanais, verificamos a paridade das semanas em relação à data de início
+  if (schedule.frequency === 'biweekly' && schedule.startDate) {
+    const start = parseLocalDate(schedule.startDate);
+    
+    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo)
+    const weeksDiff = Math.abs(differenceInCalendarWeeks(targetDate, start, { weekStartsOn: 0 }));
+    
+    return weeksDiff % 2 === 0;
+  }
+
+  return true;
+};
 
 /**
  * Calcula a duração total de múltiplos serviços selecionados.
@@ -43,6 +84,8 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
 
   let totalDuration = 0;
   let hasMainService = false;
+  let hasHair = false;
+  let hasBeard = false;
 
   serviceIds.forEach(id => {
     const s = services.find(srv => srv.id === id);
@@ -50,7 +93,13 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
 
     const name = s.name.toLowerCase();
     const cat = (s.category || '').toLowerCase();
-    const isMain = name.includes('corte') || name.includes('barba') || cat.includes('corte') || cat.includes('barba');
+    
+    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo');
+    const isBeard = name.includes('barba') || cat.includes('barba');
+    const isMain = isHair || isBeard;
+
+    if (isHair) hasHair = true;
+    if (isBeard) hasBeard = true;
 
     if (isMain) {
       totalDuration += (s.duration ?? 30);
@@ -63,6 +112,11 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
   if (!hasMainService) {
     const firstService = services.find(srv => srv.id === serviceIds[0]);
     return Math.max(30, firstService?.duration ?? 30);
+  }
+
+  // REGRA: Cabelo + Barba deve ocupar pelo menos 2 horários (60 min)
+  if (hasHair && hasBeard) {
+    return Math.max(60, totalDuration);
   }
 
   return Math.max(30, totalDuration);

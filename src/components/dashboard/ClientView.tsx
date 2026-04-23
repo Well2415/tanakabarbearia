@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { XCircle, Clock } from 'lucide-react';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 interface ClientViewProps {
   user: User;
@@ -93,14 +94,14 @@ export const ClientView = ({ user }: ClientViewProps) => {
                       <div>
                         <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                         <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
-                        <p className="text-sm text-muted-foreground">{format(new Date(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
+                        <p className="text-sm text-muted-foreground">{format(parseLocalDate(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>
                           {statusLabels[app.status] || app.status}
                         </span>
                         
-                        {app.status === 'pending' && (
+                        {(app.status === 'pending' || app.status === 'confirmed') && (
                           isCancellable(app.date, app.time) ? (
                             <Button 
                               variant="destructive" 
@@ -112,7 +113,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
                             </Button>
                           ) : (
                             <div className="flex items-center text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md mt-1" title="Cancelamentos só são permitidos com até 2 horas de antecedência.">
-                              <Clock className="w-3 h-3 mr-1" /> Fixo (Falta -2h)
+                              <Clock className="w-3 h-3 mr-1" /> No prazo limite (-2h)
                             </div>
                           )
                         )}

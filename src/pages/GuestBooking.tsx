@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Navigation } from '@/components/Navigation';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { storage } from '@/lib/storage';
 import { createPreference, isMPConfigured } from '@/lib/mercadoPago';
 import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
+import { notificationManager } from '@/lib/notifications';
 import { Appointment, Service } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
@@ -19,7 +21,7 @@ import { CalendarIcon, Palmtree } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from '@/lib/timeUtils';
 const LogoLoginImg = "/img/logo-tanaka.png";
 
 const GuestBooking = () => {
@@ -66,7 +68,7 @@ const GuestBooking = () => {
         });
 
       recurringSchedules
-        .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -75,7 +77,22 @@ const GuestBooking = () => {
 
       const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
 
-      const available = masterHours.filter(hour => canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(hour => {
+        if (isToday) {
+          const [h, m] = hour.split(':').map(Number);
+          if (h < currentHour || (h === currentHour && m <= currentMin)) {
+            return false;
+          }
+        }
+        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      });
+
       setFilteredTimes(available);
 
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
@@ -145,6 +162,26 @@ const GuestBooking = () => {
           : 'Seu agendamento foi registrado e aguarda confirmação.',
       });
 
+
+      // Notificar Barbeiro e Administradores (Push)
+      await storage.refreshUsers();
+      const allUsers = storage.getUsers();
+      const primaryService = services.find(s => s.id === newAppointment.serviceId);
+      const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
+      const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+
+      // 1. Notificar Barbeiro específico da reserva
+      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
+      if (barberUser) {
+        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+      }
+
+      // 2. Notificar todos os Administradores para que possam confirmar
+      const admins = allUsers.filter(u => u.role === 'admin');
+      admins.forEach(admin => {
+        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+      });
+
       navigate('/');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -164,7 +201,7 @@ const GuestBooking = () => {
       if (pendingJson) {
         try {
           const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, new Date(savedDateStr));
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
           localStorage.removeItem('pending_guest_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -179,7 +216,7 @@ const GuestBooking = () => {
     try {
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia (Convidado)`;
-      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date?.toISOString() }));
+      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
       const url = await createPreference(depositValue, description, formData.email, window.location.href);
       if (url) {
         window.location.href = url;
@@ -354,6 +391,9 @@ const GuestBooking = () => {
                   : `Pagar Sinal 50% (R$ ${depositValue.toFixed(2).replace('.', ',')})`
                 }
               </Button>
+              <p className="text-[10px] text-center text-muted-foreground mt-2 animate-pulse font-medium">
+                ⚠️ NÃO FECHE A PÁGINA: Após o pagamento, aguarde o redirecionamento automático para confirmar seu horário.
+              </p>
             </form>
           </Card>
         </div>

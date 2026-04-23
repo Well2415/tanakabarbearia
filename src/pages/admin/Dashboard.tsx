@@ -6,32 +6,65 @@ import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp, DollarSign, Check, X, Wallet, UserCog } from 'lucide-react';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { formatCurrency, cn } from '@/lib/utils';
-import { format, subDays } from 'date-fns';
+import { format, subDays, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = storage.getCurrentUser();
 
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayCount: 0,
+    pendingCount: 0,
+    clientsCount: 0,
+    monthlyRevenue: 0
+  });
+
   useEffect(() => {
-    if (!user) {
-      navigate('/admin/login');
+    const fetchStats = async () => {
+      setLoading(true);
+      try {
+        await storage.initializeConfig();
+        
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const startOfMonth = format(now, 'yyyy-MM-01');
+        
+        // Buscas paralelas otimizadas (usando head: true quando possível para evitar download de linhas)
+        const [todayRes, pendingRes, monthRes, clientsRes] = await Promise.all([
+          supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('date', today),
+          supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('appointments').select('finalPrice, servicePrice, extraCharges, discount').eq('status', 'completed').gte('date', startOfMonth),
+          supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'client')
+        ]);
+
+        const revenue = monthRes.data?.reduce((sum, a) => {
+          const price = a.finalPrice !== undefined ? a.finalPrice : (a.servicePrice || 0) + (a.extraCharges || 0) - (a.discount || 0);
+          return sum + price;
+        }, 0) || 0;
+
+        setStats({
+          todayCount: todayRes.count || 0,
+          pendingCount: pendingRes.count || 0,
+          clientsCount: clientsRes.count || 0,
+          monthlyRevenue: revenue
+        });
+      } catch (error) {
+        console.error('❌ [Dashboard] Erro ao carregar estatísticas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchStats();
     }
-  }, [user, navigate]);
+  }, [user]);
 
   if (!user) return null;
 
-  const appointments = storage.getAppointments();
-  const clients = storage.getUsers().filter(u => u.role === 'client');
-  const services = storage.getServices();
-
-  const today = new Date().toISOString().split('T')[0];
-  const todayAppointments = appointments.filter(a => a.date === today);
-  const pendingAppointments = appointments.filter(a => a.status === 'pending');
-
-  const totalRevenue = appointments
-    .filter(a => a.status === 'completed')
-    .reduce((sum, a) => sum + (a.finalPrice || a.servicePrice || 0), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -45,7 +78,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Agendamentos Hoje</p>
-                <p className="text-3xl font-bold">{todayAppointments.length}</p>
+                <p className="text-3xl font-bold">{stats.todayCount}</p>
               </div>
               <Calendar className="w-10 h-10 text-primary" />
             </div>
@@ -55,7 +88,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Pendentes</p>
-                <p className="text-3xl font-bold">{pendingAppointments.length}</p>
+                <p className="text-3xl font-bold">{stats.pendingCount}</p>
               </div>
               <Calendar className="w-10 h-10 text-primary" />
             </div>
@@ -65,7 +98,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Total Clientes</p>
-                <p className="text-3xl font-bold">{clients.length}</p>
+                <p className="text-3xl font-bold">{stats.clientsCount}</p>
               </div>
               <Users className="w-10 h-10 text-primary" />
             </div>
@@ -74,12 +107,13 @@ const Dashboard = () => {
           <Card className="p-6 border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Receita Total</p>
-                <p className="text-3xl font-bold">{formatCurrency(totalRevenue)}</p>
+                <p className="text-sm text-muted-foreground mb-1">Receita (Mês)</p>
+                <p className="text-3xl font-bold text-green-500">R$ {stats.monthlyRevenue.toFixed(2).replace('.', ',')}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-primary" />
             </div>
           </Card>
+
         </div>
 
 

@@ -74,10 +74,10 @@ const Users = () => {
         const updated: User = { 
           ...u, 
           role: newRole as User['role'], 
-          barberId: newRole === 'barber' ? finalBarberId : undefined 
+          barberId: (newRole === 'barber' || newRole === 'admin') ? finalBarberId : undefined 
         };
         if (password) {
-           updated.password = password;
+           updated.password = password.trim();
         }
         return updated;
       }
@@ -279,7 +279,7 @@ const Users = () => {
               </SelectContent>
             </Select>
 
-            {newRole === 'barber' && (
+            {(newRole === 'barber' || newRole === 'admin') && (
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground mb-2">Vincular a qual barbeiro?</p>
                 <Select value={selectedBarber} onValueChange={(value) => setSelectedBarber(value)}>
@@ -300,11 +300,11 @@ const Users = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="new-password">Nova Senha (deixe em branco para manter)</Label>
-                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoCapitalize="none" autoComplete="new-password" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" autoCapitalize="none" autoComplete="new-password" />
                 </div>
               </div>
             </div>

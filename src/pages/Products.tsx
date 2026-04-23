@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
-import { Product } from '@/types';
+import { Product, ProductVariant } from '@/types';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 import { Card } from '@/components/ui/card';
@@ -10,8 +10,21 @@ import { formatCurrency } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Input } from '@/components/ui/input';
 
-const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product) => void }) => {
+const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product, v?: ProductVariant) => void }) => {
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
+    product.variants && product.variants.length > 0 ? product.variants[0] : undefined
+  );
   const [activeImage, setActiveImage] = useState(product.image);
+
+  useEffect(() => {
+    if (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0) {
+      const idx = selectedVariant.imageIndices[0];
+      const images = [product.image, product.image2, product.image3, product.image4];
+      if (images[idx]) {
+        setActiveImage(images[idx]);
+      }
+    }
+  }, [selectedVariant, product]);
 
   return (
     <Card className="overflow-hidden border-border bg-card/50 flex flex-col group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
@@ -37,46 +50,77 @@ const ProductCard = ({ product, onBuy }: { product: Product, onBuy: (p: Product)
         </div>
       </div>
       
-      {/* Thumbnails if 2 images exist */}
-      {product.image && product.image2 && (
-        <div className="flex gap-2 px-4 mt-2">
-          <button 
-            onClick={() => setActiveImage(product.image)}
-            className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
-          >
-            <img src={product.image} className="w-full h-full object-cover" alt="Vista 1" />
-          </button>
-          <button 
-            onClick={() => setActiveImage(product.image2)}
-            className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === product.image2 ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
-          >
-            <img src={product.image2} className="w-full h-full object-cover" alt="Vista 2" />
-          </button>
-        </div>
-      )}
+      {/* Thumbnails logic */}
+      {(() => {
+        const allImages = [product.image, product.image2, product.image3, product.image4].filter(Boolean) as string[];
+        
+        // Se houver variante selecionada com índices específicos, filtramos as fotos
+        const visibleImages = (selectedVariant && selectedVariant.imageIndices && selectedVariant.imageIndices.length > 0)
+          ? selectedVariant.imageIndices.map(i => [product.image, product.image2, product.image3, product.image4][i]).filter(Boolean) as string[]
+          : allImages;
+
+        if (visibleImages.length <= 1) return null;
+
+        return (
+          <div className="flex gap-2 px-4 mt-2">
+            {visibleImages.map((img, i) => (
+              <button 
+                key={i}
+                onClick={() => setActiveImage(img)}
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImage === img ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60'}`}
+              >
+                <img src={img} className="w-full h-full object-cover" alt={`Vista ${i + 1}`} />
+              </button>
+            ))}
+          </div>
+        );
+      })()}
       
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{product.name}</h3>
-        <p className="text-muted-foreground text-sm line-clamp-3 mb-6 flex-grow leading-relaxed">
+        <p className="text-muted-foreground text-sm line-clamp-3 mb-4 flex-grow leading-relaxed">
           {product.description}
         </p>
+
+        {product.variants && product.variants.length > 0 && (
+          <div className="mb-6 space-y-2">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Escolha o Tamanho/Peso:</span>
+            <div className="flex flex-wrap gap-2">
+              {product.variants.map((v) => (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVariant(v)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    selectedVariant?.id === v.id 
+                      ? 'bg-primary border-primary text-primary-foreground shadow-md shadow-primary/20' 
+                      : 'bg-muted/50 border-border hover:border-primary/50'
+                  }`}
+                >
+                  {v.weight}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         
         <div className="flex items-center justify-between mb-6 pt-4 border-t border-border/50">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Preço</span>
-            <span className="text-2xl font-black text-primary">{formatCurrency(product.price)}</span>
+            <span className="text-2xl font-black text-primary">{formatCurrency(selectedVariant ? selectedVariant.price : product.price)}</span>
           </div>
-          {product.stock !== undefined && (
+          {(selectedVariant ? selectedVariant.stock !== undefined : product.stock !== undefined) && (
             <div className="text-right">
-               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
-               <span className="text-sm font-bold text-foreground">{product.stock} unids</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest block">Estoque</span>
+              <span className="text-sm font-bold text-foreground">
+                {selectedVariant ? (selectedVariant.stock || 0) : (product.stock || 0)} unids
+              </span>
             </div>
           )}
         </div>
 
         <Button 
           className="w-full h-14 bg-green-600 hover:bg-green-700 text-white rounded-xl gap-3 shadow-lg shadow-green-900/10 active:scale-[0.98] transition-all"
-          onClick={() => onBuy(product)}
+          onClick={() => onBuy(product, selectedVariant)}
         >
           <MessageSquare className="w-5 h-5 fill-current" />
           Pedir pelo WhatsApp
@@ -97,8 +141,10 @@ const Products = () => {
   const shopPhone = storage.getShopPhone() || '5501199999999';
   const shopName = storage.getShopName() || 'Barbearia Tanaka';
 
-  const handleWhatsAppBuy = (product: Product) => {
-    const message = `Olá! Tenho interesse no produto: *${product.name}* (${formatCurrency(product.price)}). Ainda está disponível no estoque?`;
+  const handleWhatsAppBuy = (product: Product, variant?: ProductVariant) => {
+    const detail = variant ? ` (${variant.weight})` : '';
+    const price = variant ? variant.price : product.price;
+    const message = `Olá! Tenho interesse no produto: *${product.name}${detail}* (${formatCurrency(price)}). Ainda está disponível no estoque?`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${shopPhone}?text=${encodedMessage}`;
     

@@ -59,8 +59,7 @@ const normalizeImagePath = (src: string): string => {
   return `/${cleanSrc}`;
 };
 
-// Variável de controle para evitar inicializações duplicadas.
-let isInitialized = false;
+// Variável de controle removida do escopo global para o objeto storage
 
 /**
  * MOTOR DE ARMAZENAMENTO (STORAGE)
@@ -71,83 +70,164 @@ export const storage = {
    * Conecta ao Supabase e carrega todos os dados necessários para o cache.
    * Deve ser chamado uma única vez no início do carregamento do App.
    */
-  async initialize() {
-    if (isInitialized) return;
+  isInitialized: false,
+  isConfigLoaded: false,
+
+  /**
+   * Inicializa apenas as configurações básicas e dados estáticos (barbeiros, serviços).
+   * Isso economiza muita transferência de dados (Egress).
+   */
+  async initializeConfig(force = false) {
+    if (this.isConfigLoaded && !force) return;
 
     try {
-      // 1. Carregar Configurações (Settings)
-      const { data: settingsData } = await supabase.from('shop_settings').select('*');
+      const [settingsRes, barbersRes, servicesRes, expenseCategoriesRes] = await Promise.all([
+        supabase.from('shop_settings').select('*'),
+        supabase.from('barbers').select('*'),
+        supabase.from('services').select('*'),
+        supabase.from('expense_categories').select('*')
+      ]);
+
       const settingsMap: Record<string, any> = {};
-      settingsData?.forEach(s => {
+      settingsRes.data?.forEach(s => {
         settingsMap[s.key] = s.value;
       });
       cache.settings = settingsMap;
 
-      // 2. Carregar Dados Principais em Paralelo
-      const [
-        barbersRes,
-        servicesRes,
-        usersRes,
-        appointmentsRes,
-        recurringRes,
-        expensesRes,
-        expenseCategoriesRes,
-        productsRes
-      ] = await Promise.all([
-        supabase.from('barbers').select('*'),
-        supabase.from('services').select('*'),
-        supabase.from('users').select('*'),
-        supabase.from('appointments').select('*'),
-        supabase.from('recurring_schedules').select('*'),
-        supabase.from('expenses').select('*'),
-        supabase.from('expense_categories').select('*'),
-        supabase.from('products').select('*')
-      ]);
-
-      if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
-      if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
-      if (productsRes.error && productsRes.error.code !== 'PGRST116') {
-        console.error('Error fetching products (Table might be missing):', productsRes.error);
-      }
-
-      cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
-      cache.products = (productsRes.data || []).map(p => ({
-        ...p,
-        image: normalizeImagePath(p.image),
-        image2: normalizeImagePath(p.image2)
-      }));
-
-      // Injetando scheduleByDay através dos settings (workaround para schema local)
       const barberSchedules = settingsMap['barber_schedules'] || {};
-
       cache.barbers = (barbersRes.data || []).map(b => ({
         ...b,
         photo: normalizeImagePath(b.photo),
         availableHours: sortTimes(b.availableHours || []),
         scheduleByDay: barberSchedules[b.id] || undefined
       }));
+
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
-      cache.users = usersRes.data || [];
-      cache.appointments = appointmentsRes.data || [];
-      cache.recurringSchedules = recurringRes.data || [];
-      cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
-      cache.products = (productsRes.data || []).map(p => ({
-        ...p,
-        image: normalizeImagePath(p.image),
-        image2: normalizeImagePath(p.image2)
-      }));
 
-      // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
-      if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {
-        console.warn('⚠️ Banco de dados parece estar vazio ou inacessível.');
-      }
-
-      isInitialized = true;
+      this.isConfigLoaded = true;
       saveCacheToLocal();
     } catch (error) {
-      console.error('❌ Error initializing Supabase:', error);
-      isInitialized = true; // Permite que o app carregue com cache vazio se o banco falhar
+      console.error('❌ [Storage] Erro ao carregar configurações:', error);
+    }
+  },
+
+  /**
+   * Método de compatibilidade que inicializa o básico.
+   * Não carrega mais agendamentos e usuários por padrão.
+   */
+  async initialize(force = false) {
+    if (this.isInitialized && !force) return;
+    await this.initializeConfig(force);
+    
+    // Carrega apenas agendamentos RECORRENTES e produtos (que costumam ser poucos)
+    const [recurringRes, productsRes] = await Promise.all([
+        supabase.from('recurring_schedules').select('*'),
+        supabase.from('products').select('*')
+    ]);
+
+    cache.recurringSchedules = recurringRes.data || [];
+    cache.products = (productsRes.data || []).map(p => ({
+        ...p,
+        image: normalizeImagePath(p.image),
+        image2: normalizeImagePath(p.image2),
+        image3: normalizeImagePath(p.image3),
+        image4: normalizeImagePath(p.image4)
+    }));
+
+    this.isInitialized = true;
+    saveCacheToLocal();
+  },
+
+  /**
+   * Busca agendamentos em um intervalo de datas específico.
+   * Crucial para evitar carregar o histórico inteiro.
+   */
+  async fetchAppointments(startDate?: string, endDate?: string) {
+    try {
+      let query = supabase.from('appointments').select('*');
+      if (startDate) query = query.gte('date', startDate);
+      if (endDate) query = query.lte('date', endDate);
+      
+      const { data, error } = await query.order('date', { ascending: false }).order('time', { ascending: false });
+      if (error) throw error;
+
+      // Sincroniza com o cache local (substitui os agendamentos do período buscado)
+      const fetchedIds = (data || []).map(a => a.id);
+      const otherAppointments = cache.appointments.filter(a => !fetchedIds.includes(a.id));
+      
+      cache.appointments = [...otherAppointments, ...(data || [])].sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`).getTime();
+        const dateB = new Date(`${b.date}T${b.time}`).getTime();
+        return dateB - dateA;
+      });
+
+      saveCacheToLocal();
+      return cache.appointments;
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao buscar agendamentos:', error);
+      return cache.appointments;
+    }
+  },
+
+  /**
+   * Busca usuários com limite e paginação.
+   */
+  async fetchUsers(limit = 100, offset = 0) {
+    try {
+      const { data, error } = await supabase.from('users').select('*').range(offset, offset + limit - 1);
+      if (error) throw error;
+
+      // Mescla com o cache
+      const fetchedIds = (data || []).map(u => u.id);
+      const otherUsers = cache.users.filter(u => !fetchedIds.includes(u.id));
+      cache.users = [...otherUsers, ...(data || [])];
+
+      saveCacheToLocal();
+      return cache.users;
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao buscar usuários:', error);
+      return cache.users;
+    }
+  },
+
+  /**
+   * Busca despesas por período.
+   */
+  async fetchExpenses(startDate?: string, endDate?: string) {
+    try {
+      let query = supabase.from('expenses').select('*');
+      if (startDate) query = query.gte('date', startDate);
+      if (endDate) query = query.lte('date', endDate);
+      
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const fetchedIds = (data || []).map(e => e.id);
+      const otherExpenses = cache.expenses.filter(e => !fetchedIds.includes(e.id));
+      cache.expenses = [...otherExpenses, ...(data || [])];
+
+      saveCacheToLocal();
+      return cache.expenses;
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao buscar despesas:', error);
+      return cache.expenses;
+    }
+  },
+  
+  /**
+   * Recarrega apenas a lista de usuários do Supabase.
+   * Útil para garantir que temos as inscrições de push mais recentes sem re-inicializar tudo.
+   */
+  async refreshUsers() {
+    try {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) throw error;
+      cache.users = data || [];
+      saveCacheToLocal();
+      console.log('✅ [Storage] Usuários recarregados com sucesso.');
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao recarregar usuários:', error);
     }
   },
 
@@ -188,17 +268,60 @@ export const storage = {
       { key: 'shop_maps_link', value: '' },
     ]);
 
-    isInitialized = false;
+    this.isInitialized = false;
     await this.initialize();
   },
 
   // --- GERENCIAMENTO DE BARBEIROS ---
   getBarbers: (): Barber[] => cache.barbers,
+
+  async updateBarber(barber: Barber) {
+    // 0. Deep clean hours (split commas, unique, sort)
+    const cleanHoursArray = (hours: string[]) => {
+      const cleaned = new Set<string>();
+      (hours || []).forEach(h => {
+        if (typeof h === 'string') {
+          h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleaned.add(s));
+        }
+      });
+      return sortTimes(Array.from(cleaned));
+    };
+
+    barber.availableHours = cleanHoursArray(barber.availableHours);
+    if (barber.scheduleByDay) {
+      Object.keys(barber.scheduleByDay).forEach(day => {
+        const d = parseInt(day);
+        barber.scheduleByDay![d] = cleanHoursArray(barber.scheduleByDay![d]);
+      });
+    }
+
+    // 1. Update local cache
+    cache.barbers = cache.barbers.map(b => b.id === barber.id ? barber : b);
+    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+
+    // 2. Prepare for DB
+    const barberSchedules = cache.settings['barber_schedules'] || {};
+    barberSchedules[barber.id] = barber.scheduleByDay;
+    await storage.saveSetting('barber_schedules', barberSchedules);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { scheduleByDay, ...dbBarber } = barber;
+    
+    // 3. Upsert to Supabase
+    const { error } = await supabase.from('barbers').upsert(dbBarber);
+    if (error) console.error('Error updating barber:', error);
+  },
+
+  async deleteBarber(id: string) {
+    cache.barbers = cache.barbers.filter(b => b.id !== id);
+    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+    await supabase.from('barbers').delete().eq('id', id);
+  },
+
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
     localStorage.setItem('barbers', JSON.stringify(barbers));
 
-    // Extract scheduleByDay and save to settings to avoid modifying Supabase schema
     const barberSchedules: Record<string, any> = {};
     const dbBarbers = barbers.map(b => {
       barberSchedules[b.id] = b.scheduleByDay;
@@ -208,22 +331,52 @@ export const storage = {
     });
 
     await storage.saveSetting('barber_schedules', barberSchedules);
-
-    await supabase.from('barbers').delete().neq('id', '_none_');
-    await supabase.from('barbers').insert(dbBarbers);
+    await supabase.from('barbers').upsert(dbBarbers);
   },
 
   // --- GERENCIAMENTO DE SERVIÇOS ---
   getServices: (): Service[] => cache.services,
+
+  async updateService(service: Service) {
+    cache.services = cache.services.map(s => s.id === service.id ? service : s);
+    localStorage.setItem('services', JSON.stringify(cache.services));
+    await supabase.from('services').upsert(service);
+  },
+
+  async deleteService(id: string) {
+    cache.services = cache.services.filter(s => s.id !== id);
+    localStorage.setItem('services', JSON.stringify(cache.services));
+    await supabase.from('services').delete().eq('id', id);
+  },
+
   async saveServices(services: Service[]) {
     cache.services = services;
     localStorage.setItem('services', JSON.stringify(services));
-    await supabase.from('services').delete().neq('id', '_none_');
-    await supabase.from('services').insert(services);
+    await supabase.from('services').upsert(services);
   },
 
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
+  
+  /**
+   * Atualiza apenas UM agendamento de forma atômica no Supabase e no Cache.
+   * Evita race conditions de sobrescrita total.
+   */
+  async updateAppointment(appointment: Appointment) {
+    // 1. Atualizar Cache Local e LocalStorage imediatamente (UI receptiva)
+    cache.appointments = cache.appointments.map(a => a.id === appointment.id ? appointment : a);
+    localStorage.setItem('appointments', JSON.stringify(cache.appointments));
+
+    // 2. Persistir no Supabase
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { isRecurring, ...dbAppointment } = appointment as any;
+    const { error } = await supabase.from('appointments').upsert(dbAppointment);
+    if (error) {
+      console.error('❌ [Storage] Erro ao atualizar agendamento granular:', error);
+      throw error;
+    }
+  },
+
   async saveAppointments(appointments: Appointment[]) {
     const currentIds = cache.appointments.map(a => a.id);
     const newIds = appointments.map(a => a.id);
@@ -232,14 +385,14 @@ export const storage = {
     cache.appointments = appointments;
     localStorage.setItem('appointments', JSON.stringify(appointments));
 
-    // Filtra discount (local only) out
-    const dbPayload = appointments.map(app => {
+    // Limpar flags de UI antes do upsert
+    const dbAppointments = appointments.map(appt => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { discount, ...rest } = app;
-      return rest;
+      const { isRecurring, ...dbAppt } = appt as any;
+      return dbAppt;
     });
 
-    const { error } = await supabase.from('appointments').upsert(dbPayload);
+    const { error } = await supabase.from('appointments').upsert(dbAppointments);
     if (error) console.error('Error saving appointments:', error);
 
     if (deletedIds.length > 0) {
@@ -248,12 +401,97 @@ export const storage = {
     }
   },
 
+  async deleteAppointment(id: string) {
+    cache.appointments = cache.appointments.filter(a => a.id !== id);
+    localStorage.setItem('appointments', JSON.stringify(cache.appointments));
+    const { error } = await supabase.from('appointments').delete().eq('id', id);
+    if (error) {
+      console.error('❌ [Storage] Erro ao excluir agendamento:', error);
+      throw error;
+    }
+  },
+
   // Users
   getUsers: (): User[] => cache.users,
+
+  async updateUser(user: User) {
+    // 1. Atualizar Cache Local e LocalStorage
+    const userExists = cache.users.some(u => u.id === user.id);
+    if (userExists) {
+      cache.users = cache.users.map(u => u.id === user.id ? user : u);
+    } else {
+      cache.users = [...cache.users, user];
+    }
+    
+    saveCacheToLocal();
+    const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
+    if (loggedInId === user.id) {
+       localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { pushSubscription, ...dbUser } = user; // Remove pushSubscription para evitar sobrescrever com null se não estiver no form
+    const { error } = await supabase.from('users').upsert(dbUser);
+    if (error) console.error('❌ [Storage] Erro ao atualizar usuário:', error);
+  },
+
+  /**
+   * Atualiza apenas a inscrição de push de um usuário específico.
+   * Evita perda de dados por sobrescrita de objeto inteiro.
+   */
+  async updateUserPushSubscription(userId: string, subscription: string | null) {
+    // 1. Atualizar Cache Local
+    const user = cache.users.find(u => u.id === userId);
+    if (user) {
+      user.pushSubscription = subscription;
+      saveCacheToLocal();
+      
+      const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
+      if (loggedInId === userId) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+      }
+    }
+
+    // 2. Atualizar apenas a coluna no Supabase
+    const { error } = await supabase
+      .from('users')
+      .update({ pushSubscription: subscription })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao atualizar pushSubscription:', error);
+      throw error;
+    }
+    console.log('✅ [Storage] pushSubscription atualizado no banco.');
+  },
+
+  /**
+   * Registra uma nova assinatura de push para o usuário na tabela de múltiplas assinaturas.
+   */
+  async registerPushSubscription(userId: string, subscription: string) {
+    if (!userId || !subscription) return;
+
+    const { error } = await supabase
+      .from('user_push_subscriptions')
+      .upsert({ 
+        user_id: userId, 
+        subscription: subscription 
+      }, { onConflict: 'user_id, subscription' });
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao registrar multi-push:', error);
+      throw error;
+    }
+    console.log('✅ [Storage] Nova assinatura de push registrada.');
+  },
+
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));
-    await supabase.from('users').upsert(users);
+    const { error } = await supabase.from('users').upsert(users);
+    if (error) {
+      console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
+    }
   },
 
   // Auth
@@ -381,7 +619,9 @@ export const storage = {
       active: s.active,
       createdAt: s.createdAt,
       serviceId: s.serviceId,
-      serviceIds: s.serviceIds
+      serviceIds: s.serviceIds,
+      frequency: s.frequency,
+      startDate: s.startDate
     }));
 
     const { error } = await supabase.from('recurring_schedules').upsert(dbPayload);
@@ -404,6 +644,10 @@ export const storage = {
     cache.expenses = expenses;
     await supabase.from('expenses').upsert(expenses);
   },
+  async deleteExpense(id: string) {
+    cache.expenses = cache.expenses.filter(e => e.id !== id);
+    await supabase.from('expenses').delete().eq('id', id);
+  },
 
   getExpenseCategories: (): string[] => cache.expenseCategories,
   async saveExpenseCategories(categories: string[]) {
@@ -414,9 +658,19 @@ export const storage = {
 
   // --- GERENCIAMENTO DE PRODUTOS ---
   getProducts: (): Product[] => cache.products,
+
+  async updateProduct(product: Product) {
+    cache.products = cache.products.map(p => p.id === product.id ? product : p);
+    await supabase.from('products').upsert(product);
+  },
+
+  async deleteProduct(id: string) {
+    cache.products = cache.products.filter(p => p.id !== id);
+    await supabase.from('products').delete().eq('id', id);
+  },
+
   async saveProducts(products: Product[]) {
     cache.products = products;
-    await supabase.from('products').delete().neq('id', '_none_');
-    await supabase.from('products').insert(products);
+    await supabase.from('products').upsert(products);
   },
 };

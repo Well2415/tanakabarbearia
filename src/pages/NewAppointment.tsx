@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { storage } from '@/lib/storage';
 import { createPreference } from '@/lib/mercadoPago';
 import { sendWhatsAppConfirmation } from '@/lib/whatsapp';
+import { notificationManager } from '@/lib/notifications';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,7 +20,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { User, Appointment, Service } from '@/types';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -96,6 +97,26 @@ const NewAppointment = () => {
         description: isPaid ? 'Seu pagamento foi aprovado. +1 ponto de fidelidade!' : 'Seu horário aguarda aprovação.',
       });
 
+
+      // Notificar Barbeiro e Administradores (Push)
+      await storage.refreshUsers();
+      const allUsers = storage.getUsers();
+      const primaryService = services.find(s => s.id === newAppointment.serviceId);
+      const notificationTitle = 'Novo Agendamento! 💈';
+      const notificationBody = `${user.fullName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+
+      // 1. Notificar Barbeiro específico da reserva
+      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
+      if (barberUser) {
+        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+      }
+
+      // 2. Notificar todos os Administradores para que possam confirmar
+      const admins = allUsers.filter(u => u.role === 'admin');
+      admins.forEach(admin => {
+        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+      });
+
       navigate('/dashboard');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -116,7 +137,7 @@ const NewAppointment = () => {
       if (pendingJson) {
         try {
           const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, new Date(savedDateStr));
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
           localStorage.removeItem('pending_appointment_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -132,7 +153,7 @@ const NewAppointment = () => {
     try {
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia`;
-      localStorage.setItem('pending_appointment_booking', JSON.stringify({ formData, date: date?.toISOString() }));
+      localStorage.setItem('pending_appointment_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
       const url = await createPreference(depositValue, description, user.email, window.location.href);
       if (url) {
         window.location.href = url;
@@ -185,7 +206,7 @@ const NewAppointment = () => {
         });
 
       recurring
-        .filter(s => s.barberId === formData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -194,7 +215,23 @@ const NewAppointment = () => {
 
       const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
 
-      setFilteredTimes(masterHours.filter(h => canAccommodateService(h, requestedDuration, allBookedTimes, masterHours)));
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(h => {
+        if (isToday) {
+          const [hour, min] = h.split(':').map(Number);
+          if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
+            return false;
+          }
+        }
+        return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
+      });
+
+      setFilteredTimes(available);
 
       if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
         setFormData(prev => ({ ...prev, time: '' }));

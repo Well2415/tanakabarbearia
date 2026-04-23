@@ -23,6 +23,7 @@ const BarberProfile = () => {
   const [photo, setPhoto] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
 
   useEffect(() => {
     if (!user || user.role !== 'barber' && user.role !== 'admin') {
@@ -41,9 +42,11 @@ const BarberProfile = () => {
       setBio(barber.bio || '');
       setDescription(barber.description || '');
       setPhoto(barber.photo || user.avatarUrl || '');
+      setPhone(user.phone || '');
     } else {
       setName(user.fullName);
       setPhoto(user.avatarUrl || '');
+      setPhone(user.phone || '');
     }
   }, [user, navigate]);
 
@@ -60,30 +63,19 @@ const BarberProfile = () => {
     }
 
     // Save to User
-    const users = storage.getUsers();
-    const updatedUsers = users.map(u => {
-      if (u.id === user.id) {
-        return {
-          ...u,
-          fullName: name,
-          avatarUrl: photo,
-          password: password ? password : u.password
-        };
-      }
-      return u;
-    });
-    await storage.saveUsers(updatedUsers);
+    const updatedUser = {
+      ...user,
+      fullName: name,
+      avatarUrl: photo,
+      phone: phone,
+      password: password ? password : user.password
+    };
+    await storage.updateUser(updatedUser);
 
     // Save to Barber
     if (barberData) {
-      const barbers = storage.getBarbers();
-      const updatedBarbers = barbers.map(b => {
-        if (b.id === barberData.id) {
-          return { ...b, name, bio, description, photo };
-        }
-        return b;
-      });
-      await storage.saveBarbers(updatedBarbers);
+      const updatedBarber = { ...barberData, name, bio, description, photo };
+      await storage.updateBarber(updatedBarber);
     }
 
     toast({ title: 'Perfil Atualizado', description: 'Suas informações foram salvas com sucesso!' });
@@ -122,6 +114,11 @@ const BarberProfile = () => {
               <div className="space-y-2">
                 <Label htmlFor="name">Nome de Exibição</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="h-12" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Número de Telefone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="h-12" placeholder="(11) 99999-9999" />
               </div>
 
               {barberData && (

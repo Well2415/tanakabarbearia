@@ -33,7 +33,10 @@ const AdminProducts = () => {
     stock: '',
     image: '',
     image2: '',
-    active: true
+    image3: '',
+    image4: '',
+    active: true,
+    variants: [] as any[]
   });
 
   useEffect(() => {
@@ -65,20 +68,20 @@ const AdminProducts = () => {
       stock: parseInt(formData.stock) || 0,
       image: formData.image,
       image2: formData.image2,
-      active: formData.active
+      image3: formData.image3,
+      image4: formData.image4,
+      active: formData.active,
+      variants: formData.variants.length > 0 ? formData.variants : undefined
     };
 
-    let updatedProducts;
+    await storage.updateProduct(productData);
     if (editingProduct) {
-      updatedProducts = products.map(p => p.id === productData.id ? productData : p);
+      setProducts(products.map(p => p.id === productData.id ? productData : p));
       toast({ title: 'Produto atualizado' });
     } else {
-      updatedProducts = [...products, productData];
+      setProducts([...products, productData]);
       toast({ title: 'Produto adicionado' });
     }
-
-    await storage.saveProducts(updatedProducts);
-    setProducts(updatedProducts);
     handleClose();
   };
 
@@ -92,22 +95,24 @@ const AdminProducts = () => {
       stock: (product.stock || 0).toString(),
       image: product.image || '',
       image2: product.image2 || '',
-      active: product.active
+      image3: product.image3 || '',
+      image4: product.image4 || '',
+      active: product.active,
+      variants: product.variants || []
     });
     setIsOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    const updated = products.filter(p => p.id !== id);
-    await storage.saveProducts(updated);
-    setProducts(updated);
+    await storage.deleteProduct(id);
+    setProducts(products.filter(p => p.id !== id));
     toast({ title: 'Produto removido' });
   };
 
   const handleClose = () => {
     setIsOpen(false);
     setEditingProduct(null);
-    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', image2: '', active: true });
+    setFormData({ name: '', description: '', price: '', category: '', stock: '', image: '', image2: '', image3: '', image4: '', active: true, variants: [] });
   };
 
   return (
@@ -156,23 +161,151 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="space-y-2">
-                    <Label>Imagem Principal</Label>
+                    <Label className="text-xs">Foto 1</Label>
                     <ImageUpload 
                       value={formData.image} 
                       onChange={(image) => setFormData({...formData, image})} 
-                      label="Foto 1"
+                      label="Principal"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Imagem Secundária</Label>
+                    <Label className="text-xs">Foto 2</Label>
                     <ImageUpload 
                       value={formData.image2} 
                       onChange={(image2) => setFormData({...formData, image2})} 
                       label="Foto 2"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Foto 3</Label>
+                    <ImageUpload 
+                      value={formData.image3} 
+                      onChange={(image3) => setFormData({...formData, image3})} 
+                      label="Foto 3"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Foto 4</Label>
+                    <ImageUpload 
+                      value={formData.image4} 
+                      onChange={(image4) => setFormData({...formData, image4})} 
+                      label="Foto 4"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-base font-bold">Variantes de Peso (Gramatura)</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setFormData({
+                        ...formData, 
+                        variants: [
+                          ...formData.variants, 
+                          { id: Date.now().toString(), weight: '', price: parseFloat(formData.price) || 0, stock: parseInt(formData.stock) || 0, imageIndices: [0] }
+                        ]
+                      })}
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Add Peso
+                    </Button>
+                  </div>
+                  
+                  {formData.variants.length > 0 ? (
+                    <div className="space-y-3">
+                      {formData.variants.map((variant, index) => (
+                        <div key={variant.id} className="grid grid-cols-12 gap-2 items-end bg-card p-3 rounded-lg border border-border/50">
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-[10px] uppercase">Grama</Label>
+                            <Input 
+                              placeholder="100g" 
+                              value={variant.weight} 
+                              onChange={(e) => {
+                                const newVariants = [...formData.variants];
+                                newVariants[index].weight = e.target.value;
+                                setFormData({...formData, variants: newVariants});
+                              }}
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-[10px] uppercase">R$</Label>
+                            <Input 
+                              type="number" 
+                              step="0.01"
+                              value={variant.price} 
+                              className="px-1"
+                              onChange={(e) => {
+                                const newVariants = [...formData.variants];
+                                newVariants[index].price = parseFloat(e.target.value);
+                                setFormData({...formData, variants: newVariants});
+                              }}
+                            />
+                          </div>
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-[10px] uppercase">Estoque</Label>
+                            <Input 
+                              type="number" 
+                              value={variant.stock || 0} 
+                              className="px-1"
+                              onChange={(e) => {
+                                const newVariants = [...formData.variants];
+                                newVariants[index].stock = parseInt(e.target.value);
+                                setFormData({...formData, variants: newVariants});
+                              }}
+                            />
+                          </div>
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-[10px] uppercase text-center block">Fotos</Label>
+                            <div className="flex justify-center gap-0.5">
+                              {[0, 1, 2, 3].map((idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    const newVariants = [...formData.variants];
+                                    const currentIndices = newVariants[index].imageIndices || [];
+                                    if (currentIndices.includes(idx)) {
+                                      newVariants[index].imageIndices = currentIndices.filter(i => i !== idx);
+                                    } else {
+                                      newVariants[index].imageIndices = [...currentIndices, idx].sort();
+                                    }
+                                    setFormData({...formData, variants: newVariants});
+                                  }}
+                                  className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold border transition-all ${
+                                    (variant.imageIndices || []).includes(idx)
+                                      ? 'bg-primary border-primary text-primary-foreground'
+                                      : 'bg-background border-border text-muted-foreground hover:border-primary/50'
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="col-span-2 flex justify-center pb-1">
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-destructive h-8 w-8"
+                              onClick={() => {
+                                const newVariants = formData.variants.filter((_, i) => i !== index);
+                                setFormData({...formData, variants: newVariants});
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic text-center">Nenhuma variante cadastrada para este produto.</p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">

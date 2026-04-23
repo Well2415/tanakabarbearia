@@ -5,8 +5,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { LogOut, LayoutDashboard, Menu, Scissors, Smartphone } from 'lucide-react';
 import { storage } from '@/lib/storage';
 import { User } from '@/types';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PWAInstructions } from './InstallPWA';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { PWAInstallDialog } from './InstallPWA';
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -130,46 +130,41 @@ export const Navigation = () => {
 
                   <div className="h-px bg-border w-full my-2"></div>
 
-                  {user ? (
-                    <div className="flex flex-col gap-4">
-                      <span className="text-muted-foreground text-sm">Logado como {user.fullName}</span>
-                      <Link to="/dashboard" onClick={() => setIsSheetOpen(false)} className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
-                        <LayoutDashboard className="w-5 h-5" />
-                        Acessar Painel
-                      </Link>
-                      <Button onClick={() => { handleLogout(); setIsSheetOpen(false); }} variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground h-12">
-                        <LogOut className="w-5 h-5 mr-3" />
-                        Sair
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      <Link to="/login" onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 rounded-xl transition-colors">
-                        Login
-                      </Link>
-                      <Link to={agendarLink} onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-12 rounded-xl shadow-md shadow-primary/20 transition-colors">
-                        Agendar Agora
-                      </Link>
+                  <div className="flex flex-col gap-4">
+                    {/* Botão de instalar App no menu mobile - Sempre visível */}
+                    <PWAInstallDialog 
+                      trigger={
+                        <button className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 text-sm font-medium transition-colors">
+                          <Smartphone className="w-5 h-5 text-primary" />
+                          Instalar Aplicativo
+                        </button>
+                      }
+                    />
 
-                      {/* Botão de instalar App no menu mobile */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <button className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 text-sm font-medium transition-colors mt-2">
-                            <Smartphone className="w-5 h-5 text-primary" />
-                            Instalar Aplicativo
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-card/95 border-border rounded-3xl w-[95%] sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Instalar App</DialogTitle>
-                            <DialogDescription>Siga o guia para seu celular</DialogDescription>
-                          </DialogHeader>
-                          <PWAInstructions platform={/iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()) ? 'ios' : 'android'} />
-                        </DialogContent>
-                      </Dialog>
-                      </div>
+                    {user ? (
+                      <>
+                        <span className="text-muted-foreground text-sm">Logado como {user.fullName}</span>
+                        <Link to="/dashboard" onClick={() => setIsSheetOpen(false)} className="flex items-center gap-3 w-full px-4 py-3 rounded-md border border-zinc-800 bg-transparent text-foreground hover:bg-zinc-800 text-sm font-medium transition-colors">
+                          <LayoutDashboard className="w-5 h-5" />
+                          Acessar Painel
+                        </Link>
+                        <Button onClick={() => { handleLogout(); setIsSheetOpen(false); }} variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground h-12">
+                          <LogOut className="w-5 h-5 mr-3" />
+                          Sair
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/login" onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-12 rounded-xl transition-colors">
+                          Login
+                        </Link>
+                        <Link to={agendarLink} onClick={() => setIsSheetOpen(false)} className="inline-flex items-center justify-center w-full whitespace-nowrap text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-12 rounded-xl shadow-md shadow-primary/20 transition-colors">
+                          Agendar Agora
+                        </Link>
+                      </>
                     )}
                   </div>
+                </div>
               </SheetContent>
             </Sheet>
           </div>

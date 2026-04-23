@@ -47,7 +47,7 @@ const Services = () => {
                   </div>
 
                   <div className="flex justify-between items-center pt-6 border-t border-border">
-                    <span className="text-3xl font-bold text-primary">
+                    <span className="text-3xl font-bold text-primary whitespace-nowrap">
                       R$ {service.price}
                     </span>
                     <Button asChild size="sm">

@@ -20,6 +20,7 @@ import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/timeUtils';
 
 const Finance = () => {
   const navigate = useNavigate();
@@ -57,6 +58,8 @@ const Finance = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isExpenseDateOpen, setIsExpenseDateOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'revenue' | 'expense', description: string } | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,11 +77,29 @@ const Finance = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
-    if (!currentUser || (currentUser.role !== 'barber' && currentUser.role !== 'admin')) {
-      navigate('/dashboard');
-      return;
-    }
-  }, [currentUser, navigate]);
+    const initFinance = async () => {
+      await storage.initialize();
+      const currentUser = storage.getCurrentUser();
+      
+      if (!currentUser || (currentUser.role !== 'barber' && currentUser.role !== 'admin')) {
+        navigate('/dashboard');
+        return;
+      }
+      
+      setUser(currentUser);
+      setUsers(storage.getUsers());
+      setCategories(storage.getExpenseCategories());
+      
+      const allAppointments = storage.getAppointments();
+      const allExpenses = storage.getExpenses();
+      const targetBarberId = currentUser.role === 'admin' ? null : (currentUser.barberId || currentUser.id);
+      
+      setAppointments(targetBarberId ? allAppointments.filter(a => a.barberId === targetBarberId) : allAppointments);
+      setExpenses(targetBarberId ? allExpenses.filter(e => e.barberId === targetBarberId) : allExpenses);
+    };
+    
+    initFinance();
+  }, [navigate]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -93,19 +114,19 @@ const Finance = () => {
   const filteredAppointments = useMemo(() => {
     return appointments.filter(a => {
       if (a.status !== 'completed') return false;
-      const d = parseISO(a.date);
-      if (filterPeriod === 'month') return isSameMonth(d, parseISO(`${filterMonth}-01`));
-      if (filterPeriod === 'year') return isSameYear(d, parseISO(`${filterYear}-01-01`));
+      const d = parseLocalDate(a.date);
+      if (filterPeriod === 'month') return isSameMonth(d, parseLocalDate(`${filterMonth}-01`));
+      if (filterPeriod === 'year') return isSameYear(d, parseLocalDate(`${filterYear}-01-01`));
       return true; // 'all'
     });
   }, [appointments, filterPeriod, filterMonth, filterYear]);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter(e => {
-      const d = parseISO(e.date);
+      const d = parseLocalDate(e.date);
       let timeMatch = true;
-      if (filterPeriod === 'month') timeMatch = isSameMonth(d, parseISO(`${filterMonth}-01`));
-      if (filterPeriod === 'year') timeMatch = isSameYear(d, parseISO(`${filterYear}-01-01`));
+      if (filterPeriod === 'month') timeMatch = isSameMonth(d, parseLocalDate(`${filterMonth}-01`));
+      if (filterPeriod === 'year') timeMatch = isSameYear(d, parseLocalDate(`${filterYear}-01-01`));
       
       let catMatch = true;
       if (filterCategory !== 'all' && filterCategory !== 'revenue') {
@@ -119,7 +140,7 @@ const Finance = () => {
   const activeExpenses = filterCategory === 'revenue' ? [] : filteredExpenses;
 
   // Calculos de Caixa baseados no filtro (The Report)
-  const totalRevenue = activeAppointments.reduce((acc, curr) => acc + (curr.finalPrice || curr.servicePrice || 0), 0);
+  const totalRevenue = activeAppointments.reduce((acc, curr) => acc + (curr.finalPrice !== undefined ? curr.finalPrice : (curr.servicePrice || 0) + (curr.extraCharges || 0) - (curr.discount || 0)), 0);
   const totalExpense = activeExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   const netBalance = totalRevenue - totalExpense;
 
@@ -149,7 +170,7 @@ const Finance = () => {
       category: e.category
     }));
 
-    return [...revenueTx, ...expenseTx].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...revenueTx, ...expenseTx].sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
   }, [activeAppointments, activeExpenses, users]);
 
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -174,7 +195,7 @@ const Finance = () => {
 
       return {
         date: dateStr,
-        label: format(parseISO(dateStr), 'EEE', { locale: ptBR }),
+        label: format(parseLocalDate(dateStr), 'EEE', { locale: ptBR }),
         revenue
       };
     });
@@ -236,9 +257,39 @@ const Finance = () => {
     toast({ title: 'Classificação Removida', description: `A classificação "${catToRemove}" foi excluída.` });
   };
 
+  const handleDeleteClick = (tx: any) => {
+    setItemToDelete({ id: tx.id, type: tx.type, description: tx.description });
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      if (itemToDelete.type === 'expense') {
+        await storage.deleteExpense(itemToDelete.id);
+        const updatedExpenses = storage.getExpenses();
+        const targetBarberId = user?.role === 'admin' ? null : (user?.barberId || user?.id);
+        setExpenses(targetBarberId ? updatedExpenses.filter(e => e.barberId === targetBarberId) : updatedExpenses);
+        toast({ title: 'Sucesso', description: 'Despesa excluída com sucesso.' });
+      } else {
+        await storage.deleteAppointment(itemToDelete.id);
+        const updatedAppointments = storage.getAppointments();
+        const targetBarberId = user?.role === 'admin' ? null : (user?.barberId || user?.id);
+        setAppointments(targetBarberId ? updatedAppointments.filter(a => a.barberId === targetBarberId) : updatedAppointments);
+        toast({ title: 'Sucesso', description: 'Receita (agendamento) excluída com sucesso.' });
+      }
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Falha ao excluir o registro. Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsDeleteConfirmOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
   const getFilterLabel = () => {
     let timeBlock = '';
-    if (filterPeriod === 'month') timeBlock = format(parseISO(`${filterMonth}-01`), 'MMM/yyyy', { locale: ptBR });
+    if (filterPeriod === 'month') timeBlock = format(parseLocalDate(`${filterMonth}-01`), 'MMM/yyyy', { locale: ptBR });
     if (filterPeriod === 'year') timeBlock = `Ano ${filterYear}`;
     if (filterPeriod === 'all') timeBlock = 'Todo o Período';
 
@@ -426,15 +477,24 @@ const Finance = () => {
                                 {tx.category}
                               </span>
                               <span className="text-[11px] text-muted-foreground ml-1">
-                                {format(parseISO(tx.date), 'dd/MM/yyyy')}
+                                {format(parseLocalDate(tx.date), 'dd/MM/yyyy')}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className={`font-bold text-sm md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
-                            {tx.type === 'revenue' ? '+' : '-'} R$ {tx.amount.toFixed(2).replace('.', ',')}
-                          </p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right shrink-0">
+                            <p className={`font-bold text-sm md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
+                              {tx.type === 'revenue' ? '+' : '-'} R$ {tx.amount.toFixed(2).replace('.', ',')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteClick(tx)}
+                            className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
+                            title="Excluir Lançamento"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -600,13 +660,13 @@ const Finance = () => {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('w-full h-12 justify-start text-left font-normal bg-card', !newExpense.date && 'text-muted-foreground')}>
                       <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                      <span className="truncate">{newExpense.date ? format(parseISO(newExpense.date), 'dd/MM/yyyy') : 'Selecione a data'}</span>
+                      <span className="truncate">{newExpense.date ? format(parseLocalDate(newExpense.date), 'dd/MM/yyyy') : 'Selecione a data'}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={newExpense.date ? parseISO(newExpense.date) : undefined}
+                      selected={newExpense.date ? parseLocalDate(newExpense.date) : undefined}
                       onSelect={(selectedDate) => {
                         if (selectedDate) {
                           setNewExpense({ ...newExpense, date: format(selectedDate, 'yyyy-MM-dd') });
@@ -689,6 +749,37 @@ const Finance = () => {
            <DialogFooter className="mt-4">
               <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)} className="w-full h-12 font-bold">Concluído</Button>
            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmação de Exclusão */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <Trash2 className="w-5 h-5" /> Confirmar Exclusão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground">
+              Deseja realmente excluir este lançamento?
+            </p>
+            <div className="mt-4 p-3 bg-muted rounded-lg border border-border">
+              <p className="text-sm font-bold">{itemToDelete?.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {itemToDelete?.type === 'revenue' ? 'Esta ação removerá permanentemente o agendamento do sistema.' : 'Esta ação removerá permanentemente o registro da despesa.'}
+              </p>
+            </div>
+            <p className="text-xs text-red-500 mt-4 font-medium flex items-center gap-1">
+              <X className="w-3 h-3" /> Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button variant="destructive" onClick={confirmDelete} className="w-full h-12">Excluir Permanentemente</Button>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -4,16 +4,23 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, parseISO, isAfter } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, isSameDay, startOfDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { createPixPayment, createPreference, checkPaymentStatus, isMPConfigured, PixPaymentResponse } from '@/lib/mercadoPago';
 import { AdminMenu } from '@/components/admin/AdminMenu';
+import { isRecurringActive, parseLocalDate, getAppointmentDuration, getBlockedTimes } from '@/lib/timeUtils';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { notificationManager } from '@/lib/notifications';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -27,30 +34,139 @@ const MyAppointments = () => {
   const [discountInput, setDiscountInput] = useState(0);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [endDate, setEndDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
+  const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
+  const [editedDate, setEditedDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [editedTime, setEditedTime] = useState('');
+  const [editedServiceId, setEditedServiceId] = useState('');
+  const [editedStatus, setEditedStatus] = useState<string>('');
+  const [isEditPickerOpen, setIsEditPickerOpen] = useState(false);
+  const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
 
-  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
+  const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput - (currentAppointmentToComplete?.amountPaid || 0));
 
   useEffect(() => {
-    const user = storage.getCurrentUser();
+    const initAndFetch = async () => {
+      await storage.initialize();
+      const user = storage.getCurrentUser();
 
-    const isBarber = user?.role === 'barber';
-    if (!user || !isBarber) {
-      toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
-      navigate('/dashboard');
-      return;
-    }
+      const isBarber = user?.role === 'barber';
+      if (!user || !isBarber) {
+        toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
+        navigate('/dashboard');
+        return;
+      }
 
-    const allAppointments = storage.getAppointments();
-    const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
+      const allAppointments = storage.getAppointments();
+      const recurringSchedules = storage.getRecurringSchedules();
+      const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
-    if (barberProfile) {
-      const barberAppointments = allAppointments.filter(appt => appt.barberId === barberProfile.id);
-      setAppointments(barberAppointments);
-    } else {
-      toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
-      navigate('/dashboard');
-    }
-  }, [navigate, toast]);
+      if (barberProfile && startDate && endDate) {
+        const start = startOfDay(startDate);
+        const end = startOfDay(endDate);
+
+        // 1. Agendamentos reais do barbeiro NO INTERVALO
+        const barberAppointments = allAppointments.filter(appt => {
+          if (appt.barberId !== barberProfile.id) return false;
+          
+          // Agendamentos pendentes OU com sinal pago sempre aparecem para o barbeiro
+          const hasSignal = appt.amountPaid && appt.amountPaid > 0;
+          const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+          
+          if (isImportant) return true;
+
+          const apptDate = parseLocalDate(appt.date);
+          return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
+                 (isSameDay(apptDate, end) || isBefore(apptDate, end));
+        });
+        
+        // 2. Agendamentos fixos (recorrentes) NO INTERVALO
+        const virtualAppointments: Appointment[] = [];
+        
+        // Limita a 31 dias
+        const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 31) {
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const currentDayStr = format(d, 'yyyy-MM-dd');
+            const dayOfWeek = d.getDay();
+            const servicesData = storage.getServices();
+            
+            const dayVirtuals = recurringSchedules
+              .filter(s => s.barberId === barberProfile.id && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, d))
+              .filter(s => {
+                // Evitar duplicados com agendamentos reais
+                return !barberAppointments.some(appt => 
+                  appt.date === currentDayStr && 
+                  appt.userId === s.userId &&
+                  appt.status !== 'cancelled'
+                );
+              })
+              .map(s => {
+                const sIds = s.serviceIds || [s.serviceId];
+                const totalPrice = sIds.reduce((sum, id) => {
+                  const srv = servicesData.find(x => x.id === id);
+                  return sum + (srv?.price || 0);
+                }, 0);
+
+                return {
+                  id: `recurring-v-${s.id}-${currentDayStr}`,
+                  userId: s.userId,
+                  barberId: s.barberId,
+                  serviceId: sIds[0],
+                  serviceIds: sIds,
+                  date: currentDayStr,
+                  time: s.time,
+                  status: 'pending' as const,
+                  servicePrice: totalPrice,
+                  amountPaid: 0,
+                  isRecurring: true,
+                  createdAt: new Date().toISOString(),
+                } as Appointment;
+              });
+              
+            // Agrupa por usuário para evitar múltiplos cards no mesmo dia
+            const groupedDayVirtuals = dayVirtuals.reduce((acc, appt) => {
+              const key = `${appt.userId}-${appt.date}`;
+              if (!acc[key]) {
+                acc[key] = { ...appt };
+              } else {
+                const existing = acc[key];
+                const existingSIds = existing.serviceIds || [existing.serviceId];
+                const currentSIds = appt.serviceIds || [appt.serviceId];
+                
+                const combinedSIds = [...existingSIds];
+                currentSIds.forEach(id => {
+                  if (!combinedSIds.includes(id)) combinedSIds.push(id);
+                });
+                
+                existing.serviceIds = combinedSIds;
+                existing.serviceId = combinedSIds[0];
+                existing.servicePrice = (existing.servicePrice || 0) + (appt.servicePrice || 0);
+                if (appt.time < existing.time) {
+                  existing.time = appt.time;
+                }
+              }
+              return acc;
+            }, {} as Record<string, Appointment>);
+            
+            virtualAppointments.push(...Object.values(groupedDayVirtuals));
+          }
+        }
+
+        setAppointments([...barberAppointments, ...virtualAppointments]);
+      } else if (!barberProfile) {
+        toast({ title: "Perfil não encontrado", description: "Não foi possível encontrar um perfil de barbeiro associado a este usuário.", variant: "destructive" });
+        navigate('/dashboard');
+      }
+    };
+
+    initAndFetch();
+  }, [navigate, toast, startDate, endDate, user?.barberId]);
 
   if (!user || user.role !== 'barber') return null;
 
@@ -69,31 +185,122 @@ const MyAppointments = () => {
   };
 
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
-    const allAppointments = storage.getAppointments();
-    const updatedAppointments = allAppointments.map(a =>
-      a.id === updatedAppointment.id ? updatedAppointment : a
-    );
-    await storage.saveAppointments(updatedAppointments);
-    const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
-    if (barberProfile) {
-      const barberAppointments = updatedAppointments.filter(appt => appt.barberId === barberProfile.id);
-      setAppointments(barberAppointments);
+    await storage.updateAppointment(updatedAppointment);
+    
+    // Refresh local state
+    const all = storage.getAppointments();
+    const barberProfile = storage.getBarbers().find(b => b.id === user?.barberId);
+    if (barberProfile && startDate && endDate) {
+      const barberAppointments = all.filter(appt => {
+        if (appt.barberId !== barberProfile.id) return false;
+        const apptDate = parseLocalDate(appt.date);
+        return (isSameDay(apptDate, startDate) || isAfter(apptDate, startDate)) && 
+               (isSameDay(apptDate, endDate) || isBefore(apptDate, endDate));
+      });
+      setAppointments(prev => {
+        const virtuals = prev.filter(p => p.isRecurring);
+        return [...barberAppointments, ...virtuals];
+      });
     }
   };
 
-  const handleStartService = (appointment: Appointment) => {
+  const handleUpdateAppointment = async () => {
+    if (appointmentToEdit) {
+      const updatedAppointment: Appointment = {
+        ...appointmentToEdit,
+        id: appointmentToEdit.id,
+        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
+        time: editedTime,
+        serviceId: editedServiceId,
+        status: editedStatus as any,
+      };
+      await updateAppointmentInStorage(updatedAppointment);
+      toast({ title: "Agendamento Atualizado", description: "O agendamento foi corrigido com sucesso." });
+      setShowEditDialog(false);
+      setAppointmentToEdit(null);
+    }
+  };
+
+  // Logic to filter times when editing
+  useEffect(() => {
+    if (editedDate && user?.barberId) {
+      const barber = storage.getBarbers().find(b => b.id === user.barberId);
+      if (!barber) return;
+
+      const masterHours = (barber.scheduleByDay && barber.scheduleByDay[editedDate.getDay()]) || barber.availableHours || [];
+      const formattedDate = format(editedDate, 'yyyy-MM-dd');
+      const allAppointments = storage.getAppointments();
+
+      const busySlots: string[] = [];
+      allAppointments
+        .filter(app => app.barberId === barber.id && app.date === formattedDate && app.status !== 'cancelled' && app.status !== 'no_show' && app.id !== appointmentToEdit?.id)
+        .forEach(app => {
+          const sIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(sIds, services);
+          busySlots.push(...getBlockedTimes(app.time, duration));
+        });
+
+      const recurring = storage.getRecurringSchedules();
+      recurring
+        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active)
+        .forEach(s => {
+          busySlots.push(s.time);
+        });
+
+      const available = masterHours.filter(h => !busySlots.includes(h) || (appointmentToEdit && h === appointmentToEdit.time && editedDate && format(editedDate, 'yyyy-MM-dd') === appointmentToEdit.date));
+      if (appointmentToEdit && !available.includes(appointmentToEdit.time) && editedDate && format(editedDate, 'yyyy-MM-dd') === appointmentToEdit.date) {
+        available.push(appointmentToEdit.time);
+        available.sort();
+      }
+      setEditFilteredTimes(available);
+    }
+  }, [editedDate, appointmentToEdit, user?.barberId, appointments, services]);
+
+  const handleStartService = async (appointment: Appointment) => {
     const now = new Date();
     const scheduledDateTime = parseISO(`${appointment.date}T${appointment.time}:00`);
     const isDelayed = isAfter(now, scheduledDateTime);
 
+    let finalAppointment = { ...appointment };
+
+    // Se for virtual, cria o agendamento real no banco agora
+    if (appointment.id.startsWith('recurring-v-')) {
+      const servicesData = storage.getServices();
+      const sIds = appointment.serviceIds || [appointment.serviceId];
+      const totalServicePrice = sIds.reduce((sum, id) => {
+        const s = servicesData.find(srv => srv.id === id);
+        return sum + (s?.price || 0);
+      }, 0);
+
+      finalAppointment = {
+        ...appointment,
+        id: `rec-${Date.now()}`, // Novo ID real
+        servicePrice: totalServicePrice,
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Salva no banco (spread para remover flags extras se houver)
+      const { ...dbAppointment } = finalAppointment;
+      
+      await storage.saveAppointments([...storage.getAppointments(), dbAppointment as Appointment]);
+    }
+
     const updatedAppointment = {
-      ...appointment,
+      ...finalAppointment,
       startTime: format(now, 'HH:mm'),
       isDelayed: isDelayed,
       status: 'in_progress' as const,
     };
-    updateAppointmentInStorage(updatedAppointment);
-    toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
+    try {
+      await updateAppointmentInStorage(updatedAppointment);
+      toast({ title: 'Serviço Iniciado', description: `O corte de ${getClientName(appointment)} foi iniciado.` });
+    } catch (error) {
+      toast({
+        title: 'Erro ao iniciar',
+        description: 'Não foi possível iniciar o serviço. Verifique sua conexão e tente novamente.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleCompleteService = async () => {
@@ -109,34 +316,62 @@ const MyAppointments = () => {
       finalPrice: finalPrice,
       status: 'completed' as const,
     };
-    await updateAppointmentInStorage(updatedAppointment);
+    try {
+      await updateAppointmentInStorage(updatedAppointment);
 
-    if (currentAppointmentToComplete.userId) {
-      const allUsers = storage.getUsers();
-      const userToUpdate = allUsers.find(u => u.id === currentAppointmentToComplete.userId);
-      if (userToUpdate) {
-        const updatedUser = { ...userToUpdate };
-        // Update user's cutsCount and stylePreferences
-        updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
+      if (currentAppointmentToComplete.userId) {
+        const userToUpdate = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId);
+        if (userToUpdate) {
+          const updatedUser = { ...userToUpdate };
 
-        const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
-        if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
-          updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
-        } else if (service && !updatedUser.stylePreferences) {
-          updatedUser.stylePreferences = [service.name];
+          // Incrementa contador de cortes
+          updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
+
+          // Atribui exatamente 1 ponto por visita (independente dos serviços)
+          const pointsEarned = 1;
+          updatedUser.loyaltyPoints = (updatedUser.loyaltyPoints || 0) + pointsEarned;
+
+          // Verifica se atingiu a meta de fidelidade e notifica admins
+          const loyaltyTarget = storage.getLoyaltyTarget();
+          if (updatedUser.loyaltyPoints >= loyaltyTarget) {
+            const allAdmins = storage.getUsers().filter(u => u.role === 'admin');
+            allAdmins.forEach(admin => {
+              notificationManager.sendPushNotification(
+                admin.id,
+                "Meta de Fidelidade Atingida! 🏆",
+                `O cliente ${updatedUser.fullName} completou ${updatedUser.loyaltyPoints} pontos e já pode ganhar um prêmio!`,
+                "/admin/clients"
+              ).catch(err => console.error('Erro ao notificar admin:', err));
+            });
+          }
+
+          // Atualiza preferências de estilo
+          const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
+          if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
+            updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
+          } else if (service && !updatedUser.stylePreferences) {
+            updatedUser.stylePreferences = [service.name];
+          }
+
+          await storage.updateUser(updatedUser);
         }
-
-        const finalUsers = allUsers.map(u => u.id === updatedUser.id ? updatedUser : u);
-        await storage.saveUsers(finalUsers);
       }
-    }
 
-    setPreferenceUrl(null);
-    setCurrentAppointmentToComplete(null);
-    setPaymentType('');
-    setExtraChargesInput(0);
-    setDiscountInput(0);
-    toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
+      setPreferenceUrl(null);
+      setCurrentAppointmentToComplete(null);
+      setPaymentType('');
+      setExtraChargesInput(0);
+      setDiscountInput(0);
+      setShowPaymentDialog(false); // Fechar o diálogo após sucesso
+      toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
+    } catch (error) {
+      console.error('Erro ao finalizar serviço:', error);
+      toast({
+        title: 'Erro ao finalizar',
+        description: 'Ocorreu um erro no banco de dados. Certifique-se de que todas as colunas SQL foram criadas.',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleGenerateLink = async () => {
@@ -191,20 +426,96 @@ const MyAppointments = () => {
     <div className="min-h-screen bg-background">
       <AdminMenu />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-32">
         <h2 className="text-3xl font-bold mb-8">Meus Agendamentos</h2>
+
+        <Card className="p-6 mb-8 border-border">
+          <h3 className="font-bold text-xl mb-4">Filtrar por Período</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Data de Início</Label>
+              <Popover open={isStartDatePickerOpen} onOpenChange={setIsStartDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12 mt-1", !startDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date ? startOfDay(date) : undefined);
+                      setIsStartDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label>Data de Fim</Label>
+              <Popover open={isEndDatePickerOpen} onOpenChange={setIsEndDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-12 mt-1", !endDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date ? startOfDay(date) : undefined);
+                      setIsEndDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </Card>
 
         <div className="space-y-4">
           {appointments.length === 0 ? (
             <Card className="p-8 text-center border-border"><p className="text-muted-foreground">Nenhum agendamento encontrado para você.</p></Card>
           ) : (
-            appointments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((appointment) => (
+            appointments.sort((a, b) => {
+              // Pending first
+              if (a.status === 'pending' && b.status !== 'pending') return -1;
+              if (a.status !== 'pending' && b.status === 'pending') return 1;
+              // Then newest date first
+              return new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime();
+            }).map((appointment) => (
               <Card key={appointment.id} className="p-6 border-border">
                 <div className="flex flex-col md:flex-row justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-lg">{getClientName(appointment)}</h3>
-                      <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
+                      <div className="flex gap-2 items-center">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 p-0 rounded-full hover:bg-primary/20 hover:text-primary transition-all" 
+                          onClick={() => {
+                            setAppointmentToEdit(appointment);
+                            setEditedDate(startOfDay(parseISO(appointment.date)));
+                            setEditedTime(appointment.time);
+                            setEditedServiceId(appointment.serviceId);
+                            setEditedStatus(appointment.status);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <Clock className="w-4 h-4 text-primary" />
+                        </Button>
+                        <Badge className={statusColors[appointment.status]}>{statusLabels[appointment.status]}</Badge>
+                      </div>
+                      {(appointment as any).isRecurring && <Badge variant="outline" className="border-primary text-primary font-bold">FIXO</Badge>}
                       {appointment.isDelayed && <Badge variant="destructive" className="bg-red-500/20 text-red-700">Atrasado</Badge>}
                     </div>
                     <p className="text-muted-foreground"><span className="font-medium">Serviço:</span> {getServiceName(appointment.serviceIds || appointment.serviceId)}</p>
@@ -212,6 +523,11 @@ const MyAppointments = () => {
                     {appointment.startTime && <p className="text-muted-foreground"><span className="font-medium">Início:</span> {appointment.startTime}</p>}
                     {appointment.endTime && <p className="text-muted-foreground"><span className="font-medium">Fim:</span> {appointment.endTime}</p>}
                     {appointment.paymentType && <p className="text-muted-foreground"><span className="font-medium">Pagamento:</span> {paymentTypeLabels[appointment.paymentType] || appointment.paymentType}</p>}
+                    {appointment.amountPaid > 0 && appointment.status !== 'completed' && (
+                      <Badge variant="outline" className="mt-2 bg-green-500/10 text-green-600 border-green-200">
+                        Sinal Pago: R$ {appointment.amountPaid.toFixed(2)}
+                      </Badge>
+                    )}
                     {appointment.status === 'completed' && appointment.finalPrice && <p className="text-muted-foreground"><span className="font-medium">Valor Pago:</span> R$ {appointment.finalPrice.toFixed(2)}</p>}
                   </div>
                   <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-border">
@@ -237,12 +553,15 @@ const MyAppointments = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
           <div className="py-2 space-y-4">
             <p className="mb-2 text-sm text-muted-foreground">
-              Finalizando atemdimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
+              Finalizando atendimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
               Valor do Serviço: R$ {currentAppointmentToComplete?.servicePrice?.toFixed(2)}
+              {currentAppointmentToComplete?.amountPaid ? (
+                <span className="block text-green-600 font-medium">Sinal já pago: - R$ {currentAppointmentToComplete.amountPaid.toFixed(2)}</span>
+              ) : null}
             </p>
 
             <div>
@@ -351,6 +670,84 @@ const MyAppointments = () => {
           <DialogFooter className="flex-col gap-2 sm:flex-row mt-4">
             <Button onClick={handleCompleteService} disabled={!paymentType || finalPrice < 0} className="w-full h-12 text-lg">Confirmar</Button>
             <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Edit Appointment Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6" aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>Corrigir Agendamento</DialogTitle></DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label>Data</Label>
+              <Popover open={isEditPickerOpen} onOpenChange={setIsEditPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal h-11", !editedDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editedDate ? format(editedDate, 'PPP', { locale: ptBR }) : "Selecione"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={editedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setEditedDate(startOfDay(date));
+                      }
+                      setIsEditPickerOpen(false);
+                    }}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label htmlFor="editTime">Hora</Label>
+              <Select value={editedTime} onValueChange={setEditedTime}>
+                <SelectTrigger className="h-11 w-full border-border bg-card">
+                  <SelectValue placeholder="Selecione o horário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {editFilteredTimes.map(time => (
+                    <SelectItem key={time} value={time}>{time}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editService">Serviço</Label>
+              <Select value={editedServiceId} onValueChange={setEditedServiceId}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Selecione um serviço" /></SelectTrigger>
+                <SelectContent>
+                  {services.map(service => (
+                    <SelectItem key={service.id} value={service.id}>{service.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Status</Label>
+              <Select value={editedStatus} onValueChange={setEditedStatus}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="no_show">Não Compareceu</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end mt-4 pb-4">
+            <Button onClick={handleUpdateAppointment} className="w-full sm:w-auto h-11 md:h-10 order-first sm:order-last font-bold">Salvar Alterações</Button>
+            <DialogClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto h-11 md:h-10">Cancelar</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

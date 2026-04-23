@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
   "latestCuts" JSONB DEFAULT '[]',
   "stylePreferences" JSONB DEFAULT '[]',
   "cutsCount" INT DEFAULT 0,
+  "barberId" TEXT,
+  "pushSubscription" TEXT,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
@@ -61,7 +63,15 @@ CREATE TABLE IF NOT EXISTS appointments (
   "extraCharges" NUMERIC(10, 2) DEFAULT 0,
   "finalPrice" NUMERIC(10, 2),
   "amountPaid" NUMERIC(10, 2) DEFAULT 0,
+  "discount" NUMERIC(10, 2) DEFAULT 0,
   "paymentType" TEXT,
+  "startTime" TEXT,
+  "endTime" TEXT,
+  "isDelayed" BOOLEAN DEFAULT false,
+  "guestName" TEXT,
+  "guestEmail" TEXT,
+  "guestPhone" TEXT,
+  "reminderSent" BOOLEAN DEFAULT false,
   "cancelledReason" TEXT,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -70,15 +80,21 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS recurring_schedules (
   id TEXT PRIMARY KEY,
   "barberId" TEXT REFERENCES barbers(id),
+  "userId" TEXT REFERENCES users(id),
+  "serviceId" TEXT REFERENCES services(id),
+  "serviceIds" JSONB DEFAULT '[]',
   "dayOfWeek" INT NOT NULL,
   time TEXT NOT NULL,
   active BOOLEAN DEFAULT true,
+  frequency TEXT DEFAULT 'weekly',
+  "startDate" DATE,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 -- TABELA DE DESPESAS
 CREATE TABLE IF NOT EXISTS expenses (
   id TEXT PRIMARY KEY,
+  "barberId" TEXT,
   description TEXT NOT NULL,
   amount NUMERIC(10, 2) NOT NULL,
   date DATE NOT NULL,

@@ -38,6 +38,7 @@ export interface User {
   stylePreferences?: string[]; // New field
   latestCuts?: Cut[]; // New field for latest cuts
   noShowCount?: number; // Tracks number of times the client didn't show up
+  pushSubscription?: string | null; // Novo: Armazena a inscrição de Push do PWA
 }
 
 export interface Cut {
@@ -73,6 +74,7 @@ export interface Appointment {
   discount?: number; // New: For discount amount applied on checkout
   finalPrice?: number; // New: Final price after all adjustments
   amountPaid?: number; // New: Amount already paid (e.g. deposit/signal)
+  isRecurring?: boolean; // Identifica se é um agendamento virtual vindo de horário fixo
 }
 export interface RecurringSchedule {
   id: string;
@@ -82,6 +84,8 @@ export interface RecurringSchedule {
   serviceIds?: string[]; // Novo: Lista de múltiplos serviços
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
   time: string; // "HH:mm"
+  frequency?: 'weekly' | 'biweekly'; // 'weekly' ou 'biweekly'
+  startDate?: string; // Data de início (yyyy-MM-dd) para calcular paridade de semanas
   active: boolean;
   createdAt: string;
 }
@@ -96,6 +100,14 @@ export interface Expense {
   createdAt: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  weight: string; // ex: "100g", "200g"
+  price: number;
+  stock?: number;
+  imageIndices?: number[]; // Lista de índices (0, 1, 2)
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -103,7 +115,19 @@ export interface Product {
   price: number;
   image?: string;
   image2?: string;
+  image3?: string;
+  image4?: string;
   category?: string;
   stock?: number;
   active: boolean;
+  variants?: ProductVariant[];
+}
+export interface NotificationLog {
+  id: string;
+  userId: string | null;
+  title: string;
+  body: string;
+  status: 'success' | 'error';
+  errorMessage?: string;
+  createdAt: string;
 }

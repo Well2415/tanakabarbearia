@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
-import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CreateClientDialog } from './CreateClientDialog';
@@ -256,39 +256,57 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                         
                         <CreateClientDialog />
 
-                        <Link to={role === 'admin' ? "/admin/appointments?action=book" : "/my-schedule?action=book"}>
-                            <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                <Calendar className="w-5 h-5 text-primary" />
-                                Marcar Horário (Manual)
-                            </Button>
-                        </Link>
+                        <DialogClose asChild>
+                            <Link to={role === 'admin' ? "/admin/appointments?action=book" : "/my-schedule?action=book"}>
+                                <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                    <Calendar className="w-5 h-5 text-primary" />
+                                    Marcar Horário (Manual)
+                                </Button>
+                            </Link>
+                        </DialogClose>
 
                         {role === 'admin' && (
                             <>
-                                <Link to="/admin/services?action=new-service">
-                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Scissors className="w-5 h-5 text-primary" />
-                                        Novo Serviço
-                                    </Button>
-                                </Link>
-                                <Link to="/admin/barbers?action=new-barber">
-                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Users className="w-5 h-5 text-primary" />
-                                        Novo Barbeiro
-                                    </Button>
-                                </Link>
-                                <Link to="/admin/products?action=new-product">
-                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                        <ShoppingBag className="w-5 h-5 text-primary" />
-                                        Novo Produto
-                                    </Button>
-                                </Link>
-                                <Link to="/admin/recurring-schedules">
-                                    <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Clock className="w-5 h-5 text-primary" />
-                                        Horários Fixos (VIP)
-                                    </Button>
-                                </Link>
+                                <DialogClose asChild>
+                                    <Link to="/admin/services?action=new-service">
+                                        <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                            <Scissors className="w-5 h-5 text-primary" />
+                                            Novo Serviço
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link to="/admin/barbers?action=new-barber">
+                                        <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                            <Users className="w-5 h-5 text-primary" />
+                                            Novo Barbeiro
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link to="/admin/products?action=new-product">
+                                        <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                            <ShoppingBag className="w-5 h-5 text-primary" />
+                                            Novo Produto
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link to="/admin/recurring-schedules">
+                                        <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                            <Clock className="w-5 h-5 text-primary" />
+                                            Horários Fixos (VIP)
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
+                                <DialogClose asChild>
+                                    <Link to="/admin/notifications/logs">
+                                        <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                            <Bell className="w-5 h-5 text-primary" />
+                                            Logs de Notificações
+                                        </Button>
+                                    </Link>
+                                </DialogClose>
                             </>
                         )}
                     </div>

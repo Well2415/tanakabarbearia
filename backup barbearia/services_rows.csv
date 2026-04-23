@@ -1,0 +1,11 @@
+id,name,description,price,duration,loyaltyPoints,category,createdAt,image
+1,Corte social,Corte social clássico,30.00,30,3,Cortes,2026-03-19 21:18:35.25604,
+10,Risquinho,Risquinho a partir de R$5,5.00,15,1,Acabamentos,2026-03-19 21:18:35.25604,
+2,Corte Degradê,Corte degradê,35.00,30,3,Cortes,2026-03-19 21:18:35.25604,
+3,Corte Degradê navalhado,Corte degradê com finalização na navalha,45.00,45,4,Cortes,2026-03-19 21:18:35.25604,
+4,Barba,Aparar e modelar barba,25.00,30,2,Barba,2026-03-19 21:18:35.25604,
+5,Corte social+barba,Pacote de corte social e barba,50.00,60,5,Combos,2026-03-19 21:18:35.25604,
+6,Corte Degradê+barba,Pacote de corte degradê e barba,55.00,60,5,Combos,2026-03-19 21:18:35.25604,
+7,Degradê navalhado+barba,Pacote completo de corte degradê navalhado e barba,65.00,60,6,Combos,2026-03-19 21:18:35.25604,
+8,Pezinho,Acabamento do pezinho do cabelo,10.00,15,1,Acabamentos,2026-03-19 21:18:35.25604,
+9,Sobrancelha,Design de sobrancelha,10.00,15,1,Acabamentos,2026-03-19 21:18:35.25604,

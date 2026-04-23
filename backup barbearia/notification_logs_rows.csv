@@ -1,0 +1,325 @@
+id,userId,title,body,status,errorMessage,createdAt
+006406c7-2444-47aa-a26c-0110db03069c,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:17:27.696933+00
+0235c7f8-b875-469c-b3d5-c832a5630cd8,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 17:00,success,,2026-04-10 14:04:46.379664+00
+0264fd24-5181-4893-bcd5-9093f2c528a3,1774394174941,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 19:00,success,,2026-04-18 15:09:35.858609+00
+02f94468-132d-4a3f-b952-57cbbe76264d,admin,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-13 às 18:00,success,,2026-04-13 17:59:31.308214+00
+058a3cdc-54de-402b-9f62-c6bb1c7939a3,1776165948058,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-20 13:04:02.81044+00
+061d001c-b748-4962-8f2c-b07a609f2c06,1774394174941,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 19:00,success,,2026-04-21 17:37:15.247662+00
+077328c6-2c6d-4197-8ac3-ee3d609455a5,1774371464441,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Pezinho na Tanaka Barbearia!,success,,2026-04-10 17:41:09.808816+00
+07e41ff6-a696-4309-912f-66ab7bb515f6,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-16 às 19:00,success,,2026-04-15 23:59:46.208458+00
+07fd6933-ac6d-42ec-a04b-6f5a7b0e3ce4,1774394174941,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 20:30,success,,2026-04-21 17:35:59.791632+00
+08ab80af-0946-45f7-a63e-364f9b6a594b,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 10:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:42:31.341056+00
+0a7c6617-7643-4ab9-8116-66211eebca57,1774371464441,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-17 15:27:11.321696+00
+0af1a1d2-572c-4226-a9c5-a44515ca9fe9,1774394174941,Novo Agendamento! 💈,Mikael agendou Corte Degradê+barba para 2026-04-17 às 14:00,success,,2026-04-15 13:48:49.722558+00
+0b1fa1df-d8c7-4136-bbb0-5fc56cac220f,1774394174941,Novo Agendamento! 💈,Elaine Severo agendou Corte social+barba para 2026-04-16 às 15:00,success,,2026-04-13 13:44:04.410943+00
+0e085afd-472e-4165-a9e7-1d3f0015738c,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 12:28:58.904742+00
+0ed205af-9eb7-438a-80e2-418abe02f3f0,1776081001626,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-13 11:52:04.814636+00
+0ee4d93a-851c-4b7c-9fb1-82efe3d02839,1774394174941,Novo Agendamento! 💈,Whytor Conrado Souza  agendou Corte Degradê+barba para 2026-04-17 às 18:30,success,,2026-04-17 17:06:14.459326+00
+0fa187b1-362f-4524-891e-cd13763c313e,1774787316177,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-10 14:17:15.975922+00
+0ff8e904-0364-4f2c-b664-b54e95b518ee,1776087523836,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 19:43:54.669192+00
+11401a54-117c-4aff-be85-b04969d47d9e,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê para 2026-04-09 às 19:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:32:47.358912+00
+11b17349-0ebf-4a44-8f98-58de4b6983ad,1774394174941,Novo Agendamento! 💈,Lucas rosa dos santos agendou Corte social para 2026-04-13 às 17:30,success,,2026-04-13 13:39:22.789434+00
+125e7022-c63f-47e2-8c32-5884483d319c,1774394174941,Novo Agendamento! 💈,Mikael agendou Pezinho para 2026-04-10 às 16:00,success,,2026-04-09 11:50:57.103901+00
+12a7868e-aa7c-4f9e-b406-418efc7c5e05,1776426702345,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 10:10:07.427794+00
+13d21ca4-4ec9-406f-a697-b010a62c249f,1775752644345,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-09 16:51:48.665166+00
+1438e773-df90-4bdc-86da-bb07dc122452,1775693440833,Horário Confirmado! ✅,Seu horário para Corte social+barba foi confirmado com sucesso.,success,,2026-04-09 00:12:45.263019+00
+14e3faa0-038b-4672-8f00-7610ba15d15e,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 13:07:09.478502+00
+1561b71c-30b8-4e5d-946f-482c59dd9196,1774394174941,Novo Agendamento! 💈,DJ Vicente Faleiro agendou Corte Degradê para 2026-04-18 às 09:30,success,,2026-04-18 10:08:39.620052+00
+1710d1bc-2ce5-4369-8a95-3c147feb626a,admin,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 17:00,success,,2026-04-10 14:04:49.720368+00
+17bd9a3c-de28-4d49-b8c8-1a3ee1696316,1774581856545,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-09 17:38:18.043191+00
+185c462e-afec-48c0-bf34-27c8049b3886,1774394174941,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Pezinho para 2026-04-11 às 20:00,success,,2026-04-10 20:58:26.046031+00
+1afc5504-eefe-4e88-ac85-b743122cf1d8,1774394174941,Novo Agendamento! 💈,Gil Pereira da Silva Neto agendou Corte Degradê para 2026-04-09 às 16:00,success,,2026-04-09 15:22:52.551022+00
+1c5c1654-dcf8-4612-83f4-9d9feb90dad9,1774394174941,Novo Agendamento! 💈,DJ Vicente Faleiro agendou Corte Degradê para 2026-04-11 às 14:30,success,,2026-04-11 11:56:51.816652+00
+1e48660f-a9c4-478b-b30a-930a20a85a88,1776425674815,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 11:40:48.025557+00
+216b8b68-0eb2-4b25-87c4-44d05bd1948c,1774447537886,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-16 16:56:19.031311+00
+21bca634-67e0-4520-8ba9-4565b80000b8,admin,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 14:30,success,,2026-04-10 14:06:45.191746+00
+22419c9b-41ae-4e2f-ac99-75cbabafb16a,1776199894029,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-14 21:08:10.948646+00
+242e085f-c54e-4041-a684-68b609ce2c2c,1774991724265,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-09 19:29:57.322491+00
+245fb0d4-7599-4cc7-bc14-478ef582f42f,1774394174941,Novo Agendamento! 💈,Marco Antônio Rodrigues agendou Corte Degradê+barba para 2026-04-14 às 18:00,success,,2026-04-14 20:52:54.53651+00
+24a2556b-96a4-4def-bf45-debd94ac3c50,1774633060719,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 20:47:28.550563+00
+257bbeb6-2ad2-4ba2-97ec-d8d727b9356c,1774394174941,Novo Agendamento! 💈,Mikael agendou Pezinho para 2026-04-10 às 16:00,success,,2026-04-09 11:50:55.434465+00
+2587e248-65a7-485b-96cc-df85cbf1ad7a,admin,Novo Agendamento! 💈,Julielson Costa agendou Corte Degradê para 2026-04-18 às 15:30,success,,2026-04-17 10:48:12.88004+00
+259e9e24-9d24-410b-b1ac-c715ca5f8442,1774394174941,Novo Agendamento! 💈,DJ Vicente Faleiro agendou Corte Degradê para 2026-04-11 às 14:30,success,,2026-04-11 11:56:52.803053+00
+2623d74f-5562-4854-9db7-5505a42b1927,1776425674815,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-17 11:40:46.092025+00
+26c680f4-20cd-4d90-ad40-06cf602fea3a,1774371743683,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-22 16:32:39.42789+00
+2a373b41-b92c-4c29-9c1f-bdb2f37c41d5,1774394174941,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:23:23.792957+00
+2ab9c110-a173-4175-b7b2-3b75614a50ab,1774382516801,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-20 20:02:19.712857+00
+2ac41c14-788d-4f23-8706-39e5430e88b8,1774394174941,Novo Agendamento! 💈,LEONARDO BARBOSA DE MORAIS agendou Corte social para 2026-04-09 às 19:00,success,,2026-04-09 16:38:51.722786+00
+2c542910-a931-4307-bfbf-5b03099460f9,1774394174941,Novo Agendamento! 💈,Whytor Conrado Souza  agendou Corte Degradê+barba para 2026-04-17 às 18:30,success,,2026-04-17 17:06:16.199756+00
+2d341f18-011e-420b-a7b8-9abe691801b7,1774367282566,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-10 19:28:40.443562+00
+2ec538be-9acd-4140-9cbc-474e2a06c4fd,1774394174941,Novo Agendamento! 💈,CLESIO F D PEIXOTO agendou Corte Degradê para 2026-04-18 às 08:30,success,,2026-04-17 11:52:26.577528+00
+2f102325-db84-49a3-8ba1-cc36b6760552,admin,Novo Agendamento! 💈,natan oliveira agendou Corte Degradê para 2026-04-17 às 19:30,success,,2026-04-13 15:54:08.768304+00
+2f7e59d9-f3a6-4c8a-a851-aed507ad2e81,1775308142501,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-22 18:27:07.989343+00
+2fb8ef57-affc-4af3-89be-de1d5121e8c0,admin,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-22 às 15:00,success,,2026-04-22 15:33:53.12468+00
+309e6687-d9ad-4e5f-914e-1b0bfd3dad97,1774394174941,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-16 às 16:00,success,,2026-04-16 16:11:19.690648+00
+31808abd-babf-4356-a306-b8ceefb66edc,1774394174941,Novo Agendamento! 💈,Adejamerson Lopes Da Silva agendou Corte Degradê para 2026-04-17 às 15:00,success,,2026-04-13 13:23:28.81998+00
+320d335c-dcea-441d-be80-4abd1a87fda8,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 16:30,success,,2026-04-10 14:05:10.047794+00
+323fb2d2-ddfc-4a30-8d75-c0c2d50d09b8,1776524862616,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-18 18:16:07.55957+00
+32990836-443a-467d-a46e-1da28235af98,admin,Novo Agendamento! 💈,Gil Pereira da Silva Neto agendou Corte Degradê para 2026-04-09 às 16:00,success,,2026-04-09 15:22:54.604561+00
+3335cce5-8f23-4658-9232-c4a63f2029ca,1776129723317,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-14 06:03:50.739672+00
+349c81ae-4c11-476d-9f63-e4caedf583e5,admin,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 19:00,success,,2026-04-21 17:37:17.729487+00
+34b1270c-05a8-46e8-9538-b849ba660fe7,1774394174941,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 19:00,success,,2026-04-21 17:37:16.322151+00
+360c9787-1f27-4d75-a28e-0c2c5f3665b8,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:28:59.564993+00
+36957f58-1052-4302-88f1-51e88837a707,1774991724265,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-08 14:43:16.857083+00
+36a2945c-9fa5-4e9f-926f-e7dbb939d0f3,admin,Novo Agendamento! 💈,Genes sena agendou Corte Degradê navalhado para 2026-04-22 às 10:00,success,,2026-04-21 19:05:53.82728+00
+370dfb30-f4a8-4fb6-ae6d-b81f1f00f072,1774394174941,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-22 às 17:30,success,,2026-04-22 16:20:57.819054+00
+371de9ab-8df1-441c-b8e3-f9d306353f3d,1774571424251,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-17 10:51:56.930793+00
+3921aca7-613c-4982-bd70-19cd6d9cf544,1774571424251,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 17:26:08.179039+00
+3a815da8-a541-4a1f-97fd-619f1dbb494d,1774394174941,Novo Agendamento! 💈,Wesley Lino agendou Corte social+barba para 2026-04-09 às 16:30,success,,2026-04-09 00:12:14.882781+00
+3b89df24-3b22-4ade-94a3-d37e14e211c2,admin,Novo Agendamento! 💈,Fabio junior Dias Santos agendou Corte Degradê para 2026-04-17 às 09:30,success,,2026-04-17 11:35:15.82054+00
+3ccb1517-dbce-4b4e-84fd-39968aca0776,admin,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-16 às 19:00,success,,2026-04-15 23:59:48.953887+00
+3e1914d8-7ced-493f-8240-6298053fa4a2,1774378807834,Horário Confirmado! ✅,Seu horário para Corte social+barba foi confirmado com sucesso.,success,,2026-04-22 16:32:46.236448+00
+3e2435f1-8921-4e70-8e50-65b419d78b5f,admin,Novo Agendamento! 💈,Lucas rosa dos santos agendou Corte social para 2026-04-13 às 17:30,success,,2026-04-13 13:39:24.390033+00
+3e7b77de-426e-4c73-a6ce-d19a740460d7,1774787316177,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-10 17:41:12.575252+00
+3ffdd96f-2724-4f01-953b-fc2d9cc139c9,1774581856545,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-09 16:15:31.075068+00
+40e6a417-08ae-439d-922a-f64a26d6f2e8,1774571424251,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 17:26:07.684986+00
+429a4b05-76d9-4483-a6bc-072ac1d0b434,1775664451953,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-09 15:04:20.02358+00
+42c14043-a92d-4b9c-965c-e8dc85b4ab87,1774787316177,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-10 17:41:14.422789+00
+43bdb6f2-82e6-4516-8886-950e2f091879,1774382516801,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-20 20:02:24.190364+00
+44185268-531e-4bb0-8afd-a16206416a71,1774433893898,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-17 20:14:48.874446+00
+44246b93-b8dd-4ae8-b927-2647caced17d,1776074941206,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 19:43:52.943315+00
+44c08e48-e398-435b-9335-bd4ae66427b8,1774787316177,Horário Confirmado! ✅,Seu horário para Barba foi confirmado com sucesso.,success,,2026-04-15 16:52:17.973563+00
+4569400e-8ee1-47f9-a88d-ec9b2d0f50ff,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:00,success,,2026-04-08 12:40:24.657519+00
+45e5db14-7a6c-436e-b2b2-e261f6968e12,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 14:00,success,,2026-04-08 12:46:37.457803+00
+469b36a4-fdf2-487e-921f-09d5adf2d653,1774633060719,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 20:47:21.249072+00
+46f5a0dc-1871-4b88-8583-2e12bea65ce2,1774394174941,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-13 às 18:00,success,,2026-04-13 17:59:28.216671+00
+49f53348-7a7a-4cc0-932b-5425375cc51b,1774394174941,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-18 às 15:00,success,,2026-04-18 12:37:34.074933+00
+4a7c7764-35cb-48a3-bfbd-e7bac0731bfb,1774394174941,Novo Agendamento! 💈,Julielson Costa agendou Corte Degradê para 2026-04-18 às 15:30,success,,2026-04-17 10:48:09.626555+00
+4af4f9c8-af08-4612-a6d2-5c2f7f7d1d20,1776087523836,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 20:21:27.271868+00
+4b76d6d3-36f9-4278-a864-182c59ae7048,1774394174941,Novo Agendamento! 💈,Wesley Lino agendou Corte social+barba para 2026-04-09 às 16:30,success,,2026-04-09 00:12:13.621213+00
+4b798458-13e2-4092-8fe2-d58146903dcc,1774394174941,Novo Agendamento! 💈,Lucas rosa dos santos agendou Corte social para 2026-04-13 às 17:30,success,,2026-04-13 13:39:21.821061+00
+4b888e02-ade0-4384-aa96-99d1084471d5,1776081001626,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,error,Failed to send a request to the Edge Function,2026-04-13 12:08:20.869325+00
+4bc7939d-77ac-4fdf-989d-599ee47f8eaa,admin,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-11 às 15:00,success,,2026-04-10 18:58:40.109147+00
+4c3bc427-f800-45e4-ac07-e60f67c4b206,1774376256383,Horário Confirmado! ✅,Seu horário para Barba foi confirmado com sucesso.,success,,2026-04-08 14:02:37.488786+00
+4c7b9c2d-7d24-4955-afbf-5424486a2d25,1774383423140,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-21 14:01:37.43646+00
+4ccbe06c-83cc-481c-bbf8-42bf2ddb4f86,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:44:25.44807+00
+515c37d7-f470-4997-8323-ef70deddea89,1774394174941,Novo Agendamento! 💈,Genes sena agendou Corte Degradê navalhado para 2026-04-22 às 10:00,success,,2026-04-21 19:05:51.544956+00
+51995bf3-48d0-43f7-b35f-ecc470e3185d,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 14:30,success,,2026-04-10 14:06:43.601706+00
+5240c234-920f-46bd-8c05-7c20e77532e8,admin,Novo Agendamento! 💈,LEONARDO BARBOSA DE MORAIS agendou Corte social para 2026-04-09 às 19:00,success,,2026-04-09 16:38:52.387197+00
+52d2b58d-5681-4e20-8549-0934ad967ff1,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-16 23:39:24.184817+00
+53bb673c-7424-4860-9a11-9e1c00cc497d,admin,Novo Agendamento! 💈,Divilmar clemente agendou Corte Degradê+barba para 2026-04-18 às 14:00,success,,2026-04-15 20:36:02.927217+00
+55aa9f2c-033d-406a-86ed-229c40539bcb,admin,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 19:00,success,,2026-04-18 15:09:39.178399+00
+564acd46-a650-4047-b512-6a5e4f6941ef,1774379183963,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-10 18:35:36.134534+00
+569360f6-d685-453b-b460-2027f23f160f,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 10:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:42:29.613579+00
+56a227c3-1923-4fb6-a809-c339f732754c,1774394174941,Novo Agendamento! 💈,Vitor Gabriel Fernandes agendou Corte social para 2026-04-09 às 14:00,success,,2026-04-08 16:09:26.38149+00
+59b3c08e-ba00-4f01-b5ae-6054a2f78a8a,admin,Novo Agendamento! 💈,João Pedro Gomes de Andrade agendou Corte Degradê para 2026-04-18 às 08:00,success,,2026-04-18 00:05:44.814806+00
+59c2a2ad-1171-414d-836c-832135cafcdc,1775664451953,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-08 16:10:09.280575+00
+5a48532d-6ecf-4ed4-a7fb-f6493afe5d66,1774394174941,Novo Agendamento! 💈,Divilmar clemente agendou Corte Degradê+barba para 2026-04-18 às 14:00,success,,2026-04-15 20:36:00.08434+00
+5a7e3b4e-9a07-4023-ac36-6eb9c169c685,1774394174941,Novo Agendamento! 💈,natan oliveira agendou Corte Degradê para 2026-04-17 às 19:30,success,,2026-04-13 15:54:03.58621+00
+5bb0117f-f3fc-43bf-b5a2-7b0e79f37be6,1774394174941,Novo Agendamento! 💈,Marco Antônio Rodrigues agendou Corte Degradê+barba para 2026-04-14 às 18:00,success,,2026-04-14 20:52:53.085947+00
+5bd4c16c-486a-4a80-88c2-de674d2d83cc,admin,Novo Agendamento! 💈,Whytor Conrado Souza  agendou Corte Degradê+barba para 2026-04-17 às 18:30,success,,2026-04-17 17:06:18.474924+00
+5c20340f-143b-4894-860d-5979fc901db7,1774564263006,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 21:44:57.991382+00
+5c425a8b-c0d6-4ba6-b6b0-78061b24a3fa,1775308142501,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-13 19:43:48.505906+00
+5c9f3a7e-8638-4d8a-a73f-377df14a9aa0,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-08 às 17:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:35:08.893662+00
+5cbecda8-89f5-4404-b8c3-fd6eda9813b0,1774394174941,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-22 às 15:00,success,,2026-04-22 15:33:50.543081+00
+5f0f78ad-69e2-43dc-8506-2f51be9f99f1,1774394174941,Novo Agendamento! 💈,Adrian Barreto da Silva agendou Corte social para 2026-04-13 às 18:30,success,,2026-04-13 10:10:23.692479+00
+62502806-e71d-45f5-b7fc-bb58dfbb9aa6,admin,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Corte Degradê para 2026-04-20 às 11:00,success,,2026-04-20 10:07:00.649507+00
+62cbc0b4-3fcd-4112-b06f-654588fe43a9,1774916243996,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,error,Failed to send a request to the Edge Function,2026-04-22 18:59:14.193039+00
+6421e774-e2f8-49ed-9616-4cbeabe4f617,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:17:29.28108+00
+659db2db-013e-459d-a0e2-cfd7aeecf442,1774787316177,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-10 17:56:00.997203+00
+666f0c6c-30b0-40ca-9421-50735819fa0e,1774787316177,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-10 14:08:13.669696+00
+680f4960-83e6-4100-9036-5de4735e25e5,admin,Novo Agendamento! 💈,Giovanna Moreira Cardoso agendou Corte Degradê para 2026-04-14 às 09:30,success,,2026-04-14 01:25:40.15899+00
+68e7db7b-545f-41d5-bee8-86e0b4a735f3,1774394174941,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-16 às 16:00,success,,2026-04-16 16:11:21.249439+00
+697e69a6-d74c-4875-a928-35b34775a672,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:27:33.841031+00
+6b64e31e-15b8-4cd1-a8ba-08fb11764559,1774619070748,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-15 20:37:52.39382+00
+6c5cd642-c373-4717-8f35-cec231043c10,1776872535225,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-22 20:29:58.96352+00
+6d359ea5-446e-4158-9cb9-783400a6f4a8,admin,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:17:31.530841+00
+6d3af509-e69a-4d75-93c8-1b265c4ee56d,1774440298885,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-20 10:10:35.230431+00
+6d60fb69-2d5d-4677-b296-d13c852ce896,1774367282566,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-10 20:35:42.065225+00
+6e023a63-93e1-428f-9074-a7ee024ef668,1776087523836,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-13 13:40:02.634881+00
+6f396d18-e847-46df-83d7-4cbb639b940c,1776221302852,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-15 09:41:30.423449+00
+70674183-1fe1-4c6d-bce1-2b2578ce8dbe,1774991724265,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 10:51:51.827622+00
+710f60ce-a1ea-4ec1-9a0e-625853d09f29,1774382516801,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-18 10:10:47.521283+00
+71bcb80b-1147-466a-9b3a-3658300e950b,1774394174941,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-18 às 18:30,success,,2026-04-16 14:06:50.144798+00
+71d6ac7e-d795-4018-ab2f-37e6257e8443,1774394174941,Novo Agendamento! 💈,DJ Vicente Faleiro agendou Corte Degradê para 2026-04-20 às 18:30,success,,2026-04-20 19:27:18.550978+00
+71f5e075-bac4-4754-8639-4036ebea6d17,1774633060719,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-13 15:55:34.352201+00
+721fbbff-ec4c-4691-95b2-464cca991435,1775064587419,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-20 21:05:53.799188+00
+727405d6-dc77-47da-b6e3-be2b854c74d1,admin,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-16 23:39:26.571089+00
+72759b66-b539-4651-be0b-70f6db3e79fe,1774394174941,Novo Agendamento! 💈,Divilmar clemente agendou Corte Degradê+barba para 2026-04-18 às 14:00,success,,2026-04-15 20:36:01.637702+00
+7577ca9e-ded9-4ed3-b794-4ee9acf00ea4,1774376256383,Horário Confirmado! ✅,Seu horário para Barba foi confirmado com sucesso.,success,,2026-04-16 23:53:35.559206+00
+7666a782-cdce-4fe6-9223-4e7e13e7a102,1774394174941,Novo Agendamento! 💈,CLESIO F D PEIXOTO agendou Corte Degradê para 2026-04-18 às 08:30,success,,2026-04-17 11:52:25.626653+00
+77195c87-f9ac-4850-bb8d-42c22e1de64a,1774394174941,Novo Agendamento! 💈,Giovanna Moreira Cardoso agendou Corte Degradê para 2026-04-14 às 09:30,success,,2026-04-14 01:25:38.401601+00
+7ad02068-1e16-4f6d-bf63-109bd281b645,1774394174941,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-18 às 16:30,success,,2026-04-16 23:53:07.235062+00
+7ad39dbb-9e6d-4382-b7e4-f585b34dfb27,1775308142501,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-13 17:59:53.272903+00
+7b3b1842-257f-433e-b5b6-fb9de5c59087,1774394174941,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 17:00,success,,2026-04-18 17:22:53.633384+00
+7c97d71b-4dfd-4fa9-b2be-f74958e1311b,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:30:23.715407+00
+7d47d095-e78a-48c4-8a5e-d2176a50186a,1776524862616,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-18 15:11:18.446112+00
+7d6da224-3396-40eb-9564-6d4fef3b0c7d,admin,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 17:00,success,,2026-04-18 17:22:56.324688+00
+7df83f83-727a-4d1e-810a-a9377cc79143,1774394174941,Novo Agendamento! 💈,Vitor Gabriel Fernandes agendou Corte social para 2026-04-09 às 14:00,success,,2026-04-08 16:09:27.84529+00
+7e1c46db-6cb0-4d87-ad21-a4acf3ee3d35,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:44:27.277527+00
+7e3595fc-f9c6-4121-8c79-ea4f65dd3f95,1774394174941,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-20 às 17:00,success,,2026-04-20 13:03:24.68299+00
+7e45e798-e4a5-4ae6-bd83-2021912c41c8,1774561980821,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 10:10:03.186392+00
+7ecf67c8-8b89-43ec-a808-a8a3417b5656,1774394174941,Novo Agendamento! 💈,DJ Vicente Faleiro agendou Corte Degradê para 2026-04-18 às 09:30,success,,2026-04-18 10:08:38.201479+00
+80ce5e79-1abc-40c1-bc23-1f15805b939c,1776081001626,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-13 11:52:08.693287+00
+81b200a4-ce56-4074-95be-038d2e29e7fa,1775752644345,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-09 20:16:36.061458+00
+820b6c3f-46b9-4e59-90c3-bafdab7a2b62,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê para 2026-04-09 às 19:00,success,,2026-04-08 12:32:49.323462+00
+826b6aac-a0d6-4376-9582-be149ac19ee5,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 10:00,success,,2026-04-08 12:42:31.40807+00
+838e4f76-e74c-4a9f-afb9-856da03b3df6,1774394174941,Novo Agendamento! 💈,João Pedro Gomes de Andrade agendou Corte Degradê para 2026-04-18 às 08:00,success,,2026-04-18 00:05:42.035096+00
+83b7d420-3bd9-42df-894d-b576b44e0fe8,1776165948058,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-14 11:29:21.188593+00
+8453f198-1366-4a0b-bc4a-857bc159be83,1775077411460,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Pezinho na Tanaka Barbearia!,success,,2026-04-15 19:33:20.377081+00
+848464e4-20f6-4e6e-8ba1-9fdc1c90702e,admin,Novo Agendamento! 💈,Wesley Lino agendou Corte social+barba para 2026-04-09 às 16:30,success,,2026-04-09 00:12:16.794003+00
+84df07e7-5628-4ff9-aec6-c07acaa9fcb8,1774394174941,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 08:30,success,,2026-04-15 11:13:11.867425+00
+85a264b5-e17b-4cbd-b5b3-6690b1735d1d,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:37:46.24074+00
+87b8b63e-aa7f-4ed3-a361-ff84e8601741,1774382516801,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 10:58:13.682238+00
+8823b7b1-70ca-4fc1-add9-410cfb9e4016,1775143760814,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 17:00:56.936577+00
+8911e3fc-0102-402b-ae02-74d7cd3d0e89,admin,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 16:30,success,,2026-04-10 14:05:13.227656+00
+89c50ba7-1d24-456a-8c43-508e36eb4a65,1774394174941,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-22 às 17:30,success,,2026-04-22 16:20:56.899267+00
+8a138115-a88b-4ebf-a7e8-85850db94ab5,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 12:30:23.583067+00
+8a6609b0-91fa-41f1-bc20-a71a6808442f,1774394174941,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-09 às 18:30,success,,2026-04-08 14:41:10.413559+00
+8a7acc84-86f0-48f8-8aa3-a9b8ebae5032,1774573333824,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-21 17:37:55.063486+00
+8b59538c-9654-4697-9539-72a8466fba36,1774378807834,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-18 15:55:12.088376+00
+8c3ae315-ae54-48a8-81f2-6bf159bded58,admin,Novo Agendamento! 💈,Adrian Barreto da Silva agendou Corte social para 2026-04-13 às 18:30,success,,2026-04-13 10:10:25.180295+00
+8caf1ad7-df97-4742-8828-842dec17ef07,1774960766604,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-16 16:56:16.162699+00
+8d4c0ad9-312d-4e9e-835b-a04fcf9c868c,1775308142501,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-22 16:32:57.928412+00
+8d99bf80-d7c7-48ec-90ea-fc33d56693ca,1775077411460,Horário Confirmado! ✅,Seu horário para Corte Degradê navalhado foi confirmado com sucesso.,success,,2026-04-21 19:07:03.759153+00
+8dc8eec9-05b4-4f2f-bf3b-f077032c10fb,1776129723317,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-14 10:29:56.47644+00
+8f6f22bc-79a7-48a1-8ca6-294e5f6d2bca,1774394174941,Novo Agendamento! 💈,Adejamerson Lopes Da Silva agendou Corte Degradê para 2026-04-17 às 15:00,success,,2026-04-13 13:23:27.343196+00
+8fd3538d-4db7-42ac-be72-dd40a977183b,1775064587419,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-10 18:59:56.398483+00
+911143b0-948d-42e8-89dc-b7f3caa33ba9,1774447537886,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-16 16:56:22.111576+00
+92447cc2-5ffa-41f1-9b33-b30efc82ccab,admin,Novo Agendamento! 💈,Adejamerson Lopes Da Silva agendou Corte Degradê para 2026-04-17 às 15:00,success,,2026-04-13 13:23:30.746993+00
+92550573-d4d0-4afa-8d65-857979b2e83b,1774394174941,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 20:30,success,,2026-04-21 17:36:01.587934+00
+92692a13-07c4-4282-acd4-1a4b14fded55,admin,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-20 às 17:00,success,,2026-04-20 13:03:25.45661+00
+92f993ab-b8df-49b3-954e-e63a720c6040,1776087523836,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 19:43:54.553081+00
+93b2182d-0372-4893-9f2f-c8d326229ed7,1774382516801,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-11 15:31:34.363864+00
+93b9efbb-3f37-471b-83b2-026f0571188a,admin,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-16 às 16:00,success,,2026-04-16 16:11:22.766711+00
+93c602f4-b237-4326-b61d-f6b293c74978,1775077411460,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê navalhado na Tanaka Barbearia!,success,,2026-04-22 11:55:20.948288+00
+96429c4f-68e2-4deb-9dd3-135f8064c9d4,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 14:00,success,,2026-04-08 12:46:36.547458+00
+96694b0b-f17f-43e5-aba1-5f17e80ee515,1776426702345,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 10:10:13.715767+00
+9904b9d5-1e2d-4cbe-b443-9a731c417d2e,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:30,success,,2026-04-08 12:53:33.904568+00
+9a2299ff-c775-42df-8b71-72e3823c91ab,1774394174941,Novo Agendamento! 💈,Guilherme Gomes agendou Corte Degradê+barba para 2026-04-11 às 11:00,success,,2026-04-10 18:32:08.035282+00
+9a6f625c-30ce-4054-ae87-1a4602f181f2,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 16:30,success,,2026-04-10 14:05:11.235146+00
+9a7e6739-2dad-4460-bdd1-bd85d4429a09,1774394174941,Novo Agendamento! 💈,Mikael agendou Corte Degradê+barba para 2026-04-17 às 14:00,success,,2026-04-15 13:48:51.307684+00
+9c23905b-62d1-4ea1-9842-87516ee5eadd,1774394174941,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-18 às 18:30,success,,2026-04-16 14:06:51.664202+00
+9d91a37f-ffa3-4f05-a939-6f45b10f6086,1774960766604,Horário Confirmado! ✅,Seu horário para Corte social+barba foi confirmado com sucesso.,success,,2026-04-13 13:44:35.497647+00
+9f04d361-d76a-49c5-aa14-966ef986e0ba,1774394174941,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 08:30,success,,2026-04-15 11:13:10.704929+00
+9f3969ea-d516-41ca-927f-63198165afdd,1774564263006,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 21:44:56.300869+00
+9f52427b-c91f-473a-bd1b-f96aeb0a6109,1774371464441,Horário Confirmado! ✅,Seu horário para Pezinho foi confirmado com sucesso.,success,,2026-04-09 11:53:28.256021+00
+9fb4f42f-1870-411d-ab0e-7b6b0faed887,1774394174941,Novo Agendamento! 💈,Kleber Fernandes agendou Corte social para 2026-04-11 às 16:00,error,Failed to send a request to the Edge Function,2026-04-10 13:18:23.499941+00
+a00b82d2-b201-4377-a82e-137e3dbee323,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-16 23:39:25.57179+00
+a174f65c-9cd4-4919-9016-57c32d343ce5,1774394174941,Novo Agendamento! 💈,Willianker Ordones ferraz agendou Corte social para 2026-04-15 às 10:30,success,,2026-04-15 02:53:12.136536+00
+a349e5ed-82c2-49f2-8783-8826120d80f0,1774394174941,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Corte Degradê para 2026-04-20 às 11:00,success,,2026-04-20 10:06:57.371047+00
+a37b3e24-2013-4236-a872-05c90b142e81,1776074941206,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-13 10:36:03.648114+00
+a6259071-7ce4-41cf-9489-bf39b6c2ff2d,1774879556254,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-08 18:25:09.649433+00
+a68a57a3-75e5-4ccc-8b1e-6a2453e6db00,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 12:37:46.290528+00
+a6af40cf-aa94-40e7-a78b-a15342d41dc2,1774394174941,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-20 às 17:00,success,,2026-04-20 13:03:22.917481+00
+a94fdedd-aaaa-44c0-91cf-03e63efcdfee,1776426702345,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-18 10:10:09.091601+00
+a99b8ecb-2228-4d9c-801d-62808cb68733,admin,Novo Agendamento! 💈,CLESIO F D PEIXOTO agendou Corte Degradê para 2026-04-18 às 08:30,success,,2026-04-17 11:52:28.355467+00
+ab2386ce-ba91-4b77-9a5f-15f6d4b79f03,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê para 2026-04-09 às 19:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:32:49.290206+00
+ac1446c4-ed93-40d2-be2c-f2e6b433cabc,admin,Teste de Sistema 🛠️,"Olá TANAKA, este é um teste manual de notificação.",success,,2026-04-13 10:36:52.225857+00
+ace39dfe-b21f-4c11-9daa-9c8888a898df,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 17:00,success,,2026-04-10 14:04:48.345677+00
+ad2ff2a8-5c72-4e76-8c00-fec1be697a66,1774633060719,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 20:47:24.716104+00
+ad3142de-da75-40fb-b26d-c0d821a911bb,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 12:44:27.402962+00
+ae242690-fe5b-472b-808a-602e7130bae7,1774394174941,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-11 às 15:00,success,,2026-04-10 18:58:36.605771+00
+ae6b6ba7-9f2d-42bb-bf3d-bb2d6a7e19f4,1774382516801,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-11 11:57:26.751333+00
+aeefca7d-6150-4e8e-afbf-d6d742deb711,1774447537886,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-16 14:09:12.937047+00
+afafd2ca-c1e7-4443-951e-140347141c51,1774440298885,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-20 12:24:34.00425+00
+b059b2e3-4485-4cc4-830c-9a0d5e84ed05,1776426702345,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-17 12:03:16.071722+00
+b11547f1-4470-40c9-8754-71d84709187b,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 13:07:12.660639+00
+b1672645-77ff-4b5e-a1c6-4d3edf8d4aed,admin,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 08:30,success,,2026-04-15 11:13:13.006653+00
+b1d8025b-ba85-4d6f-b48f-8e91ca2e38c0,1774371464441,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-15 13:59:11.375611+00
+b2f445fa-fa13-4b75-b223-d27c67cef91d,1776165948058,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-20 18:15:17.261561+00
+b3882178-9271-42ed-bd32-82d0e9c7ed42,admin,Novo Agendamento! 💈,Vitor Gabriel Fernandes agendou Corte social para 2026-04-09 às 14:00,success,,2026-04-08 16:09:28.945068+00
+b40af270-dc05-4e55-b9d8-2126e72230bd,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:30,success,,2026-04-08 12:53:33.024771+00
+b421cd64-8501-42a6-8320-534f501b6b80,1774376256383,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Barba na Tanaka Barbearia!,success,,2026-04-18 17:25:59.167585+00
+b4cb2fdc-1591-4257-b31e-aeebf1619f62,admin,Novo Agendamento! 💈,Mikael agendou Corte Degradê+barba para 2026-04-17 às 14:00,success,,2026-04-15 13:48:53.464222+00
+b5e7b876-d6fc-46d4-a35b-2611a6d22c43,1775077411460,Horário Confirmado! ✅,Seu horário para Pezinho foi confirmado com sucesso.,success,,2026-04-15 19:33:18.446803+00
+b6b46f7a-e4e4-458c-8005-c39e518f6bd7,admin,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:23:25.254059+00
+b7d7a890-8dc7-4a99-85ab-5804fa847c2f,1774787316177,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-10 14:17:21.602451+00
+b8c48cfd-ba77-435b-9e1b-ec49955fc481,1774394174941,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 19:00,success,,2026-04-18 15:09:37.500624+00
+b992db28-a8c2-4eb3-acdc-06041abdc00c,1774633060719,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 20:47:28.012708+00
+b9e9a554-0719-425c-9fff-b4a3688e6fa1,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:40:22.887761+00
+baa4459f-2818-4763-8a7c-1561e2d8f6e6,1774394174941,Novo Agendamento! 💈,Gil Pereira da Silva Neto agendou Corte Degradê para 2026-04-09 às 16:00,success,,2026-04-09 15:22:50.972468+00
+bba4de68-0dec-433f-8b53-a37e2775ec14,1774633060719,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 20:47:25.316235+00
+bbb0d352-6324-45d4-8edb-258c4c5af966,1774394174941,Novo Agendamento! 💈,Fabio junior Dias Santos agendou Corte Degradê para 2026-04-17 às 09:30,success,,2026-04-17 11:35:14.239104+00
+bbbd9506-5beb-4def-8894-61e5db2b9a23,1775143760814,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-13 13:27:02.487032+00
+bc76609a-3075-4906-b0ec-0f97d70cbf1b,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Barba para 2026-04-15 às 15:00,success,,2026-04-15 16:27:05.221122+00
+bca5276c-bc55-4a79-a27f-e916a175b8b6,admin,Novo Agendamento! 💈,Mikael agendou Pezinho para 2026-04-10 às 16:00,success,,2026-04-09 11:50:58.804979+00
+bd3343d2-142f-4802-92f2-3a6e55604b23,1775143760814,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-17 17:00:56.338126+00
+bd489697-b96c-462e-b52c-6a0b9c95877e,1774394174941,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-09 às 18:30,success,,2026-04-08 14:41:08.837394+00
+bde2a55b-9472-49ca-87ae-464c95d4aa13,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Corte social para 2026-04-10 às 14:30,success,,2026-04-10 14:06:42.132664+00
+c0577533-3a35-433b-b536-071b26c65d71,1774382516801,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-20 20:02:24.465844+00
+c196ccdf-727a-427a-9d82-3d42302e67c6,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:30:21.718198+00
+c1d4ec06-4f9b-41a0-93c8-3efd0ab2a1fd,1774394174941,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 17:00,success,,2026-04-15 19:31:22.280913+00
+c2f9d018-c9f8-4e05-b07a-af8214102604,1774394174941,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-14 às 16:00,success,,2026-04-14 11:26:45.651102+00
+c3e16186-fb52-4a2c-bf79-4640f4e19b7c,admin,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-18 às 15:00,success,,2026-04-18 12:37:37.318036+00
+c4a36cfe-9e6f-4fd3-a0b9-fde925344f66,1774573333824,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-21 17:37:37.24254+00
+c4fc8582-0ccf-4ed5-8ff0-6af304930763,admin,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-18 às 16:30,success,,2026-04-16 23:53:10.637196+00
+c641dcfd-e0ed-4bd7-9302-99095dc49f13,admin,Novo Agendamento! 💈,Danielson agendou Corte Degradê para 2026-04-18 às 18:30,success,,2026-04-16 14:06:53.112311+00
+c6818223-f36d-4cd5-803f-b040eff368f1,admin,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-09 às 18:30,success,,2026-04-08 14:41:12.107211+00
+c6ba5abf-0b91-4f5b-8037-397e17714121,1774394174941,Novo Agendamento! 💈,Julielson Costa agendou Corte Degradê para 2026-04-18 às 15:30,success,,2026-04-17 10:48:11.637594+00
+c6beb230-5380-408f-b092-b35b766bc79a,1774394174941,Novo Agendamento! 💈,Guilherme Gomes agendou Corte Degradê+barba para 2026-04-11 às 11:00,success,,2026-04-10 18:32:04.182199+00
+c7ff0b34-7e6a-4294-a73e-81767148414b,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:27:32.000257+00
+c869b4c1-01e7-43e5-95f0-97ebfeca9c08,1776221302852,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-15 11:51:12.140786+00
+c87b6934-f8e3-4186-8318-8334e33b22a7,1774394174941,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-11 às 16:30,success,,2026-04-08 13:46:38.934559+00
+c9196ba5-3aed-46a6-a78f-de4a4c67a7b0,admin,Novo Agendamento! 💈,Guilherme Gomes agendou Corte Degradê+barba para 2026-04-11 às 11:00,success,,2026-04-10 18:32:09.519409+00
+ca07b0d7-d4e6-4f48-8621-480065af2bda,admin,Teste de Sistema 🛠️,"Olá TANAKA, este é um teste manual de notificação.",success,,2026-04-08 12:25:15.073405+00
+cc1c75eb-1241-47f2-a7b8-e5e6470c5050,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 14:00,success,,2026-04-08 12:46:38.428997+00
+cf2918e1-1bda-45b4-a71f-f444a26b228f,admin,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-14 às 16:00,success,,2026-04-14 11:26:49.063101+00
+cf8a8bba-18d3-46f1-839a-36e9429e6bb1,1774433893898,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-17 17:12:21.747737+00
+cf985878-a520-430a-842a-5f4f276bee1f,1774378807834,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-22 16:32:48.575147+00
+cfb2ab9f-adf9-4b81-931f-8a5fd6554a1c,1774394174941,Novo Agendamento! 💈,Willianker Ordones ferraz agendou Corte social para 2026-04-15 às 10:30,success,,2026-04-15 02:53:13.640866+00
+cffb121b-d43a-405f-a9f6-823175b24530,1774394174941,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-18 às 16:30,success,,2026-04-16 23:53:08.331345+00
+d0108a7d-322b-48e4-adad-7f96d9178cd1,1774367282566,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê na Tanaka Barbearia!,success,,2026-04-10 20:35:42.844547+00
+d293c532-3e82-426f-b795-da3543e1b3cb,1774394174941,Novo Agendamento! 💈,Luis Gustavo Ferreira agendou Corte Degradê+barba para 2026-04-18 às 17:00,success,,2026-04-18 17:22:55.682327+00
+d2987b6d-a575-4dfc-9fec-41b4bc6218ef,admin,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-20 às 20:00,success,,2026-04-20 20:34:00.582526+00
+d2af5f24-3119-4c8e-91b6-ffabe1f377c3,1774394174941,Novo Agendamento! 💈,Fernanda Rodrigues Lima agendou Corte Degradê para 2026-04-17 às 09:00,success,,2026-04-17 00:23:22.65497+00
+d2e7f2d7-cf7f-4b6b-ac04-9d0e54cb4d8b,1774394174941,Novo Agendamento! 💈,Fabio junior Dias Santos agendou Corte Degradê para 2026-04-17 às 09:30,success,,2026-04-17 11:35:12.644934+00
+d355d404-d8c7-41b8-8548-77580a6dd2d5,1774394174941,Novo Agendamento! 💈,Elaine Severo agendou Corte social+barba para 2026-04-16 às 15:00,success,,2026-04-13 13:44:06.362639+00
+d38e3d0f-c018-41be-b353-0d66a909e7cc,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:00,error,Edge Function returned a non-2xx status code,2026-04-08 12:40:24.518513+00
+d3b7d195-adf9-4bdd-8054-09a4d0b0c4b7,1774394174941,Novo Agendamento! 💈,Genes sena agendou Corte Degradê navalhado para 2026-04-22 às 10:00,success,,2026-04-21 19:05:53.199678+00
+d4a3fd1e-5552-4ecc-b7c9-8da5c28aef71,admin,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 17:00,success,,2026-04-15 19:31:24.449138+00
+d59bd269-a26e-4e5e-a5fb-a5f6ae8f2291,admin,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-22 às 17:30,success,,2026-04-22 16:20:59.823598+00
+d5a7e401-cb3c-4e4d-a74c-32240d924154,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-08 às 17:30,success,,2026-04-08 12:35:09.663+00
+d725567b-4533-49bd-a734-d762452c2055,1776165948058,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-14 17:43:10.834817+00
+d85a087c-cd57-4ff1-89df-3e428a05e05e,1774394174941,Novo Agendamento! 💈,Ricardo Rodrigues TORMIN agendou Corte Degradê para 2026-04-13 às 09:00,success,,2026-04-13 11:51:33.760541+00
+d9f16de3-c873-4856-a132-ecb5859200b3,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 09:30,success,,2026-04-08 12:53:35.465603+00
+da988367-62da-454b-9cd9-2e1e9a0af6c9,1775064587419,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-20 21:05:48.850803+00
+db3b2f2a-25e6-4cd6-9f2c-8e3207a0ceb8,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 13:07:10.459142+00
+dcce6854-b9eb-42ef-a2d9-35b72c8975cd,1774394174941,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-18 às 15:00,success,,2026-04-18 12:37:35.10502+00
+df2ce2ff-6e5d-4d61-a4ea-a3507d97bce7,1775693440833,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-09 17:38:22.916603+00
+e027c7c6-5ae1-42d4-83cb-0c5d6ebf71fb,1774394174941,Novo Agendamento! 💈,Adrian Barreto da Silva agendou Corte social para 2026-04-13 às 18:30,success,,2026-04-13 10:10:22.027869+00
+e18d9551-8981-43e1-b7d6-e2466cae85af,admin,Novo Agendamento! 💈,Joseffer Fernandes agendou Corte social para 2026-04-23 às 20:30,success,,2026-04-21 17:36:03.199645+00
+e305f87c-659b-4fe3-9b0b-d25250afc765,1774394174941,Novo Agendamento! 💈,Giovanna Moreira Cardoso agendou Corte Degradê para 2026-04-14 às 09:30,success,,2026-04-14 01:25:37.387372+00
+e39e20d2-7997-48c6-bc38-95005a7c06d5,1774394174941,Novo Agendamento! 💈,LEONARDO BARBOSA DE MORAIS agendou Corte social para 2026-04-09 às 19:00,success,,2026-04-09 16:38:49.784671+00
+e49208c2-e25c-4102-9b70-82fc85bfa512,1774394174941,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-20 às 20:00,success,,2026-04-20 20:33:59.110842+00
+e4b0c2db-6e24-4894-9fe7-dc017398486e,1774379183963,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-11 11:57:24.890855+00
+e5076fb3-abd2-4980-a871-6ee7f4ce2615,admin,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-11 às 16:30,success,,2026-04-08 13:46:39.391221+00
+e60a18e4-6feb-4ac9-ace2-a0087bdc5f72,1774394174941,Novo Agendamento! 💈,Danilo agendou Corte Degradê+barba para 2026-04-13 às 18:00,success,,2026-04-13 17:59:30.540977+00
+e6d60ef2-c920-469b-a8ce-75503549b5dc,1774394174941,Novo Agendamento! 💈,Matheus Suares Tristão  agendou Barba para 2026-04-11 às 16:30,success,,2026-04-08 13:46:36.396874+00
+e7078611-954a-41cc-86d7-b12f01c98112,admin,Novo Agendamento! 💈,Willianker Ordones ferraz agendou Corte social para 2026-04-15 às 10:30,success,,2026-04-15 02:53:15.227933+00
+e70bf267-ebf4-4369-bfa5-8999dbe43f6f,1774394174941,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Barba para 2026-04-15 às 15:00,success,,2026-04-15 16:27:07.738035+00
+e721e1b9-bf5a-486a-ac86-ba486ecfc5d4,1774628770550,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-09 19:17:25.155711+00
+e875c763-0cc5-4726-a1d0-1ea39c87bbcd,admin,Novo Agendamento! 💈,Marco Antônio Rodrigues agendou Corte Degradê+barba para 2026-04-14 às 18:00,success,,2026-04-14 20:52:56.225491+00
+e8ef0e93-d255-4b62-9901-f9b54c2c163c,1774394174941,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-11 às 15:00,success,,2026-04-10 18:58:38.281781+00
+e8fd8d96-68ad-4e60-8536-c77a847eb97e,1774394174941,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Pezinho para 2026-04-11 às 20:00,success,,2026-04-10 20:58:27.720129+00
+e9c29f5a-7538-4858-9cb5-36217462604b,1774362778616,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-11 15:11:07.714457+00
+ea408110-70eb-4a35-b233-4006dadfba68,1776074941206,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 19:43:51.989062+00
+eb0a83a8-e3f6-44b7-9cf6-b255872ae319,1774394174941,Novo Agendamento! 💈,natan oliveira agendou Corte Degradê para 2026-04-17 às 19:30,success,,2026-04-13 15:54:06.947315+00
+ec3af7df-2802-4cd4-9ad7-496e5606ffd6,1774394174941,Novo Agendamento! 💈,Marcos Henrique Lopes de Souza agendou Corte Degradê+barba para 2026-04-14 às 16:00,success,,2026-04-14 11:26:47.811158+00
+ece28a6a-9920-44b3-b89c-8929a5f071f7,admin,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,success,,2026-04-08 12:27:33.921005+00
+ed3c2559-ce2b-411b-a24b-2293b253874d,admin,Novo Agendamento! 💈,Marcos paulo ferreira alves agendou Barba para 2026-04-15 às 15:00,success,,2026-04-15 16:27:08.662829+00
+ed661667-a6d5-4f68-bd82-e0579d931729,1776524862616,Horário Confirmado! ✅,Seu horário para Corte Degradê+barba foi confirmado com sucesso.,success,,2026-04-18 17:26:08.601369+00
+eda82a6f-15dc-4ff2-82d0-f3bd3552af08,1775743241176,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-10 13:19:49.227549+00
+efc8a9fc-ba80-4a8b-a69f-fd4362e00c36,admin,Novo Agendamento! 💈,Elaine Severo agendou Corte social+barba para 2026-04-16 às 15:00,success,,2026-04-13 13:44:07.224755+00
+efe65a57-eb4f-419c-8454-176eee0c5797,1774378807834,Horário Confirmado! ✅,Seu horário para Corte social+barba foi confirmado com sucesso.,success,,2026-04-18 12:58:48.753914+00
+efee02a1-7b3d-4e0e-a8ec-2b474eac0035,1774561980821,Horário Confirmado! ✅,Seu horário para Corte Degradê foi confirmado com sucesso.,success,,2026-04-18 00:19:37.988047+00
+f0c6e979-8d36-4ea3-a0b9-8d678bec172f,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:37:45.237731+00
+f0ee2522-dd0d-4898-9685-b2cf481c12a1,1776114564448,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social na Tanaka Barbearia!,success,,2026-04-13 21:29:29.080908+00
+f15b67ff-0bf4-4ccb-8e30-dbb9567a0fe0,admin,Teste de Sistema 🛠️,"Olá TANAKA, este é um teste manual de notificação.",success,,2026-04-08 12:20:52.173824+00
+f1727dbf-1805-419e-949c-dae5b73dc3d0,admin,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Pezinho para 2026-04-11 às 20:00,success,,2026-04-10 20:58:28.830462+00
+f240faea-fc11-4f13-94f4-56d2036b0390,1775693440833,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte social+barba na Tanaka Barbearia!,success,,2026-04-09 17:38:20.87906+00
+f293f5f6-4807-4a07-a667-052aada79d6f,1774394174941,Novo Agendamento! 💈,Fernanda agendou Corte Degradê para 2026-04-16 às 19:00,success,,2026-04-15 23:59:47.26729+00
+f32e446b-b2df-46ba-96bb-b66b1edc60e9,1774394174941,Novo Agendamento! 💈,Ricardo Rodrigues TORMIN agendou Corte Degradê para 2026-04-13 às 09:00,success,,2026-04-13 11:51:35.025228+00
+f44a4abb-bad7-44a7-8fa3-2bb936d1829c,1774394174941,Novo Agendamento! 💈,Genes sena agendou Pezinho para 2026-04-15 às 17:00,success,,2026-04-15 19:31:23.445137+00
+f7cc1b40-aee1-4561-b515-5cc9278dfccf,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-09 às 18:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:28:57.8643+00
+f808f6ec-8931-4ea3-9906-62534fd46a47,admin,Novo Agendamento! 💈,Ricardo Rodrigues TORMIN agendou Corte Degradê para 2026-04-13 às 09:00,success,,2026-04-13 11:51:36.327158+00
+f8a3e316-4975-4ba7-a03e-793efe9d8fc5,1774394174941,Novo Agendamento! 💈,Marcos Paulo  Gomes  agendou Corte Degradê para 2026-04-20 às 11:00,success,,2026-04-20 10:06:59.001531+00
+f93b3c86-44ed-45d0-8eb0-488c2e08acd6,1774619070748,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-20 20:02:20.261193+00
+f97b6e21-ce10-4bc3-991d-4c703859ab8e,1774619070748,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Corte Degradê+barba na Tanaka Barbearia!,success,,2026-04-20 20:02:25.865317+00
+fa976012-2f98-472e-a157-98a0b6622ef9,1774440298885,Horário Confirmado! ✅,Seu horário para Pezinho foi confirmado com sucesso.,success,,2026-04-10 21:01:44.74999+00
+fb21ce12-6f4b-4484-9d7a-1392cb6f11dc,1774394174941,Novo Agendamento! 💈,Christiano Silva  agendou Corte social+barba para 2026-04-22 às 15:00,success,,2026-04-22 15:33:52.127263+00
+fbb7b9b4-ba0f-482b-a1c3-24a472c439a4,1774394174941,Novo Agendamento! 💈,Wellington Douglas Batista Silva agendou Corte Degradê+barba para 2026-04-08 às 17:30,error,Edge Function returned a non-2xx status code,2026-04-08 12:35:06.176761+00
+fcf1b6cb-63c6-4161-a932-7fe14e1096e4,1774787316177,Aviso de Agendamento,Faltam 2 horas para o seu serviço de Barba na Tanaka Barbearia!,success,,2026-04-15 16:52:19.412569+00
+fd4f49e0-0bcb-4827-bd5a-7b9dc63c1d39,1774394174941,Novo Agendamento! 💈,Pacheco agendou Corte social para 2026-04-20 às 20:00,success,,2026-04-20 20:33:57.618729+00
+ff839dae-41c2-43c9-9d31-dcf719f0b312,1774573333824,Horário Confirmado! ✅,Seu horário para Corte social foi confirmado com sucesso.,success,,2026-04-21 17:36:37.389653+00
+ff953fcc-f23d-4385-a74b-0fd3d4a9961b,1774394174941,Novo Agendamento! 💈,João Pedro Gomes de Andrade agendou Corte Degradê para 2026-04-18 às 08:00,success,,2026-04-18 00:05:43.802541+00

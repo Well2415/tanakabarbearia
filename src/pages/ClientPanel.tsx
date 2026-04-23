@@ -9,6 +9,7 @@ import { User, Appointment, Service, Barber } from '@/types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { parseLocalDate } from '@/lib/timeUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -179,7 +180,7 @@ const ClientPanel = () => {
                           <div>
                             <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                             <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
-                            <p className="text-sm text-muted-foreground">{format(new Date(app.date + 'T12:00:00'), 'PPP', { locale: ptBR })} às {app.time}</p>
+                            <p className="text-sm text-muted-foreground">{format(parseLocalDate(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
                           </div>
                           <div className="text-right">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>

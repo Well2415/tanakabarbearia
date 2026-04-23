@@ -55,7 +55,12 @@ const ManageAvailability = () => {
   };
 
   const handleAddHour = () => {
-    const hoursToAdd = newHour.split(',').map(h => h.trim()).filter(h => h !== '');
+    const hoursToAdd: string[] = [];
+    newHour.split(',').forEach(h => {
+      const trimmed = h.trim();
+      if (trimmed) hoursToAdd.push(trimmed);
+    });
+
     const uniqueNewHours = hoursToAdd.filter(h => !availableHours.includes(h));
     if (uniqueNewHours.length > 0) {
       setAvailableHours(sortTimes([...availableHours, ...uniqueNewHours]));
@@ -123,21 +128,26 @@ const ManageAvailability = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!barberProfile) return;
+    
+    try {
+      // Limpeza profunda de horários antes de salvar
+      const cleanedHours = new Set<string>();
+      availableHours.forEach(h => {
+        h.split(',').map(s => s.trim()).filter(Boolean).forEach(s => cleanedHours.add(s));
+      });
 
-    const allBarbers = storage.getBarbers();
-    const updatedBarbers = allBarbers.map(b =>
-      b.id === barberProfile.id
-        ? {
-          ...b,
-          availableHours: availableHours,
-          availableDates: availableDates,
-        }
-        : b
-    );
+      const updatedBarber = {
+        ...barberProfile,
+        availableHours: sortTimes(Array.from(cleanedHours)),
+        availableDates: availableDates,
+      };
 
-    await storage.saveBarbers(updatedBarbers);
-    toast({ title: 'Horários e Datas Atualizados!', description: 'Sua lista de horários e datas de trabalho foi salva.' });
-    navigate('/dashboard');
+      await storage.updateBarber(updatedBarber);
+      toast({ title: 'Horários e Datas Atualizados!', description: 'Sua lista de horários e datas de trabalho foi salva.' });
+      navigate('/dashboard');
+    } catch (error) {
+      toast({ title: 'Erro ao salvar', description: 'Não foi possível salvar suas alterações. Tente novamente.', variant: 'destructive' });
+    }
   };
 
   if (!user || !barberProfile) return null;

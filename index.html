@@ -39,15 +39,7 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
-    // Forçar limpeza de Service Worker antigo e cache para garantir a entrega do novo código
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        for (let registration of registrations) {
-          registration.unregister();
-        }
-      });
-
-      // Registrar o novo SW
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js?v=1.0.2', { scope: '/' })
           .catch(err => console.error('PWA erro no registro', err));

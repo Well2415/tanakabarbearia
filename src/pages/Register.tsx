@@ -26,7 +26,7 @@ const Register = () => {
     e.preventDefault();
 
     const users = storage.getUsers();
-    const userExists = users.find(u => u.username === formData.username);
+    const userExists = users.find(u => u.username.toLowerCase() === formData.username.toLowerCase());
 
     if (userExists) {
       toast({
@@ -39,18 +39,17 @@ const Register = () => {
 
     const newUser: any = {
       id: Date.now().toString(),
-      fullName: formData.fullName,
-      username: formData.username,
-      password: formData.password, // Em um app real, isso seria criptografado
-      email: formData.email || undefined, // Make sure it's undefined if empty
-      phone: formData.phone,
+      fullName: formData.fullName.trim(),
+      username: formData.username.trim().toLowerCase(),
+      password: formData.password.trim(), // Em um app real, isso seria criptografado
+      email: formData.email?.trim().toLowerCase() || undefined, // Make sure it's undefined if empty
+      phone: formData.phone.trim(),
       loyaltyPoints: 0,
       createdAt: new Date().toISOString(),
       role: 'client', // Default role for new registrations
     };
 
-    const updatedUsers = [...users, newUser];
-    await storage.saveUsers(updatedUsers);
+    await storage.updateUser(newUser);
     storage.loginUser(newUser.id);
 
     toast({
