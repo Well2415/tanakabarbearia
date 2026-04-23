@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
 import { Calendar, Users, Scissors, TrendingUp, DollarSign, Check, X, Wallet, UserCog } from 'lucide-react';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { formatCurrency, cn } from '@/lib/utils';
