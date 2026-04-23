@@ -34,6 +34,9 @@ const Login = () => {
       storage.isInitialized = false; 
       await storage.initialize();
       
+      // Carrega especificamente os usuários (já que o initialize padrão não carrega mais para economizar dados)
+      await storage.refreshUsers();
+      
       const users = storage.getUsers();
       const typedUsername = formData.username.trim();
       const typedPassword = formData.password.trim();
