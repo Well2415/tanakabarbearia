@@ -34,6 +34,7 @@ const Clients = () => {
   const [searchParams] = useSearchParams();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'points_desc' | 'points_asc'>('name');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (searchParams.get('action') === 'new-client') {
