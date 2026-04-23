@@ -91,7 +91,7 @@ export const storage = {
       if (settingsRes.error) console.error('❌ [Storage] Erro settings:', settingsRes.error);
       if (barbersRes.error) console.error('❌ [Storage] Erro barbers:', barbersRes.error);
 
-      console.log(`📡 [Storage] Dados recebidos: ${barbersRes.data?.length || 0} barbeiros, ${servicesRes.data?.length || 0} serviços.`);
+      // Configurações básicas carregadas
 
       const settingsMap: Record<string, any> = {};
       settingsRes.data?.forEach(s => {
@@ -201,6 +201,12 @@ export const storage = {
 
       if (error) throw error;
 
+      // Atualiza cache local mesclando com os novos dados
+      const fetchedIds = (data || []).map(u => u.id);
+      const otherUsers = cache.users.filter(u => !fetchedIds.includes(u.id));
+      cache.users = [...otherUsers, ...(data || [])];
+      saveCacheToLocal();
+
       return { data: data || [], total: count || 0 };
     } catch (error) {
       console.error('❌ [Storage] Erro ao buscar usuários:', error);
@@ -242,7 +248,7 @@ export const storage = {
       if (error) throw error;
       cache.users = data || [];
       saveCacheToLocal();
-      console.log('✅ [Storage] Usuários recarregados com sucesso.');
+      // Sincronização concluída
     } catch (error) {
       console.error('❌ [Storage] Erro ao recarregar usuários:', error);
     }
