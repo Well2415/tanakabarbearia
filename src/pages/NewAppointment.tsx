@@ -60,8 +60,22 @@ const NewAppointment = () => {
     const finalDate = restoredDate || date;
 
     if (!finalDate || !user) return;
-
+    
     try {
+      const availability = await storage.validateAvailability({
+        barberId: finalForm.barberId,
+        date: format(finalDate, 'yyyy-MM-dd'),
+        time: finalForm.time,
+        serviceIds: finalForm.serviceIds,
+        serviceId: finalForm.serviceIds[0]
+      });
+
+      if (!availability.available) {
+        toast({ title: 'Indisponível', description: availability.message, variant: 'destructive' });
+        setIsProcessing(false);
+        return;
+      }
+
       const totalServicePrice = finalForm.serviceIds.reduce((sum, id) => {
         const s = services.find(srv => srv.id === id);
         return sum + (s?.price || 0);

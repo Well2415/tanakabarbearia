@@ -1,7 +1,7 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense, Product } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT, DEFAULT_PRODUCTS } from './initialData';
-import { sortTimes } from './timeUtils';
+import { sortTimes, getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from './timeUtils';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
 const LogoMenu = "/img/logo-tanaka.png";
@@ -420,6 +420,74 @@ export const storage = {
 
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
+
+  /**
+   * Verifica se um horário está disponível buscando os dados mais recentes do Supabase.
+   * Útil para evitar agendamentos duplicados por race conditions no cliente.
+   */
+  async validateAvailability(appointment: Partial<Appointment>): Promise<{ available: boolean; message?: string }> {
+    if (!appointment.barberId || !appointment.date || !appointment.time) {
+      return { available: false, message: 'Dados incompletos para validação.' };
+    }
+
+    try {
+      // 1. Busca agendamentos reais atualizados para este barbeiro e data
+      const { data: recentApps, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('barberId', appointment.barberId)
+        .eq('date', appointment.date)
+        .neq('status', 'cancelled');
+
+      if (error) throw error;
+
+      // 2. Filtra o próprio agendamento se for uma edição
+      const appsToCheck = recentApps.filter(a => a.id !== appointment.id);
+
+      // 3. Calcula horários ocupados pelos agendamentos reais
+      const allBookedTimes: string[] = [];
+      const services = this.getServices();
+
+      appsToCheck.forEach(app => {
+        const sIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+        const duration = getAppointmentDuration(sIds, services);
+        allBookedTimes.push(...getBlockedTimes(app.time, duration));
+      });
+
+      // 4. Considera agendamentos recorrentes (bloqueios fixos)
+      const recurring = this.getRecurringSchedules();
+      const appointmentDate = new Date(appointment.date + 'T12:00:00');
+      const dayOfWeek = appointmentDate.getDay();
+
+      recurring
+        .filter(s => s.barberId === appointment.barberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, appointmentDate))
+        .forEach(s => {
+          // Se for o agendamento recorrente que estamos tentando "efetivar", não bloqueia
+          if (appointment.id?.startsWith('recurring-') && appointment.id.includes(s.id)) return;
+          
+          const sIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(sIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
+
+      // 5. Verifica se o novo agendamento cabe
+      const requestedDuration = getAppointmentDuration(appointment.serviceIds || [appointment.serviceId!], services);
+      const barber = this.getBarbers().find(b => b.id === appointment.barberId);
+      const masterHours = (barber?.scheduleByDay && barber.scheduleByDay[dayOfWeek]) || barber?.availableHours || [];
+
+      const isAvailable = canAccommodateService(appointment.time, requestedDuration, allBookedTimes, masterHours);
+
+      if (!isAvailable) {
+        return { available: false, message: 'Desculpe, este horário acabou de ser preenchido. Por favor, escolha outro.' };
+      }
+
+      return { available: true };
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao validar disponibilidade:', error);
+      // Em caso de erro na rede, permitimos por segurança do cache local mas logamos
+      return { available: true }; 
+    }
+  },
   
   /**
    * Atualiza apenas UM agendamento de forma atômica no Supabase e no Cache.

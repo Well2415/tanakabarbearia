@@ -315,6 +315,20 @@ const Appointments = () => {
     const service = storage.getServices().find(s => s.id === serviceId);
     const barber = storage.getBarbers().find(b => b.id === barberId);
 
+    // Validação final de disponibilidade
+    const availability = await storage.validateAvailability({
+      barberId,
+      date: format(date, 'yyyy-MM-dd'),
+      time,
+      serviceId,
+      serviceIds: [serviceId]
+    });
+
+    if (!availability.available) {
+      toast({ title: "Horário Ocupado", description: availability.message, variant: "destructive" });
+      return;
+    }
+
     const newAppointment: Appointment = {
       id: Date.now().toString(),
       userId: userId || null,
@@ -358,6 +372,21 @@ const Appointments = () => {
 
   const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
+      // Validação final de disponibilidade
+      const availability = await storage.validateAvailability({
+        id: appointmentToEdit.id,
+        barberId: editedBarberId,
+        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
+        time: editedTime,
+        serviceId: editedServiceId,
+        serviceIds: [editedServiceId]
+      });
+
+      if (!availability.available) {
+        toast({ title: "Conflito de Horário", description: availability.message, variant: "destructive" });
+        return;
+      }
+
       const updatedAppointment: Appointment = {
         ...appointmentToEdit,
         date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,

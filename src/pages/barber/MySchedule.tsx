@@ -208,6 +208,20 @@ const MyAppointments = () => {
 
   const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
+      const availability = await storage.validateAvailability({
+        id: appointmentToEdit.id,
+        barberId: user?.barberId,
+        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
+        time: editedTime,
+        serviceIds: appointmentToEdit.serviceIds,
+        serviceId: editedServiceId
+      });
+
+      if (!availability.available) {
+        toast({ title: "Conflito de Horário", description: availability.message, variant: "destructive" });
+        return;
+      }
+
       const updatedAppointment: Appointment = {
         ...appointmentToEdit,
         id: appointmentToEdit.id,
@@ -280,6 +294,13 @@ const MyAppointments = () => {
         servicePrice: totalServicePrice,
         createdAt: new Date().toISOString(),
       };
+
+      // Validar disponibilidade antes de transformar virtual em real
+      const availability = await storage.validateAvailability(finalAppointment);
+      if (!availability.available) {
+        toast({ title: 'Horário Ocupado', description: 'Este horário fixo colidiu com outro agendamento manual feito recentemente.', variant: 'destructive' });
+        return;
+      }
       
       // Salva no banco (spread para remover flags extras se houver)
       const { ...dbAppointment } = finalAppointment;
