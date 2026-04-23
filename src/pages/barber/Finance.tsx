@@ -480,35 +480,35 @@ const Finance = () => {
                 <div className="flex flex-col">
                   <div className="divide-y divide-border">
                     {displayedTransactions.map((tx) => (
-                      <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-muted/10 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'revenue' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <div key={tx.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-muted/10 transition-colors gap-2">
+                        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                          <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'revenue' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                             {tx.type === 'revenue' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                           </div>
-                          <div className="flex flex-col overflow-hidden">
-                            <p className="font-bold text-sm truncate max-w-[150px] md:max-w-full">{tx.description}</p>
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-bold text-xs md:text-sm truncate">{tx.description}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm truncate max-w-[100px]">
+                              <span className="text-[9px] md:text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm truncate max-w-[80px] md:max-w-[120px]">
                                 {tx.category}
                               </span>
-                              <span className="text-[11px] text-muted-foreground ml-1">
-                                {format(parseLocalDate(tx.date), 'dd/MM/yyyy')}
+                              <span className="text-[10px] md:text-[11px] text-muted-foreground ml-1 shrink-0">
+                                {format(parseLocalDate(tx.date), 'dd/MM/yy')}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4 shrink-0">
                           <div className="text-right shrink-0">
-                            <p className={`font-bold text-sm md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
+                            <p className={`font-bold text-xs md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
                               {tx.type === 'revenue' ? '+' : '-'} R$ {tx.amount.toFixed(2).replace('.', ',')}
                             </p>
                           </div>
                           <button
                             onClick={() => handleDeleteClick(tx)}
-                            className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
+                            className="p-1.5 md:p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
                             title="Excluir Lançamento"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                           </button>
                         </div>
                       </div>
