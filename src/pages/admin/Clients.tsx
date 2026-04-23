@@ -13,6 +13,7 @@ import { AdminMenu } from '@/components/admin/AdminMenu';
 import { CreateClientDialog } from '@/components/admin/CreateClientDialog';
 import { useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -90,8 +91,9 @@ const Clients = () => {
         setClients(usersList.filter(u => u.role === 'client'));
         setTotalItems(total);
         
-        // Busca agendamentos recentes para alimentar a contagem na lista
-        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 1000);
+        // Busca apenas agendamentos recentes (últimos 100) para evitar sobrecarga no banco de dados
+        // e exceder a cota de transferência (Egress) do Supabase.
+        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 100);
         setAppointments(apptsList);
       } catch (error) {
         console.error('❌ [Clients] Erro ao carregar dados:', error);
