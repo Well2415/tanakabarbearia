@@ -76,7 +76,8 @@ const MyAppointments = () => {
           500, 
           0, 
           undefined, 
-          barberProfile.id
+          barberProfile.id,
+          true // includeImportant
         );
         
         const recurringSchedules = storage.getRecurringSchedules();
@@ -194,7 +195,12 @@ const MyAppointments = () => {
         500, 
         0, 
         undefined, 
+<<<<<<< HEAD
         user.barberId
+=======
+        user.barberId,
+        true // includeImportant
+>>>>>>> 59b6aef (feat: melhoria na confiabilidade de agendamento de convidados e visibilidade total no dashboard)
       );
       
       setAppointments(prev => {

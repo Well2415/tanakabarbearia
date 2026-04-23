@@ -113,7 +113,12 @@ const Appointments = () => {
         1000, 
         0, 
         filters.userId || undefined, 
+<<<<<<< HEAD
         filters.barberId || undefined
+=======
+        filters.barberId || undefined,
+        true // includeImportant = true
+>>>>>>> 59b6aef (feat: melhoria na confiabilidade de agendamento de convidados e visibilidade total no dashboard)
       );
       setAppointments(appts);
       
@@ -146,7 +151,7 @@ const Appointments = () => {
           const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           
           setIsSyncing(true);
-          const { data: appts } = await storage.fetchAppointments(startStr, endStr);
+          const { data: appts } = await storage.fetchAppointments(startStr, endStr, 1000, 0, undefined, undefined, true);
           setAppointments(appts);
           setIsSyncing(false);
         }
@@ -689,8 +694,9 @@ const Appointments = () => {
 
       // 3. Date range filter
       const apptDate = parseLocalDate(appt.date);
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
       const hasSignal = appt.amountPaid && appt.amountPaid > 0;
-      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed') || appt.date > todayStr;
       
       if (!isImportant) {
         if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
