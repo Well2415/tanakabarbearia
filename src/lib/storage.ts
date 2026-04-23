@@ -161,51 +161,50 @@ export const storage = {
    * Busca agendamentos em um intervalo de datas específico.
    * Crucial para evitar carregar o histórico inteiro.
    */
-  async fetchAppointments(startDate?: string, endDate?: string) {
+  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0) {
     try {
-      let query = supabase.from('appointments').select('*');
+      let query = supabase.from('appointments').select('*', { count: 'exact' });
       if (startDate) query = query.gte('date', startDate);
       if (endDate) query = query.lte('date', endDate);
       
-      const { data, error } = await query.order('date', { ascending: false }).order('time', { ascending: false });
+      const { data, count, error } = await query
+        .order('date', { ascending: false })
+        .order('time', { ascending: false })
+        .range(offset, offset + limit - 1);
+
       if (error) throw error;
 
-      // Sincroniza com o cache local (substitui os agendamentos do período buscado)
-      const fetchedIds = (data || []).map(a => a.id);
-      const otherAppointments = cache.appointments.filter(a => !fetchedIds.includes(a.id));
-      
-      cache.appointments = [...otherAppointments, ...(data || [])].sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`).getTime();
-        const dateB = new Date(`${b.date}T${b.time}`).getTime();
-        return dateB - dateA;
-      });
-
+      cache.appointments = data || [];
       saveCacheToLocal();
-      return cache.appointments;
+      
+      return { data: data || [], total: count || 0 };
     } catch (error) {
       console.error('❌ [Storage] Erro ao buscar agendamentos:', error);
-      return cache.appointments;
+      return { data: cache.appointments, total: cache.appointments.length };
     }
   },
 
   /**
-   * Busca usuários com limite e paginação.
+   * Busca usuários com suporte a pesquisa e paginação no servidor.
    */
-  async fetchUsers(limit = 100, offset = 0) {
+  async fetchUsers(limit = 100, offset = 0, searchTerm = '', sortBy = 'fullName', sortOrder: 'asc' | 'desc' = 'asc') {
     try {
-      const { data, error } = await supabase.from('users').select('*').range(offset, offset + limit - 1);
+      let query = supabase.from('users').select('*', { count: 'exact' });
+      
+      if (searchTerm) {
+        query = query.or(`fullName.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+      }
+
+      const { data, count, error } = await query
+        .order(sortBy, { ascending: sortOrder === 'asc' })
+        .range(offset, offset + limit - 1);
+
       if (error) throw error;
 
-      // Mescla com o cache
-      const fetchedIds = (data || []).map(u => u.id);
-      const otherUsers = cache.users.filter(u => !fetchedIds.includes(u.id));
-      cache.users = [...otherUsers, ...(data || [])];
-
-      saveCacheToLocal();
-      return cache.users;
+      return { data: data || [], total: count || 0 };
     } catch (error) {
       console.error('❌ [Storage] Erro ao buscar usuários:', error);
-      return cache.users;
+      return { data: cache.users, total: cache.users.length };
     }
   },
 

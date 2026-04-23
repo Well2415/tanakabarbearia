@@ -102,7 +102,7 @@ const Appointments = () => {
       const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
       
       // 3. Busca apenas agendamentos do período
-      const appts = await storage.fetchAppointments(startStr, endStr);
+      const { data: appts } = await storage.fetchAppointments(startStr, endStr);
       setAppointments(appts);
       
       // 4. Busca lista básica de usuários para exibição de nomes
@@ -134,7 +134,7 @@ const Appointments = () => {
           const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           
           setIsSyncing(true);
-          const appts = await storage.fetchAppointments(startStr, endStr);
+          const { data: appts } = await storage.fetchAppointments(startStr, endStr);
           setAppointments(appts);
           setIsSyncing(false);
         }

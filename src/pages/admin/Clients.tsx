@@ -42,24 +42,8 @@ const Clients = () => {
     }
   }, [searchParams]);
 
-  const filteredClients = useMemo(() => {
-    const filtered = clients.filter(client => {
-      const search = searchTerm.toLowerCase();
-      const nameMatch = client.fullName.toLowerCase().includes(search);
-      const emailMatch = client.email?.toLowerCase().includes(search);
-      const phoneMatch = client.phone?.includes(search);
-      return nameMatch || emailMatch || phoneMatch;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (sortBy === 'points_desc') return (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0);
-      if (sortBy === 'points_asc') return (a.loyaltyPoints || 0) - (b.loyaltyPoints || 0);
-      return a.fullName.localeCompare(b.fullName);
-    });
-  }, [clients, searchTerm, sortBy]);
-
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const displayedClients = filteredClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const [totalItems, setTotalItems] = useState(0);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   // Effect to load loyalty target only once on mount
   useEffect(() => {
@@ -76,23 +60,43 @@ const Clients = () => {
         return;
       }
 
+      setLoading(true);
       try {
         await storage.initializeConfig();
-        // Busca agendamentos e usuários (limitando para evitar estouro de cota)
-        const [apptsList, usersList] = await Promise.all([
-          storage.fetchAppointments(), 
-          storage.fetchUsers(500)
-        ]);
+        
+        let sortField = 'fullName';
+        let sortOrder: 'asc' | 'desc' = 'asc';
+
+        if (sortBy === 'points_desc') {
+          sortField = 'loyaltyPoints';
+          sortOrder = 'desc';
+        } else if (sortBy === 'points_asc') {
+          sortField = 'loyaltyPoints';
+          sortOrder = 'asc';
+        }
+
+        const { data: usersList, total } = await storage.fetchUsers(
+          itemsPerPage, 
+          (currentPage - 1) * itemsPerPage, 
+          searchTerm,
+          sortField,
+          sortOrder
+        );
 
         setClients(usersList.filter(u => u.role === 'client'));
+        setTotalItems(total);
+        
+        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 50);
         setAppointments(apptsList);
       } catch (error) {
         console.error('❌ [Clients] Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [user, navigate, toast]);
+  }, [user, navigate, toast, currentPage, searchTerm, sortBy]);
 
 
   useEffect(() => {
@@ -212,14 +216,14 @@ const Clients = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {displayedClients.length === 0 ? (
+          {clients.length === 0 ? (
             <Card className="p-8 text-center border-border border-dashed bg-muted/20 col-span-full">
               <p className="text-muted-foreground">
                 {searchTerm ? 'Nenhum cliente encontrado para sua pesquisa.' : 'Nenhum cliente cadastrado ainda.'}
               </p>
             </Card>
           ) : (
-            displayedClients.map((client) => (
+            clients.map((client) => (
               <Card key={client.id} className="p-4 md:p-6 border-border flex flex-col hover:border-primary/30 transition-colors">
                 <div className="flex-grow">
                   <h3 className="text-lg md:text-xl font-bold mb-3">{client.fullName}</h3>
@@ -247,7 +251,7 @@ const Clients = () => {
         {/* Pagination Controls */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-            Mostrando <span className="font-medium">{filteredClients.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredClients.length)}</span> de <span className="font-medium">{filteredClients.length}</span> clientes
+            Mostrando <span className="font-medium">{clients.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> de <span className="font-medium">{totalItems}</span> clientes
           </p>
           <div className="flex items-center gap-2">
             <Button 

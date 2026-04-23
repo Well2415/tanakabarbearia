@@ -63,7 +63,7 @@ const RecurringSchedules = () => {
             }
 
             await storage.initialize();
-            const usersList = await storage.fetchUsers(200);
+            const { data: usersList } = await storage.fetchUsers(200);
             setSchedules(storage.getRecurringSchedules());
             setUsers(usersList.filter(u => u.role === 'client'));
 

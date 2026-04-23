@@ -64,7 +64,7 @@ const NotificationLogs = () => {
             }
 
             // Carrega usuários básicos para exibir nomes nos logs
-            const usersData = await storage.fetchUsers(100);
+            const { data: usersData } = await storage.fetchUsers(100);
             setUsers(usersData);
 
         } catch (error) {
