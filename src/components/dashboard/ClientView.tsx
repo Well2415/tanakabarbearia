@@ -21,11 +21,22 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const allAppointments = storage.getAppointments();
-    const userAppointments = allAppointments.filter(app => app.userId === user.id);
-    setAppointments(userAppointments);
-    setServices(storage.getServices());
-    setBarbers(storage.getBarbers());
+    const fetchData = async () => {
+      // Busca agendamentos específicos do usuário no Supabase
+      const { data: userAppointments } = await storage.fetchAppointments(
+        undefined, 
+        undefined, 
+        100, 
+        0, 
+        user.id
+      );
+      
+      setAppointments(userAppointments);
+      setServices(storage.getServices());
+      setBarbers(storage.getBarbers());
+    };
+    
+    fetchData();
   }, [user.id]);
 
   const handleCancelAppointment = (appId: string) => {

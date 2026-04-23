@@ -101,8 +101,15 @@ const Appointments = () => {
       const startStr = startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
       const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
       
-      // 3. Busca apenas agendamentos do período
-      const { data: appts } = await storage.fetchAppointments(startStr, endStr);
+      // 3. Busca apenas agendamentos do período com filtros aplicados
+      const { data: appts } = await storage.fetchAppointments(
+        startStr, 
+        endStr, 
+        1000, 
+        0, 
+        filters.userId || undefined, 
+        filters.barberId || undefined
+      );
       setAppointments(appts);
       
       // 4. Busca lista básica de usuários para exibição de nomes
@@ -112,10 +119,10 @@ const Appointments = () => {
     }
   };
 
-  // Carregamento inicial e quando as datas do filtro mudam
+  // Carregamento inicial e quando os filtros mudam
   useEffect(() => {
     initStorage();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, filters.userId, filters.barberId]);
 
   // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
   useEffect(() => {

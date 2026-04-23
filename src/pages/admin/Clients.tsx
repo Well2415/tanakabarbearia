@@ -27,6 +27,9 @@ const Clients = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [viewingHistoryClient, setViewingHistoryClient] = useState<User | null>(null);
+  const [clientHistory, setClientHistory] = useState<Appointment[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,7 +90,8 @@ const Clients = () => {
         setClients(usersList.filter(u => u.role === 'client'));
         setTotalItems(total);
         
-        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 50);
+        // Busca agendamentos recentes para alimentar a contagem na lista
+        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 1000);
         setAppointments(apptsList);
       } catch (error) {
         console.error('❌ [Clients] Erro ao carregar dados:', error);
@@ -154,6 +158,20 @@ const Clients = () => {
     setPassword('');
     setConfirmPassword('');
     toast({ title: 'Senha atualizada!', description: `A senha de ${editingClient.fullName} foi alterada com sucesso.` });
+  };
+
+  const handleViewHistory = async (client: User) => {
+    setViewingHistoryClient(client);
+    setLoadingHistory(true);
+    try {
+      const { data } = await storage.fetchAppointments(undefined, undefined, 200, 0, client.id);
+      setClientHistory(data);
+    } catch (error) {
+      console.error('Erro ao buscar histórico:', error);
+      toast({ title: 'Erro', description: 'Não foi possível carregar o histórico.', variant: 'destructive' });
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   return (
@@ -240,6 +258,9 @@ const Clients = () => {
                   <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
                     <Edit className="w-4 h-4 mr-2" />Pontos
                   </Button>
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => handleViewHistory(client)}>
+                    <Calendar className="w-4 h-4 mr-2" />Histórico
+                  </Button>
                   <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
                     <Lock className="w-4 h-4 mr-2" />Senha
                   </Button>
@@ -323,6 +344,54 @@ const Clients = () => {
               <Button type="submit">Alterar Senha</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={!!viewingHistoryClient} onOpenChange={(isOpen) => !isOpen && setViewingHistoryClient(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Histórico de Agendamentos</DialogTitle>
+            <DialogDescription>
+              Agendamentos de <span className="font-bold text-foreground">{viewingHistoryClient?.fullName}</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {loadingHistory ? (
+              <div className="flex justify-center py-8 text-muted-foreground italic">Carregando histórico...</div>
+            ) : clientHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground italic">Nenhum agendamento encontrado para este cliente.</div>
+            ) : (
+              <div className="space-y-3">
+                {clientHistory.map(app => (
+                  <div key={app.id} className="p-4 border rounded-xl bg-card flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-sm">{new Date(app.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-muted-foreground">{app.time}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{storage.getServices().find(s => s.id === (app.serviceIds?.[0] || app.serviceId))?.name || 'Serviço'}</p>
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
+                        app.status === 'completed' ? "bg-green-500/10 text-green-600" :
+                        app.status === 'cancelled' ? "bg-red-500/10 text-red-600" : "bg-zinc-500/10 text-zinc-600"
+                      )}>
+                        {app.status === 'pending' ? 'Pendente' : 
+                         app.status === 'confirmed' ? 'Confirmado' : 
+                         app.status === 'completed' ? 'Concluído' : 
+                         app.status === 'cancelled' ? 'Cancelado' : app.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Fechar</Button></DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

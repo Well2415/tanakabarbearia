@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp, Clock, UserCog, Star, Wallet } from 'lucide-react';
-import { User } from '@/types';
+import { User, Appointment } from '@/types';
 import { isSameMonth, format } from 'date-fns';
 import { parseLocalDate } from '@/lib/timeUtils';
 
@@ -11,10 +12,20 @@ interface StaffViewProps {
 }
 
 export const StaffView = ({ user }: StaffViewProps) => {
-  const appointments = storage.getAppointments();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const services = storage.getServices();
   const clients = storage.getUsers().filter(u => u.role === 'client');
   
+  useEffect(() => {
+    const fetchData = async () => {
+      // Busca agendamentos do barbeiro no Supabase
+      const targetBarberId = user.barberId || user.id;
+      const { data } = await storage.fetchAppointments(undefined, undefined, 500, 0, undefined, targetBarberId);
+      setAppointments(data);
+    };
+    fetchData();
+  }, [user.id, user.barberId]);
+
   const now = new Date();
   const today = format(now, 'yyyy-MM-dd');
   const todayAppointments = appointments.filter(a => a.date === today);

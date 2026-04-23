@@ -61,28 +61,25 @@ const MyAppointments = () => {
         return;
       }
 
-      const allAppointments = storage.getAppointments();
-      const recurringSchedules = storage.getRecurringSchedules();
       const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
       if (barberProfile && startDate && endDate) {
         const start = startOfDay(startDate);
         const end = startOfDay(endDate);
+        const startStr = format(start, 'yyyy-MM-dd');
+        const endStr = format(end, 'yyyy-MM-dd');
 
-        // 1. Agendamentos reais do barbeiro NO INTERVALO
-        const barberAppointments = allAppointments.filter(appt => {
-          if (appt.barberId !== barberProfile.id) return false;
-          
-          // Agendamentos pendentes OU com sinal pago sempre aparecem para o barbeiro
-          const hasSignal = appt.amountPaid && appt.amountPaid > 0;
-          const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
-          
-          if (isImportant) return true;
-
-          const apptDate = parseLocalDate(appt.date);
-          return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
-                 (isSameDay(apptDate, end) || isBefore(apptDate, end));
-        });
+        // 1. Busca agendamentos reais do barbeiro NO INTERVALO diretamente no Supabase
+        const { data: barberAppointments } = await storage.fetchAppointments(
+          startStr, 
+          endStr, 
+          500, 
+          0, 
+          undefined, 
+          barberProfile.id
+        );
+        
+        const recurringSchedules = storage.getRecurringSchedules();
         
         // 2. Agendamentos fixos (recorrentes) NO INTERVALO
         const virtualAppointments: Appointment[] = [];
@@ -187,16 +184,19 @@ const MyAppointments = () => {
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
     await storage.updateAppointment(updatedAppointment);
     
-    // Refresh local state
-    const all = storage.getAppointments();
-    const barberProfile = storage.getBarbers().find(b => b.id === user?.barberId);
-    if (barberProfile && startDate && endDate) {
-      const barberAppointments = all.filter(appt => {
-        if (appt.barberId !== barberProfile.id) return false;
-        const apptDate = parseLocalDate(appt.date);
-        return (isSameDay(apptDate, startDate) || isAfter(apptDate, startDate)) && 
-               (isSameDay(apptDate, endDate) || isBefore(apptDate, endDate));
-      });
+    // Refresh local state by refetching from server
+    if (user?.barberId && startDate && endDate) {
+      const startStr = format(startOfDay(startDate), 'yyyy-MM-dd');
+      const endStr = format(startOfDay(endDate), 'yyyy-MM-dd');
+      const { data: barberAppointments } = await storage.fetchAppointments(
+        startStr, 
+        endStr, 
+        500, 
+        0, 
+        undefined, 
+        user.barberId
+      );
+      
       setAppointments(prev => {
         const virtuals = prev.filter(p => p.isRecurring);
         return [...barberAppointments, ...virtuals];
