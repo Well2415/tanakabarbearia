@@ -35,6 +35,14 @@ const NotificationLogs = () => {
         try {
             await storage.initializeConfig();
             
+            // Limpeza preventiva: apaga logs com mais de 24h ao carregar a página
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+            await supabase
+                .from('notification_logs')
+                .delete()
+                .lt('created_at', oneDayAgo.toISOString());
+
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
