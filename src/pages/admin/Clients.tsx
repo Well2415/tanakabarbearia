@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock, Trash2, X } from 'lucide-react';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -252,7 +252,28 @@ const Clients = () => {
                     {client.phone && <div className="flex items-center gap-2 text-zinc-500"><Phone className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{client.phone}</span></div>}
                     {client.email && <div className="flex items-center gap-2 text-zinc-500"><Mail className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm truncate">{client.email}</span></div>}
                     <div className="flex items-center gap-2 text-zinc-500"><Calendar className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{getClientAppointmentsCount(client.id)} agendamento(s)</span></div>
-                    <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20"><Star className="w-3.5 h-3.5" /><span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts de fidelidade</span></div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20">
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts</span>
+                      </div>
+                      
+                      {(client.noShowCount || 0) > 0 && (
+                        <div className={cn(
+                          "flex items-center gap-2 w-fit px-3 py-1 rounded-full border",
+                          (client.noShowCount || 0) >= 2 
+                            ? "bg-red-500/10 text-red-600 border-red-500/20 font-black" 
+                            : "bg-orange-500/10 text-orange-600 border-orange-500/20 font-bold"
+                        )}>
+                          <X className="w-3.5 h-3.5" />
+                          <span className="text-[11px] uppercase tracking-tighter">
+                            {(client.noShowCount || 0) >= 2 ? 'Restrito: ' : ''}
+                            {client.noShowCount} Falta(s)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
@@ -266,6 +287,21 @@ const Clients = () => {
                   <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
                     <Lock className="w-4 h-4 mr-2" />Senha
                   </Button>
+                  {(client.noShowCount || 0) > 0 && (
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 text-sm h-11 md:h-10 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors rounded-xl font-medium" 
+                      onClick={async () => {
+                        const allUsers = storage.getUsers();
+                        const updatedUsers = allUsers.map(u => u.id === client.id ? { ...u, noShowCount: 0 } : u);
+                        await storage.saveUsers(updatedUsers);
+                        setClients(updatedUsers.filter(u => u.role === 'client'));
+                        toast({ title: 'Faltas Zeradas', description: `O contador de faltas de ${client.fullName} foi resetado.` });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />Zerar Faltas
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))

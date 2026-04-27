@@ -41,8 +41,15 @@ const NewAppointment = () => {
 
   useEffect(() => {
     const currentUser = storage.getCurrentUser();
-    if (!currentUser) navigate('/login');
-    else setUser(currentUser);
+    if (!currentUser) {
+      navigate('/login');
+    } else {
+      setUser(currentUser);
+      // Sincroniza dados do usuário (faltas, pontos) ao entrar na página
+      storage.refreshCurrentUser().then(updated => {
+        if (updated) setUser(updated);
+      });
+    }
   }, []);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
@@ -266,7 +273,16 @@ const NewAppointment = () => {
         <div className="container mx-auto max-w-2xl">
           <h1 className="text-4xl font-bold text-center mb-4">Novo <span className="text-primary">Agendamento</span></h1>
           <p className="text-center text-muted-foreground mb-8">Olá, {user.fullName}. Preencha os dados abaixo.</p>
-          <Card className="p-8 border-border">
+          <Card className="p-8 border-border relative overflow-hidden">
+            {requiresPayment && (
+              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+                <div className="text-destructive mt-0.5">⚠️</div>
+                <div>
+                  <p className="text-sm font-bold text-destructive">Pagamento Antecipado Obrigatório</p>
+                  <p className="text-xs text-muted-foreground">Devido a faltas em agendamentos anteriores, é necessário o pagamento de 50% do valor como sinal para garantir seu horário.</p>
+                </div>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div><Label>Nome Completo</Label><Input value={user.fullName} disabled /></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -642,6 +642,35 @@ export const storage = {
     return user || null;
   },
 
+  /**
+   * Recarrega os dados do usuário atual diretamente do Supabase.
+   * Garante que o noShowCount e outros campos estejam sincronizados.
+   */
+  async refreshCurrentUser() {
+    const userId = localStorage.getItem('barbershop_logged_in_user_id');
+    if (!userId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        // Atualiza o cache local
+        cache.users = cache.users.map(u => u.id === data.id ? data : u);
+        saveCacheToLocal();
+        localStorage.setItem('currentUser', JSON.stringify(data));
+        return data as User;
+      }
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao atualizar usuário atual:', error);
+    }
+    return this.getCurrentUser();
+  },
+
   // --- CONFIGURAÇÕES DA BARBEARIA (SHOP SETTINGS) ---
   getSetting: (key: string, defaultValue: any) => {
     return cache.settings[key] !== undefined ? cache.settings[key] : defaultValue;
