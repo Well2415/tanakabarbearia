@@ -578,8 +578,9 @@ const Appointments = () => {
     const checkReminders = async () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
+      const currentAppointments = storage.getAppointments();
 
-      const upcoming = appointments.filter(app => {
+      const upcoming = currentAppointments.filter(app => {
         // Apenas agendamentos confirmados hoje, sem lembrete enviado
         if (app.status !== 'confirmed' || app.reminderSent || app.date !== todayStr) return false;
 
@@ -614,6 +615,8 @@ const Appointments = () => {
             );
           }
 
+          // Marcar localmente para evitar múltiplas execuções caso o Supabase falhe ou ignore a coluna
+          app.reminderSent = true;
           // Marcar como enviado no storage
           await updateAppointmentInStorage({ ...app, reminderSent: true });
         }
@@ -627,7 +630,7 @@ const Appointments = () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [appointments, barbers, services]);
+  }, [barbers, services]);
 
 
 
