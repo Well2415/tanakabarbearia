@@ -53,11 +53,9 @@ export const AdminMenu = () => {
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
-        { name: 'Notificações', path: '/admin/notifications', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
-        { name: 'Notificações', path: '/admin/notifications', icon: Bell },
         { name: 'Produtos', path: '/products', icon: ShoppingBag },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Início', path: '/dashboard', icon: LayoutDashboard },

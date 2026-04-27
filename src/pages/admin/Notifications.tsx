@@ -100,7 +100,7 @@ const Notifications = () => {
             const result = await notificationManager.sendPushNotification(
                 user.id, 
                 'Teste de Sistema 🛠️', 
-                `Olá ${user.fullName}, as notificações push estão funcionando corretamente!`,
+                `Olá ${user.fullName}, as notificações push da barbearia estão funcionando perfeitamente!`,
                 '/admin/notifications'
             );
             
@@ -131,10 +131,10 @@ const Notifications = () => {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-background pb-32">
+        <div className="min-h-screen bg-background pb-32 w-full">
             <AdminMenu />
 
-            <div className="container mx-auto px-4 py-8 max-w-2xl">
+            <div className="container mx-auto px-2 md:px-4 py-8 max-w-full md:max-w-2xl">
                 <div className="flex items-center gap-4 mb-8">
                     <Link to={user.role === 'admin' ? "/admin/dashboard" : "/dashboard"}>
                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/20 hover:text-primary transition-all">
