@@ -207,7 +207,7 @@ const GuestBooking = () => {
           await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
         }
 
-        const admins = allUsers.filter(u => u.role === 'admin');
+        const admins = allUsers.filter(u => u.role === 'admin' && u.id !== barberUser?.id);
         admins.forEach(admin => {
           notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
         });

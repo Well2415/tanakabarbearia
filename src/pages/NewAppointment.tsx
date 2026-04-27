@@ -132,8 +132,8 @@ const NewAppointment = () => {
         await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
       }
 
-      // 2. Notificar todos os Administradores para que possam confirmar
-      const admins = allUsers.filter(u => u.role === 'admin');
+      // 2. Notificar todos os Administradores (exceto se o administrador já foi notificado como barbeiro)
+      const admins = allUsers.filter(u => u.role === 'admin' && u.id !== barberUser?.id);
       admins.forEach(admin => {
         notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
       });
