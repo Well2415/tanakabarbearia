@@ -47,22 +47,16 @@ const NotificationLogs = () => {
             }
 
             const { data: logsData, error: logsError, count } = await query
-                .order('createdAt', { ascending: false })
+                .order('created_at', { ascending: false })
                 .range(from, to);
 
-            if (logsError && logsError.message.includes('createdAt')) {
-                const { data, error, count: countAlt } = await query
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
-                
-                if (error) throw error;
-                setLogs(data?.map(log => ({ ...log, createdAt: log.created_at })) || []);
-                if (countAlt !== null) setTotalCount(countAlt);
-            } else {
-                if (logsError) throw logsError;
-                setLogs(logsData || []);
-                if (count !== null) setTotalCount(count);
-            }
+            if (logsError) throw logsError;
+            setLogs(logsData?.map(log => ({ 
+                ...log, 
+                createdAt: log.created_at || log.createdAt,
+                userId: log.user_id || log.userId
+            })) || []);
+            if (count !== null) setTotalCount(count);
 
             // Carrega usuários básicos para exibir nomes nos logs
             const { data: usersData } = await storage.fetchUsers(100);
