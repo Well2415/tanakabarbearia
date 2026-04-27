@@ -277,20 +277,20 @@ const Clients = () => {
                   </div>
                   <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
-                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 gap-2">
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
-                    <Edit className="w-4 h-4 mr-2" />Pontos
+                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 grid grid-cols-2 gap-2">
+                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
+                    <Edit className="w-3.5 h-3.5 mr-1.5" />Pontos
                   </Button>
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => handleViewHistory(client)}>
-                    <Calendar className="w-4 h-4 mr-2" />Histórico
+                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => handleViewHistory(client)}>
+                    <Calendar className="w-3.5 h-3.5 mr-1.5" />Histórico
                   </Button>
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
-                    <Lock className="w-4 h-4 mr-2" />Senha
+                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
+                    <Lock className="w-3.5 h-3.5 mr-1.5" />Senha
                   </Button>
                   {(client.noShowCount || 0) > 0 && (
                     <Button 
                       variant="outline" 
-                      className="flex-1 text-sm h-11 md:h-10 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors rounded-xl font-medium" 
+                      className="text-xs h-10 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors rounded-xl font-medium" 
                       onClick={async () => {
                         const allUsers = storage.getUsers();
                         const updatedUsers = allUsers.map(u => u.id === client.id ? { ...u, noShowCount: 0 } : u);
@@ -299,7 +299,7 @@ const Clients = () => {
                         toast({ title: 'Faltas Zeradas', description: `O contador de faltas de ${client.fullName} foi resetado.` });
                       }}
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />Zerar Faltas
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />Zerar
                     </Button>
                   )}
                 </CardFooter>
