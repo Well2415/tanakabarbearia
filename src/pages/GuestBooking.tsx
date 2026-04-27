@@ -47,67 +47,80 @@ const GuestBooking = () => {
   }, [barbers, formData.barberId]);
 
   useEffect(() => {
-    if (date && formData.barberId) {
-      const selectedBarber = barbers.find(b => b.id === formData.barberId);
-      if (!selectedBarber) return;
+    let isMounted = true;
 
-      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      const allAppointments = storage.getAppointments();
-      const recurringSchedules = storage.getRecurringSchedules();
-      const dayOfWeek = date.getDay();
+    const loadTimes = async () => {
+      if (date && formData.barberId) {
+        const selectedBarber = barbers.find(b => b.id === formData.barberId);
+        if (!selectedBarber) return;
 
-      const allBookedTimes: string[] = [];
+        const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        
+        // Busca dados frescos do banco para garantir consistência e evitar conflitos com agendamentos recém-criados
+        const { data: realAppointments } = await storage.fetchAppointments(formattedDate, formattedDate, 500, 0, undefined, formData.barberId);
+        
+        if (!isMounted) return;
 
-      allAppointments
-        .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
-        .forEach(app => {
-          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
-          const duration = getAppointmentDuration(serviceIds, services);
-          allBookedTimes.push(...getBlockedTimes(app.time, duration));
-        });
+        const recurringSchedules = storage.getRecurringSchedules();
+        const dayOfWeek = date.getDay();
 
-      recurringSchedules
-        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
-        .forEach(s => {
-          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-          const duration = getAppointmentDuration(serviceIds, services);
-          allBookedTimes.push(...getBlockedTimes(s.time, duration));
-        });
+        const allBookedTimes: string[] = [];
 
-      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+        realAppointments
+          .filter(app => app.status !== 'cancelled' && app.status !== 'no_show')
+          .forEach(app => {
+            const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+            const duration = getAppointmentDuration(serviceIds, services);
+            allBookedTimes.push(...getBlockedTimes(app.time, duration));
+          });
 
-      // Filtra horários que já passaram (se for hoje)
-      const now = new Date();
-      const todayStr = format(now, 'yyyy-MM-dd');
-      const isToday = formattedDate === todayStr;
-      const currentHour = now.getHours();
-      const currentMin = now.getMinutes();
+        recurringSchedules
+          .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
+          .forEach(s => {
+            const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+            const duration = getAppointmentDuration(serviceIds, services);
+            allBookedTimes.push(...getBlockedTimes(s.time, duration));
+          });
 
-      const available = masterHours.filter(hour => {
-        if (isToday) {
-          const [h, m] = hour.split(':').map(Number);
-          if (h < currentHour || (h === currentHour && m <= currentMin)) {
-            return false;
+        const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+        // Filtra horários que já passaram (se for hoje)
+        const now = new Date();
+        const todayStr = format(now, 'yyyy-MM-dd');
+        const isToday = formattedDate === todayStr;
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+
+        const available = masterHours.filter(hour => {
+          if (isToday) {
+            const [h, m] = hour.split(':').map(Number);
+            if (h < currentHour || (h === currentHour && m <= currentMin)) {
+              return false;
+            }
           }
+          return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+        });
+
+        setFilteredTimes(available);
+
+        if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
+          setFormData(current => ({ ...current, time: '' }));
+          setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
         }
-        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
-      });
-
-      setFilteredTimes(available);
-
-      if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
-        setFormData(current => ({ ...current, time: '' }));
-        setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
+      } else {
+        setFilteredTimes([]);
+        if (lastBarberDate.barberId !== '' || lastBarberDate.date !== '') {
+          setFormData(current => ({ ...current, time: '' }));
+          setLastBarberDate({ barberId: '', date: '' });
+        }
       }
-    } else {
-      setFilteredTimes([]);
-      if (lastBarberDate.barberId !== '' || lastBarberDate.date !== '') {
-        setFormData(current => ({ ...current, time: '' }));
-        setLastBarberDate({ barberId: '', date: '' });
-      }
-    }
-  }, [date, formData.barberId, barbers, lastBarberDate]);
+    };
+
+    loadTimes();
+
+    return () => { isMounted = false; };
+  }, [date, formData.barberId, barbers, lastBarberDate, services]);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
     const s = services.find(srv => srv.id === id);

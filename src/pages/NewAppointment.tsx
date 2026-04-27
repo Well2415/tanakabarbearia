@@ -207,62 +207,75 @@ const NewAppointment = () => {
   }, [barbers, formData.barberId]);
 
   useEffect(() => {
-    if (date && formData.barberId) {
-      const selectedBarber = barbers.find(b => b.id === formData.barberId);
-      if (!selectedBarber) return;
-      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      const allApps = storage.getAppointments();
-      const recurring = storage.getRecurringSchedules();
-      const dayOfWeek = date.getDay();
+    let isMounted = true;
 
-      const allBookedTimes: string[] = [];
+    const loadTimes = async () => {
+      if (date && formData.barberId) {
+        const selectedBarber = barbers.find(b => b.id === formData.barberId);
+        if (!selectedBarber) return;
+        const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        
+        // Busca dados frescos do banco para evitar conflitos de horários
+        const { data: realAppointments } = await storage.fetchAppointments(formattedDate, formattedDate, 500, 0, undefined, formData.barberId);
+        
+        if (!isMounted) return;
 
-      allApps
-        .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
-        .forEach(app => {
-          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
-          const duration = getAppointmentDuration(serviceIds, services);
-          allBookedTimes.push(...getBlockedTimes(app.time, duration));
-        });
+        const recurring = storage.getRecurringSchedules();
+        const dayOfWeek = date.getDay();
 
-      recurring
-        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
-        .forEach(s => {
-          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-          const duration = getAppointmentDuration(serviceIds, services);
-          allBookedTimes.push(...getBlockedTimes(s.time, duration));
-        });
+        const allBookedTimes: string[] = [];
 
-      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+        realAppointments
+          .filter(app => app.status !== 'cancelled' && app.status !== 'no_show')
+          .forEach(app => {
+            const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+            const duration = getAppointmentDuration(serviceIds, services);
+            allBookedTimes.push(...getBlockedTimes(app.time, duration));
+          });
 
-      // Filtra horários que já passaram (se for hoje)
-      const now = new Date();
-      const todayStr = format(now, 'yyyy-MM-dd');
-      const isToday = formattedDate === todayStr;
-      const currentHour = now.getHours();
-      const currentMin = now.getMinutes();
+        recurring
+          .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
+          .forEach(s => {
+            const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+            const duration = getAppointmentDuration(serviceIds, services);
+            allBookedTimes.push(...getBlockedTimes(s.time, duration));
+          });
 
-      const available = masterHours.filter(h => {
-        if (isToday) {
-          const [hour, min] = h.split(':').map(Number);
-          if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
-            return false;
+        const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+        // Filtra horários que já passaram (se for hoje)
+        const now = new Date();
+        const todayStr = format(now, 'yyyy-MM-dd');
+        const isToday = formattedDate === todayStr;
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+
+        const available = masterHours.filter(h => {
+          if (isToday) {
+            const [hour, min] = h.split(':').map(Number);
+            if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
+              return false;
+            }
           }
+          return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
+        });
+
+        setFilteredTimes(available);
+
+        if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
+          setFormData(prev => ({ ...prev, time: '' }));
+          setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
         }
-        return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
-      });
-
-      setFilteredTimes(available);
-
-      if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
-        setFormData(prev => ({ ...prev, time: '' }));
-        setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
+      } else {
+        setFilteredTimes([]);
       }
-    } else {
-      setFilteredTimes([]);
-    }
-  }, [date, formData.barberId, barbers, lastBarberDate]);
+    };
+
+    loadTimes();
+
+    return () => { isMounted = false; };
+  }, [date, formData.barberId, barbers, lastBarberDate, services]);
 
   if (!user) return null;
 
