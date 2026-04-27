@@ -20,24 +20,32 @@ const Login = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simple authentication check
-    const users = storage.getUsers();
-    const user = users.find(u => u.email === credentials.email);
+    // Carregamento de dados atualizados
+    storage.refreshUsers().then(() => {
+      const users = storage.getUsers();
+      const typedEmail = credentials.email.trim().toLowerCase();
+      const typedPassword = credentials.password.trim();
 
-    if (user && credentials.password === 'admin123') {
-      storage.loginUser(user.id);
-      toast({
-        title: 'Login realizado!',
-        description: 'Bem-vindo ao painel administrativo',
-      });
-      navigate('/admin/dashboard');
-    } else {
-      toast({
-        title: 'Erro',
-        description: 'E-mail ou senha incorretos',
-        variant: 'destructive',
-      });
-    }
+      const user = users.find(u => 
+        (u.email?.toLowerCase() === typedEmail || u.username?.toLowerCase() === typedEmail) && 
+        (u.role === 'admin' || u.role === 'barber')
+      );
+
+      if (user && user.password === typedPassword) {
+        storage.loginUser(user.id);
+        toast({
+          title: 'Login realizado!',
+          description: `Bem-vindo ao painel, ${user.fullName}`,
+        });
+        navigate('/admin/dashboard');
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'E-mail ou senha incorretos',
+          variant: 'destructive',
+        });
+      }
+    });
   };
 
   const handleResetPassword = () => {

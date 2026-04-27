@@ -38,14 +38,18 @@ const Login = () => {
       await storage.refreshUsers();
       
       const users = storage.getUsers();
-      const typedUsername = formData.username.trim();
+      const typedIdentifier = formData.username.trim().toLowerCase();
       const typedPassword = formData.password.trim();
+      const typedPhone = typedIdentifier.replace(/\D/g, ''); // Versão apenas números se for telefone
 
-      
       const user = users.find(u => {
-        const matchUsername = (u.username || "").trim().toLowerCase() === typedUsername.toLowerCase();
+        const usernameMatch = (u.username || "").trim().toLowerCase() === typedIdentifier;
+        const emailMatch = (u.email || "").trim().toLowerCase() === typedIdentifier;
+        const phoneMatch = (u.phone || "").replace(/\D/g, '') === typedPhone && typedPhone.length >= 8;
+        
         const matchPassword = (u.password || "").trim() === typedPassword;
-        return matchUsername && matchPassword;
+        
+        return (usernameMatch || emailMatch || phoneMatch) && matchPassword;
       });
 
       if (user) {
@@ -56,14 +60,14 @@ const Login = () => {
         });
 
         if (user.role === 'admin' || user.role === 'barber') {
-          navigate('/admin');
+          navigate('/admin/dashboard'); // Redireciona para o dashboard correto
         } else {
           navigate('/new-appointment');
         }
       } else {
         toast({
           title: 'Erro de Login',
-          description: 'Nome de usuário ou senha incorretos.',
+          description: 'Credenciais incorretas. Tente usar seu e-mail ou telefone se esqueceu o usuário.',
           variant: 'destructive',
         });
       }
