@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
