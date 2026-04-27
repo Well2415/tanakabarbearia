@@ -87,11 +87,11 @@ export const notificationManager = {
 
       // Salva o log no banco de dados para controle administrativo
       await supabase.from('notification_logs').insert([{
-        userId,
+        user_id: userId,
         title,
         body,
         status: (data?.success && !error) ? 'success' : 'error',
-        errorMessage: error ? (error.message || JSON.stringify(error)) : (data?.success ? null : data?.message)
+        error_message: error ? (error.message || JSON.stringify(error)) : (data?.success ? null : data?.message)
       }]);
 
       return data;
