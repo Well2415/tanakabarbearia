@@ -206,28 +206,54 @@ const MyAppointments = () => {
             true // includeImportant = true para garantir que veja pendentes
           );
 
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newAppt = payload.new as Appointment;
-            const clientName = newAppt.guestName || 'Um cliente';
-            toast({
-              title: "Novo Agendamento! 🆕",
-              description: `${clientName} agendou para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
-              variant: "default",
-              className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
-            });
             
-            // Tenta tocar um som sutil se o navegador permitir
-            try {
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-              audio.volume = 0.3;
-              audio.play().catch(() => {});
-            } catch (e) {}
-          }
+            if (payload.eventType === 'INSERT') {
+              const clientName = newAppt.guestName || 'Um cliente';
+              toast({
+                title: "Novo Agendamento! 🆕",
+                description: `${clientName} agendou para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
+                variant: "default",
+                className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
+              });
+              
+              // Tenta tocar um som sutil se o navegador permitir
+              try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+              } catch (e) {}
+            }
 
-          setAppointments(prev => {
-            const virtuals = prev.filter(a => a.isRecurring);
-            return [...barberAppointments, ...virtuals];
-          });
+            // Atualiza cache local instantaneamente
+            const currentCache = storage.getAppointments();
+            const cacheIdx = currentCache.findIndex(a => a.id === newAppt.id);
+            if (cacheIdx >= 0) {
+              currentCache[cacheIdx] = newAppt;
+            } else {
+              currentCache.push(newAppt);
+            }
+            localStorage.setItem('appointments', JSON.stringify(currentCache));
+
+            // Atualiza estado local instantaneamente (sem esperar o fetch do banco)
+            setAppointments(prev => {
+              const virtuals = prev.filter(a => a.isRecurring);
+              const reals = [...barberAppointments];
+              
+              const existIdx = reals.findIndex(a => a.id === newAppt.id);
+              if (existIdx >= 0) {
+                reals[existIdx] = newAppt;
+              } else {
+                reals.push(newAppt);
+              }
+              
+              return [...reals, ...virtuals];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldAppt = payload.old as Appointment;
+            setAppointments(prev => prev.filter(a => a.id !== oldAppt.id));
+          }
         }
       )
       .subscribe();

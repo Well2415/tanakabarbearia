@@ -158,24 +158,42 @@ const Appointments = () => {
           const startStr = startDateRef.current ? format(startDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           const endStr = endDateRef.current ? format(endDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newAppt = payload.new as Appointment;
-            const clientName = newAppt.guestName || 'Um cliente';
-            const barberName = storage.getBarbers().find(b => b.id === newAppt.barberId)?.name || 'um barbeiro';
             
-            toast({
-              title: "Novo Agendamento! 💈",
-              description: `${clientName} agendou com ${barberName} para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
-              variant: "default",
-              className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
-            });
+            if (payload.eventType === 'INSERT') {
+              const clientName = newAppt.guestName || 'Um cliente';
+              const barberName = storage.getBarbers().find(b => b.id === newAppt.barberId)?.name || 'um barbeiro';
+              
+              toast({
+                title: "Novo Agendamento! 💈",
+                description: `${clientName} agendou com ${barberName} para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
+                variant: "default",
+                className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
+              });
 
-            // Tenta tocar um som sutil
-            try {
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-              audio.volume = 0.3;
-              audio.play().catch(() => {});
-            } catch (e) {}
+              // Tenta tocar um som sutil
+              try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+                audio.volume = 0.3;
+                audio.play().catch(() => {});
+              } catch (e) {}
+            }
+
+            // Atualiza cache local instantaneamente
+            const currentCache = storage.getAppointments();
+            const cacheIdx = currentCache.findIndex(a => a.id === newAppt.id);
+            if (cacheIdx >= 0) {
+              currentCache[cacheIdx] = newAppt;
+            } else {
+              currentCache.push(newAppt);
+            }
+            localStorage.setItem('appointments', JSON.stringify(currentCache));
+          } else if (payload.eventType === 'DELETE') {
+            const oldAppt = payload.old as Appointment;
+            // Atualiza cache local removendo
+            const currentCache = storage.getAppointments().filter(a => a.id !== oldAppt.id);
+            localStorage.setItem('appointments', JSON.stringify(currentCache));
           }
 
           // Re-busca apenas se não estivermos já sincronizando
@@ -190,6 +208,18 @@ const Appointments = () => {
               filtersRef.current.barberId || undefined, 
               true
             );
+            
+            // Combina o que veio do fetch com o que chegou no payload para garantir
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+               const newAppt = payload.new as Appointment;
+               const existIdx = appts.findIndex(a => a.id === newAppt.id);
+               if (existIdx >= 0) {
+                  appts[existIdx] = newAppt;
+               } else {
+                  appts.push(newAppt);
+               }
+            }
+            
             setAppointments(appts);
           } catch (err) {
             console.error('❌ [Realtime] Erro ao atualizar:', err);
