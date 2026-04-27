@@ -158,6 +158,26 @@ const Appointments = () => {
           const startStr = startDateRef.current ? format(startDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           const endStr = endDateRef.current ? format(endDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
           
+          if (payload.eventType === 'INSERT') {
+            const newAppt = payload.new as Appointment;
+            const clientName = newAppt.guestName || 'Um cliente';
+            const barberName = storage.getBarbers().find(b => b.id === newAppt.barberId)?.name || 'um barbeiro';
+            
+            toast({
+              title: "Novo Agendamento! 💈",
+              description: `${clientName} agendou com ${barberName} para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
+              variant: "default",
+              className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
+            });
+
+            // Tenta tocar um som sutil
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+              audio.volume = 0.3;
+              audio.play().catch(() => {});
+            } catch (e) {}
+          }
+
           // Re-busca apenas se não estivermos já sincronizando
           setIsSyncing(true);
           try {

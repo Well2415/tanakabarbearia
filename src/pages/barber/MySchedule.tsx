@@ -206,8 +206,24 @@ const MyAppointments = () => {
             true // includeImportant = true para garantir que veja pendentes
           );
 
-          // Agendamentos fixos (virtuais) precisam ser re-calculados se a data mudou, 
-          // mas aqui apenas mesclamos os reais novos com o que já temos de virtual
+          if (payload.eventType === 'INSERT') {
+            const newAppt = payload.new as Appointment;
+            const clientName = newAppt.guestName || 'Um cliente';
+            toast({
+              title: "Novo Agendamento! 🆕",
+              description: `${clientName} agendou para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
+              variant: "default",
+              className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
+            });
+            
+            // Tenta tocar um som sutil se o navegador permitir
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+              audio.volume = 0.3;
+              audio.play().catch(() => {});
+            } catch (e) {}
+          }
+
           setAppointments(prev => {
             const virtuals = prev.filter(a => a.isRecurring);
             return [...barberAppointments, ...virtuals];
