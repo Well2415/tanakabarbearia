@@ -21,6 +21,7 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { notificationManager } from '@/lib/notifications';
+import { supabase } from '@/lib/supabase';
 
 const MyAppointments = () => {
   const navigate = useNavigate();

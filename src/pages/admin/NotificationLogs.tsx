@@ -123,7 +123,14 @@ const NotificationLogs = () => {
                             <History className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                             Histórico de Avisos
                         </h2>
-                        <p className="text-sm text-muted-foreground italic">Monitoramento de notificações PWA.</p>
+                        <div className="flex items-center gap-4">
+                            <p className="text-sm text-muted-foreground italic">Monitoramento de notificações PWA.</p>
+                            <Link to="/admin/notifications">
+                                <Button variant="link" className="text-xs p-0 h-auto text-primary flex items-center gap-1">
+                                    <Bell className="w-3 h-3" /> Configurações
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3 h-8">
                         <div className={cn("transition-opacity duration-300", loading ? "opacity-100" : "opacity-0")}>

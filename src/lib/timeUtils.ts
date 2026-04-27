@@ -94,8 +94,11 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
     const name = s.name.toLowerCase();
     const cat = (s.category || '').toLowerCase();
     
-    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo');
-    const isBeard = name.includes('barba') || cat.includes('barba');
+    // Identificação robusta: verifica nome e categoria por termos comuns
+    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo') || name.includes('social') || name.includes('degradê') || name.includes('maquina');
+    const isBeard = name.includes('barba') || cat.includes('barba') || name.includes('barboterapia') || name.includes('aparar');
+    
+    // Um combo ou serviço principal é identificado se for cabelo ou barba
     const isMain = isHair || isBeard;
 
     if (isHair) hasHair = true;

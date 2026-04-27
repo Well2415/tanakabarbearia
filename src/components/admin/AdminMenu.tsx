@@ -53,9 +53,11 @@ export const AdminMenu = () => {
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
+        { name: 'Notificações', path: '/admin/notifications', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
+        { name: 'Notificações', path: '/admin/notifications', icon: Bell },
         { name: 'Produtos', path: '/products', icon: ShoppingBag },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Início', path: '/dashboard', icon: LayoutDashboard },
@@ -300,10 +302,10 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                                     </Link>
                                 </DialogClose>
                                 <DialogClose asChild>
-                                    <Link to="/admin/notifications/logs">
+                                    <Link to="/admin/notifications">
                                         <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
                                             <Bell className="w-5 h-5 text-primary" />
-                                            Logs de Notificações
+                                            Configurações de Avisos
                                         </Button>
                                     </Link>
                                 </DialogClose>
