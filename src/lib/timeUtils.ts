@@ -1,5 +1,5 @@
 import { RecurringSchedule, Service } from '../types';
-import { differenceInCalendarWeeks } from 'date-fns';
+import { differenceInCalendarWeeks, startOfDay } from 'date-fns';
 
 /**
  * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 

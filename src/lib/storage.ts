@@ -2,6 +2,7 @@ import { Barber, Service, Appointment, User, RecurringSchedule, Expense, Product
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT, DEFAULT_PRODUCTS } from './initialData';
 import { sortTimes, getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from './timeUtils';
+import { startOfDay } from 'date-fns';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
 const LogoMenu = "/img/logo-tanaka.png";
