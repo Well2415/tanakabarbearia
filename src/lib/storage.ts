@@ -456,7 +456,7 @@ export const storage = {
 
       // 4. Considera agendamentos recorrentes (bloqueios fixos)
       const recurring = this.getRecurringSchedules();
-      const appointmentDate = new Date(appointment.date + 'T12:00:00');
+      const appointmentDate = startOfDay(new Date(appointment.date + 'T12:00:00'));
       const dayOfWeek = appointmentDate.getDay();
 
       recurring

@@ -55,7 +55,8 @@ export const sortTimes = (times: string[]): string[] => {
 export const isRecurringActive = (schedule: RecurringSchedule, date: Date | string): boolean => {
   if (!schedule.active) return false;
   
-  const targetDate = typeof date === 'string' ? parseLocalDate(date) : date;
+  // Normaliza para o início do dia para evitar problemas com horários próximos à meia-noite
+  const targetDate = startOfDay(typeof date === 'string' ? parseLocalDate(date) : date);
   
   // Se não houver frequência definida ou for semanal, está sempre ativo
   if (!schedule.frequency || schedule.frequency === 'weekly') {
@@ -63,10 +64,17 @@ export const isRecurringActive = (schedule: RecurringSchedule, date: Date | stri
   }
 
   // Para frequências bi-semanais, verificamos a paridade das semanas em relação à data de início
-  if (schedule.frequency === 'biweekly' && schedule.startDate) {
-    const start = parseLocalDate(schedule.startDate);
+  if (schedule.frequency === 'biweekly') {
+    if (!schedule.startDate) {
+      // Se for bi-semanal mas não tiver data de início, não podemos calcular a paridade.
+      // Por segurança, retornamos false para não bloquear indevidamente se a configuração estiver incompleta.
+      return false; 
+    }
+
+    const start = startOfDay(parseLocalDate(schedule.startDate));
     
-    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo)
+    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo por padrão)
+    // Usamos weekStartsOn: 0 (Domingo) para consistência
     const weeksDiff = Math.abs(differenceInCalendarWeeks(targetDate, start, { weekStartsOn: 0 }));
     
     return weeksDiff % 2 === 0;

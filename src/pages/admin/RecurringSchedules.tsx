@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
 import { AdminMenu } from '@/components/admin/AdminMenu';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, differenceInCalendarWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Plus, Trash2, Calendar as CalendarIcon, Clock, User, Scissors, ArrowLeft, Check, ChevronsUpDown, CalendarDays, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -400,9 +400,21 @@ const RecurringSchedules = () => {
                                             />
                                         </PopoverContent>
                                     </Popover>
-                                    <p className="text-[10px] text-zinc-500 ml-1">
-                                        O horário será ativo nesta semana e em todas as semanas ímpares a partir dela (pulando uma).
-                                    </p>
+                                     <p className="text-[10px] text-zinc-500 ml-1">
+                                         O horário será ativo nesta semana e em todas as semanas ímpares a partir dela (pulando uma).
+                                     </p>
+                                     {formData.startDate && (
+                                         <p className={cn(
+                                             "text-[10px] font-bold ml-1 px-2 py-1 rounded-md inline-block",
+                                             Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
+                                                 ? "bg-green-500/10 text-green-500"
+                                                 : "bg-amber-500/10 text-amber-500"
+                                         )}>
+                                             {Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
+                                                 ? "✓ Ativo nesta semana"
+                                                 : "✕ Inativo nesta semana (Próxima semana será ativa)"}
+                                         </p>
+                                     )}
                                 </div>
                             )}
                         </div>

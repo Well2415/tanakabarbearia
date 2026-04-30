@@ -713,7 +713,7 @@ const Appointments = () => {
               }, 0);
 
               return {
-                id: `recurring-${s.id}-${currentDayStr}`,
+                id: `recurring-v-${s.id}-${currentDayStr}`,
                 userId: s.userId,
                 barberId: s.barberId,
                 serviceId: s.serviceId,

@@ -120,7 +120,7 @@ const MyAppointments = () => {
                   serviceIds: sIds,
                   date: currentDayStr,
                   time: s.time,
-                  status: 'pending' as const,
+                  status: 'confirmed' as const,
                   servicePrice: totalPrice,
                   amountPaid: 0,
                   isRecurring: true,
