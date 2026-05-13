@@ -356,7 +356,7 @@ const MyAppointments = () => {
 
       const recurring = storage.getRecurringSchedules();
       recurring
-        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active)
+        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active && isRecurringActive(s, editedDate))
         .forEach(s => {
           busySlots.push(s.time);
         });

@@ -77,7 +77,14 @@ export const isRecurringActive = (schedule: RecurringSchedule, date: Date | stri
     // Usamos weekStartsOn: 0 (Domingo) para consistência
     const weeksDiff = Math.abs(differenceInCalendarWeeks(targetDate, start, { weekStartsOn: 0 }));
     
-    return weeksDiff % 2 === 0;
+    const isActive = weeksDiff % 2 === 0;
+
+    // Log de diagnóstico apenas para bi-semanais para ajudar a identificar problemas de paridade
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Paridade Bi-semanal] Schedule: ${schedule.id}, Target: ${targetDate.toISOString().split('T')[0]}, Start: ${schedule.startDate}, WeeksDiff: ${weeksDiff}, Active: ${isActive}`);
+    }
+    
+    return isActive;
   }
 
   return true;

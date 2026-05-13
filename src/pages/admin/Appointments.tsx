@@ -275,7 +275,7 @@ const Appointments = () => {
       const dayOfWeek = newBookingData.date.getDay();
 
       recurringSchedules
-        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, newBookingData.date))
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -334,7 +334,7 @@ const Appointments = () => {
       const dayOfWeek = editedDate.getDay();
 
       recurringSchedules
-        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active)
+        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, editedDate))
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);

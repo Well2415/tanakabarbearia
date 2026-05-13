@@ -6,8 +6,11 @@ import { storage } from '@/lib/storage';
 import { notificationManager } from '@/lib/notifications';
 import { useToast } from '@/hooks/use-toast';
 import { AdminMenu } from '@/components/admin/AdminMenu';
-import { Bell, BellOff, ArrowLeft, History, Shield, Smartphone, Loader2 } from 'lucide-react';
+import { Bell, BellOff, ArrowLeft, History, Shield, Smartphone, Loader2, Send, Users, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 const Notifications = () => {
     const navigate = useNavigate();
@@ -19,6 +22,14 @@ const Notifications = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
     const [isStandalone, setIsStandalone] = useState(false);
+
+    // Broadcast States
+    const [broadcastTitle, setBroadcastTitle] = useState('Novidade na Barbearia! 💈');
+    const [broadcastBody, setBroadcastBody] = useState('');
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
+    const [pushUserCount, setPushUserCount] = useState(0);
+    const [broadcastProgress, setBroadcastProgress] = useState(0);
+    const [broadcastStats, setBroadcastStats] = useState({ success: 0, error: 0 });
 
     useEffect(() => {
         if (!user || (user.role !== 'admin' && user.role !== 'barber')) {
@@ -39,6 +50,11 @@ const Notifications = () => {
                 const sub = await notificationManager.getSubscription();
                 setPushEnabled(status === 'granted' && !!sub);
             }
+        });
+
+        // Get count of users with push
+        storage.fetchUsersWithPush().then(users => {
+            setPushUserCount(users.length);
         });
     }, [user, navigate]);
 
@@ -125,6 +141,57 @@ const Notifications = () => {
             });
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleSendBroadcast = async () => {
+        if (!user || !broadcastBody.trim()) return;
+        
+        const confirmSend = window.confirm(`Deseja enviar esta mensagem para todos os ${pushUserCount} clientes com notificações ativadas?`);
+        if (!confirmSend) return;
+
+        setIsBroadcasting(true);
+        setBroadcastProgress(0);
+        setBroadcastStats({ success: 0, error: 0 });
+
+        try {
+            const usersWithPush = await storage.fetchUsersWithPush();
+            const total = usersWithPush.length;
+            
+            if (total === 0) {
+                toast({ title: 'Sem Clientes', description: 'Nenhum cliente possui notificações ativadas no momento.', variant: 'destructive' });
+                return;
+            }
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < total; i++) {
+                const targetUser = usersWithPush[i];
+                const result = await notificationManager.sendPushNotification(
+                    targetUser.id,
+                    broadcastTitle,
+                    broadcastBody,
+                    '/'
+                );
+
+                if (result) successCount++;
+                else errorCount++;
+
+                setBroadcastStats({ success: successCount, error: errorCount });
+                setBroadcastProgress(Math.round(((i + 1) / total) * 100));
+            }
+
+            toast({ 
+                title: 'Envio Concluído!', 
+                description: `Sucesso: ${successCount}, Falhas: ${errorCount}.` 
+            });
+            setBroadcastBody('');
+        } catch (error) {
+            console.error('Erro no broadcast:', error);
+            toast({ title: 'Erro no Disparo', description: 'Ocorreu uma falha ao tentar enviar as mensagens em massa.', variant: 'destructive' });
+        } finally {
+            setIsBroadcasting(false);
         }
     };
 
@@ -242,6 +309,112 @@ const Notifications = () => {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Broadcast Section */}
+                    {(user.role === 'admin' || user.role === 'barber') && (
+                        <Card className="border-white/5 bg-black/40 backdrop-blur-md shadow-2xl overflow-hidden rounded-3xl">
+                            <CardHeader className="bg-white/5 border-b border-white/5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-primary/20 rounded-xl">
+                                            <Send className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg text-white font-bold">Mensagem em Massa</CardTitle>
+                                            <CardDescription className="text-zinc-400 text-xs">Envie novidades para todos os clientes.</CardDescription>
+                                        </div>
+                                    </div>
+                                    <div className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20 flex items-center gap-2">
+                                        <Users className="w-3 h-3 text-primary" />
+                                        <span className="text-[10px] font-bold text-primary uppercase">{pushUserCount} Clientes</span>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                {isBroadcasting ? (
+                                    <div className="py-8 space-y-6">
+                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                            <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                                            <div className="text-center">
+                                                <h3 className="text-xl font-bold text-white">Enviando Mensagens...</h3>
+                                                <p className="text-sm text-zinc-400">Não feche esta página até concluir.</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                                                <span>Progresso</span>
+                                                <span>{broadcastProgress}%</span>
+                                            </div>
+                                            <Progress value={broadcastProgress} className="h-3 bg-zinc-800" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl text-center">
+                                                <span className="block text-2xl font-black text-green-500">{broadcastStats.success}</span>
+                                                <span className="text-[10px] text-green-500/70 uppercase font-bold">Sucesso</span>
+                                            </div>
+                                            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-center">
+                                                <span className="block text-2xl font-black text-red-500">{broadcastStats.error}</span>
+                                                <span className="text-[10px] text-red-500/70 uppercase font-bold">Falhas</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 ml-1 uppercase tracking-wider">Título da Notificação</label>
+                                                <Input 
+                                                    value={broadcastTitle}
+                                                    onChange={(e) => setBroadcastTitle(e.target.value)}
+                                                    placeholder="Ex: Promoção de Terça! 💈"
+                                                    className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/50 text-white"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 ml-1 uppercase tracking-wider">Conteúdo da Mensagem</label>
+                                                <Textarea 
+                                                    value={broadcastBody}
+                                                    onChange={(e) => setBroadcastBody(e.target.value)}
+                                                    placeholder="Digite aqui o que deseja enviar para seus clientes..."
+                                                    className="min-h-[120px] bg-white/5 border-white/10 rounded-xl focus:ring-primary/50 text-white resize-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {pushUserCount === 0 ? (
+                                            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+                                                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                                <p className="text-xs text-amber-500/80 leading-relaxed">
+                                                    Nenhum cliente ativou as notificações ainda. O envio em massa só funciona para quem instalou o app e permitiu avisos.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <Button 
+                                                onClick={handleSendBroadcast}
+                                                disabled={!broadcastBody.trim() || isBroadcasting}
+                                                className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                            >
+                                                {isBroadcasting ? (
+                                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Send className="w-5 h-5 mr-2" />
+                                                        DISPARAR PARA {pushUserCount} CLIENTES
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                        
+                                        <p className="text-[10px] text-center text-zinc-500 italic">
+                                            Importante: Use este recurso com moderação para não incomodar seus clientes.
+                                        </p>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Quick Links Section */}
                     {user.role === 'admin' && (

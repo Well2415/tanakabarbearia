@@ -404,16 +404,50 @@ const RecurringSchedules = () => {
                                          O horário será ativo nesta semana e em todas as semanas ímpares a partir dela (pulando uma).
                                      </p>
                                      {formData.startDate && (
-                                         <p className={cn(
-                                             "text-[10px] font-bold ml-1 px-2 py-1 rounded-md inline-block",
-                                             Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
-                                                 ? "bg-green-500/10 text-green-500"
-                                                 : "bg-amber-500/10 text-amber-500"
-                                         )}>
-                                             {Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
-                                                 ? "✓ Ativo nesta semana"
-                                                 : "✕ Inativo nesta semana (Próxima semana será ativa)"}
-                                         </p>
+                                         <div className="space-y-3 mt-2">
+                                            <p className={cn(
+                                                "text-[10px] font-bold ml-1 px-2 py-1 rounded-md inline-block",
+                                                Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
+                                                    ? "bg-green-500/10 text-green-500"
+                                                    : "bg-amber-500/10 text-amber-500"
+                                            )}>
+                                                {Math.abs(differenceInCalendarWeeks(startOfDay(new Date()), formData.startDate, { weekStartsOn: 0 })) % 2 === 0
+                                                    ? "✓ Ativo nesta semana"
+                                                    : "✕ Inativo nesta semana (Próxima semana será ativa)"}
+                                            </p>
+
+                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-3">
+                                                <p className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Próximas datas deste horário:</p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {(() => {
+                                                        const dates = [];
+                                                        let current = new Date(formData.startDate);
+                                                        // Ajusta para o dia da semana selecionado
+                                                        const targetDay = parseInt(formData.dayOfWeek);
+                                                        const currentDay = current.getDay();
+                                                        let diff = targetDay - currentDay;
+                                                        current.setDate(current.getDate() + diff);
+                                                        
+                                                        // Se o ajuste jogou para antes da startDate (mesma semana), mantemos.
+                                                        // differenceInCalendarWeeks garante que fiquem na mesma paridade.
+                                                        
+                                                        for (let i = 0; i < 4; i++) {
+                                                            dates.push(new Date(current));
+                                                            current.setDate(current.getDate() + 14);
+                                                        }
+                                                        return dates.map((d, i) => (
+                                                            <div key={i} className="flex items-center gap-2 text-xs text-zinc-300 bg-white/5 p-2 rounded-lg border border-white/5">
+                                                                <CalendarIcon className="w-3 h-3 text-primary" />
+                                                                <span className="font-medium">{format(d, "dd/MM (EEE)", { locale: ptBR })}</span>
+                                                            </div>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                                <p className="text-[8px] text-zinc-600 italic mt-2">
+                                                    * Baseado na semana de início selecionada acima.
+                                                </p>
+                                            </div>
+                                         </div>
                                      )}
                                 </div>
                             )}

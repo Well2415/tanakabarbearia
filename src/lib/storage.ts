@@ -617,6 +617,23 @@ export const storage = {
     console.log('✅ [Storage] Nova assinatura de push registrada.');
   },
 
+  /**
+   * Busca todos os usuários que possuem uma inscrição de push ativa.
+   * Útil para disparar mensagens em massa.
+   */
+  async fetchUsersWithPush() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, fullName, pushSubscription')
+      .not('pushSubscription', 'is', null);
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao buscar usuários com push:', error);
+      return [];
+    }
+    return data || [];
+  },
+
   async saveUsers(users: User[]) {
     cache.users = users;
     localStorage.setItem('users', JSON.stringify(users));
