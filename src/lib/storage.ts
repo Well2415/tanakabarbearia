@@ -635,8 +635,12 @@ export const storage = {
   },
 
   async saveUsers(users: User[]) {
-    cache.users = users;
-    localStorage.setItem('users', JSON.stringify(users));
+    // Atualiza o cache local mesclando (evita perder usuários não listados na página atual)
+    const userIds = users.map(u => u.id);
+    const otherUsers = cache.users.filter(u => !userIds.includes(u.id));
+    cache.users = [...otherUsers, ...users];
+    saveCacheToLocal();
+    
     const { error } = await supabase.from('users').upsert(users);
     if (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);

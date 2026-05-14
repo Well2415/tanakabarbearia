@@ -69,7 +69,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Barbeiro desconhecido';
 
   const loyaltyPoints = user.loyaltyPoints || 0;
-  const pointsToFreeHaircut = 10; // Example value
+  const pointsToFreeHaircut = storage.getLoyaltyTarget();
 
   const statusColors = {
     pending: 'bg-yellow-500/10 text-yellow-600',
