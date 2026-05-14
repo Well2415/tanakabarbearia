@@ -256,6 +256,24 @@ export const storage = {
   },
 
   /**
+   * Busca um único usuário pelo ID.
+   */
+  async fetchUser(id: string) {
+    try {
+      const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+      if (error) throw error;
+      if (data) {
+        await this.updateUser(data);
+        return data as User;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao buscar usuário individual:', error);
+      return null;
+    }
+  },
+
+  /**
    * Busca despesas por período.
    */
   async fetchExpenses(startDate?: string, endDate?: string) {
