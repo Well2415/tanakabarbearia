@@ -386,19 +386,19 @@ const MyAppointments = () => {
         return sum + (s?.price || 0);
       }, 0);
 
+      // Validar disponibilidade usando o agendamento virtual original
+      const availability = await storage.validateAvailability(appointment);
+      if (!availability.available) {
+        toast({ title: 'Horário Ocupado', description: 'Este horário fixo colidiu com outro agendamento manual feito recentemente.', variant: 'destructive' });
+        return;
+      }
+
       finalAppointment = {
         ...appointment,
         id: `rec-${Date.now()}`, // Novo ID real
         servicePrice: totalServicePrice,
         createdAt: new Date().toISOString(),
       };
-
-      // Validar disponibilidade antes de transformar virtual em real
-      const availability = await storage.validateAvailability(finalAppointment);
-      if (!availability.available) {
-        toast({ title: 'Horário Ocupado', description: 'Este horário fixo colidiu com outro agendamento manual feito recentemente.', variant: 'destructive' });
-        return;
-      }
       
       // Salva no banco (spread para remover flags extras se houver)
       const { ...dbAppointment } = finalAppointment;

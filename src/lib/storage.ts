@@ -483,6 +483,7 @@ export const storage = {
         .forEach(s => {
           // Se for o agendamento recorrente que estamos tentando "efetivar", não bloqueia
           if (appointment.id?.startsWith('recurring-') && appointment.id.includes(s.id)) return;
+          if (appointment.isRecurring && appointment.userId === s.userId && appointment.time === s.time) return;
           
           const sIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(sIds, services);
