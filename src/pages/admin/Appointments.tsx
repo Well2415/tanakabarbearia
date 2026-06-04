@@ -819,8 +819,8 @@ const Appointments = () => {
     if (!updatedAppointment) return;
 
     const newAppointment = { ...updatedAppointment, status };
-    await updateAppointmentInStorage(newAppointment);
 
+    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular
     if (status === 'confirmed') {
       const barber = barbers.find(b => b.id === updatedAppointment.barberId);
       const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
@@ -828,16 +828,21 @@ const Appointments = () => {
         // Envio MANUAL para economizar API nas confirmações por botão
         const link = getWhatsAppManualLink(newAppointment, barber, service);
         if (link) window.open(link, '_blank');
+      }
+    }
 
+    await updateAppointmentInStorage(newAppointment);
+
+    if (status === 'confirmed') {
+      const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
+      if (service && updatedAppointment.userId) {
         // Enviar Notificação Push de Confirmação (a Edge Function verifica a inscrição no Banco)
-        if (updatedAppointment.userId) {
-          await notificationManager.sendPushNotification(
-            updatedAppointment.userId,
-            'Horário Confirmado! ✅',
-            `Seu horário para ${service.name} foi confirmado com sucesso.`,
-            '/dashboard'
-          );
-        }
+        await notificationManager.sendPushNotification(
+          updatedAppointment.userId,
+          'Horário Confirmado! ✅',
+          `Seu horário para ${service.name} foi confirmado com sucesso.`,
+          '/dashboard'
+        );
       }
     }
 

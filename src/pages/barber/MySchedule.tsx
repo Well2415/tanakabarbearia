@@ -406,19 +406,20 @@ const MyAppointments = () => {
     const appointmentToUpdate = appointments.find(a => a.id === id);
     if (!appointmentToUpdate) return;
 
-    await updateAppointmentInStorage({ ...appointmentToUpdate, status });
-    toast({ title: 'Status atualizado', description: 'O agendamento foi atualizado com sucesso' });
-    
+    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular
     if (status === 'confirmed') {
       const barber = storage.getBarbers().find(b => b.id === appointmentToUpdate.barberId);
       const serviceId = appointmentToUpdate.serviceIds?.[0] || appointmentToUpdate.serviceId;
       const service = storage.getServices().find(s => s.id === serviceId);
 
       if (barber && service) {
-        const link = getWhatsAppManualLink(appointmentToUpdate, barber, service);
+        const link = getWhatsAppManualLink({ ...appointmentToUpdate, status }, barber, service);
         if (link) window.open(link, '_blank');
       }
     }
+
+    await updateAppointmentInStorage({ ...appointmentToUpdate, status });
+    toast({ title: 'Status atualizado', description: 'O agendamento foi atualizado com sucesso' });
   };
 
   const statusColors = {
