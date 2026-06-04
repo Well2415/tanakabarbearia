@@ -476,10 +476,13 @@ const Appointments = () => {
     const checkReminders = async () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
+      
+      // Controle local extra para evitar loop infinito caso o Supabase ignore a coluna reminderSent
+      const sentRemindersLocal: string[] = JSON.parse(localStorage.getItem('barbershop_sent_reminders_local') || '[]');
 
       const upcoming = appointments.filter(app => {
         // Apenas agendamentos confirmados hoje, sem lembrete enviado
-        if (app.status !== 'confirmed' || app.reminderSent || app.date !== todayStr) return false;
+        if (app.status !== 'confirmed' || app.reminderSent || sentRemindersLocal.includes(app.id) || app.date !== todayStr) return false;
 
         try {
           const [hours, minutes] = app.time.split(':').map(Number);
@@ -495,11 +498,17 @@ const Appointments = () => {
         }
       });
 
+      let updatedLocal = false;
       for (const app of upcoming) {
         const barber = barbers.find(b => b.id === app.barberId);
         const service = services.find(s => s.id === (app.serviceIds?.[0] || app.serviceId));
         if (barber && service) {
           console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
+          
+          // Marca localmente para evitar spam imediato
+          sentRemindersLocal.push(app.id);
+          updatedLocal = true;
+          
           await sendWhatsApp2HourReminder(app, barber, service);
           
           // Enviar Notificação Push se o usuário tiver ID (a Edge Function verifica a inscrição no Banco)
@@ -515,6 +524,12 @@ const Appointments = () => {
           // Marcar como enviado no storage
           await updateAppointmentInStorage({ ...app, reminderSent: true });
         }
+      }
+      
+      if (updatedLocal) {
+        // Mantém o array local num tamanho razoável
+        if (sentRemindersLocal.length > 500) sentRemindersLocal.splice(0, sentRemindersLocal.length - 200);
+        localStorage.setItem('barbershop_sent_reminders_local', JSON.stringify(sentRemindersLocal));
       }
     };
 
