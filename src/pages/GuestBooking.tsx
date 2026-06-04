@@ -51,12 +51,14 @@ const GuestBooking = () => {
 
   useEffect(() => {
     // Escuta mudanças em tempo real apenas para atualizar a lista local sem dar reload na página
+    console.log('📡 [GuestBooking] Conectando ao Realtime de Agendamentos...');
     const channel = supabase
       .channel('guest-booking-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
         (payload) => {
+          console.log('📡 [GuestBooking] Agendamento alterado ao vivo!', payload.eventType);
           setAppointments(prev => {
             const updated = [...prev];
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
@@ -70,7 +72,11 @@ const GuestBooking = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [GuestBooking] Conectado ao Realtime com sucesso!');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
