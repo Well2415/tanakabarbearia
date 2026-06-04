@@ -129,8 +129,18 @@ const Appointments = () => {
         },
         (payload) => {
           console.log('📡 [Appointments] Agendamento alterado ao vivo!', payload.eventType);
-          // Recarrega os dados do storage para garantir sincronia total
-          initStorage(true);
+          setAppointments(prev => {
+            const updated = [...prev];
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newAppt = payload.new as Appointment;
+              const index = updated.findIndex(a => a.id === newAppt.id);
+              if (index >= 0) updated[index] = newAppt;
+              else updated.push(newAppt);
+            } else if (payload.eventType === 'DELETE') {
+              return updated.filter(a => a.id !== payload.old.id);
+            }
+            return updated;
+          });
         }
       )
       .subscribe((status) => {
