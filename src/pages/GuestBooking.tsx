@@ -47,41 +47,7 @@ const GuestBooking = () => {
     }
   }, [barbers, formData.barberId]);
 
-  const [appointments, setAppointments] = useState<Appointment[]>(storage.getAppointments());
-
-  useEffect(() => {
-    // Escuta mudanças em tempo real apenas para atualizar a lista local sem dar reload na página
-    console.log('📡 [GuestBooking] Conectando ao Realtime de Agendamentos...');
-    const channel = supabase
-      .channel('guest-booking-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
-          console.log('📡 [GuestBooking] Agendamento alterado ao vivo!', payload.eventType);
-          setAppointments(prev => {
-            const updated = [...prev];
-            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-              const index = updated.findIndex(a => a.id === payload.new.id);
-              if (index >= 0) updated[index] = payload.new as Appointment;
-              else updated.push(payload.new as Appointment);
-            } else if (payload.eventType === 'DELETE') {
-              return updated.filter(a => a.id !== payload.old.id);
-            }
-            return updated;
-          });
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [GuestBooking] Conectado ao Realtime com sucesso!');
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const [appointments] = useState<Appointment[]>(storage.getAppointments());
 
   useEffect(() => {
     if (date && formData.barberId) {
