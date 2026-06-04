@@ -21,6 +21,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { User, Appointment, Service } from '@/types';
 import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
+import { supabase } from '@/lib/supabase';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -185,13 +186,43 @@ const NewAppointment = () => {
     }
   }, [barbers, formData.barberId]);
 
+  const [appointments, setAppointments] = useState<Appointment[]>(storage.getAppointments());
+
+  useEffect(() => {
+    // Escuta mudanças em tempo real apenas para atualizar a lista local sem dar reload na página
+    const channel = supabase
+      .channel('new-appointment-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          setAppointments(prev => {
+            const updated = [...prev];
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const index = updated.findIndex(a => a.id === payload.new.id);
+              if (index >= 0) updated[index] = payload.new as Appointment;
+              else updated.push(payload.new as Appointment);
+            } else if (payload.eventType === 'DELETE') {
+              return updated.filter(a => a.id !== payload.old.id);
+            }
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     if (date && formData.barberId) {
       const selectedBarber = barbers.find(b => b.id === formData.barberId);
       if (!selectedBarber) return;
       const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
       const formattedDate = format(date, 'yyyy-MM-dd');
-      const allApps = storage.getAppointments();
+      const allApps = appointments;
       const recurring = storage.getRecurringSchedules();
       const dayOfWeek = date.getDay();
 
@@ -240,7 +271,7 @@ const NewAppointment = () => {
     } else {
       setFilteredTimes([]);
     }
-  }, [date, formData.barberId, barbers, lastBarberDate]);
+  }, [date, formData.barberId, barbers, lastBarberDate, appointments]);
 
   if (!user) return null;
 

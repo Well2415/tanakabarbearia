@@ -22,6 +22,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from '@/lib/timeUtils';
+import { supabase } from '@/lib/supabase';
 const LogoLoginImg = "/img/logo-tanaka.png";
 
 const GuestBooking = () => {
@@ -46,6 +47,36 @@ const GuestBooking = () => {
     }
   }, [barbers, formData.barberId]);
 
+  const [appointments, setAppointments] = useState<Appointment[]>(storage.getAppointments());
+
+  useEffect(() => {
+    // Escuta mudanças em tempo real apenas para atualizar a lista local sem dar reload na página
+    const channel = supabase
+      .channel('guest-booking-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          setAppointments(prev => {
+            const updated = [...prev];
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const index = updated.findIndex(a => a.id === payload.new.id);
+              if (index >= 0) updated[index] = payload.new as Appointment;
+              else updated.push(payload.new as Appointment);
+            } else if (payload.eventType === 'DELETE') {
+              return updated.filter(a => a.id !== payload.old.id);
+            }
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     if (date && formData.barberId) {
       const selectedBarber = barbers.find(b => b.id === formData.barberId);
@@ -53,7 +84,7 @@ const GuestBooking = () => {
 
       const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
       const formattedDate = format(date, 'yyyy-MM-dd');
-      const allAppointments = storage.getAppointments();
+      const allAppointments = appointments;
       const recurringSchedules = storage.getRecurringSchedules();
       const dayOfWeek = date.getDay();
 
@@ -106,7 +137,7 @@ const GuestBooking = () => {
         setLastBarberDate({ barberId: '', date: '' });
       }
     }
-  }, [date, formData.barberId, barbers, lastBarberDate]);
+  }, [date, formData.barberId, barbers, lastBarberDate, appointments]);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
     const s = services.find(srv => srv.id === id);
