@@ -171,6 +171,11 @@ export const storage = {
     }
   },
 
+  async fetchUsersWithPush(): Promise<User[]> {
+    await this.refreshUsers();
+    return cache.users.filter(u => u.pushSubscription && u.pushSubscription !== '');
+  },
+
   async seedDefaultData() {
     console.log('🌱 Seeding default data to Supabase...');
     await supabase.from('services').insert(DEFAULT_SERVICES);

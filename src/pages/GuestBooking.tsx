@@ -137,7 +137,7 @@ const GuestBooking = () => {
         setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
       }
     } else {
-      setFilteredTimes([]);
+      setFilteredTimes(prev => prev.length > 0 ? [] : prev);
       if (lastBarberDate.barberId !== '' || lastBarberDate.date !== '') {
         setFormData(current => ({ ...current, time: '' }));
         setLastBarberDate({ barberId: '', date: '' });

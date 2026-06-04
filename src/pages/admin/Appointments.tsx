@@ -223,7 +223,7 @@ const Appointments = () => {
         setLastBarberDate({ barberId: newBookingData.barberId, date: formattedDate });
       }
     } else {
-      setManualFilteredTimes([]);
+      setManualFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
   }, [newBookingData.date, newBookingData.barberId, appointments, barbers]);
 
@@ -288,7 +288,7 @@ const Appointments = () => {
 
       setEditFilteredTimes(available);
     } else {
-      setEditFilteredTimes([]);
+      setEditFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
   }, [editedDate, editedBarberId, appointments, barbers, appointmentToEdit]);
 
@@ -490,13 +490,21 @@ const Appointments = () => {
   // Lógica de Lembrete Automático (2 horas antes)
   useEffect(() => {
     const checkReminders = async () => {
+      // Se lembretes automáticos estiverem desativados, não faz nada
+      if (!storage.getAutoReminders()) return;
+
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
       
       // Controle local extra para evitar loop infinito caso o Supabase ignore a coluna reminderSent
       const sentRemindersLocal: string[] = JSON.parse(localStorage.getItem('barbershop_sent_reminders_local') || '[]');
 
-      const upcoming = appointments.filter(app => {
+      // Obtém os dados diretamente do storage para garantir que estamos lendo os dados atualizados sem re-registrar o hook
+      const currentAppointments = storage.getAppointments();
+      const currentBarbers = storage.getBarbers();
+      const currentServices = storage.getServices();
+
+      const upcoming = currentAppointments.filter(app => {
         // Apenas agendamentos confirmados hoje, sem lembrete enviado
         if (app.status !== 'confirmed' || app.reminderSent || sentRemindersLocal.includes(app.id) || app.date !== todayStr) return false;
 
@@ -516,13 +524,14 @@ const Appointments = () => {
 
       let updatedLocal = false;
       for (const app of upcoming) {
-        const barber = barbers.find(b => b.id === app.barberId);
-        const service = services.find(s => s.id === (app.serviceIds?.[0] || app.serviceId));
+        const barber = currentBarbers.find(b => b.id === app.barberId);
+        const service = currentServices.find(s => s.id === (app.serviceIds?.[0] || app.serviceId));
         if (barber && service) {
           console.log(`⏰ Enviando lembrete automático de 2h para ${app.guestName || app.userId}`);
           
-          // Marca localmente para evitar spam imediato
+          // Marca localmente antes do await assíncrono para blindar execuções simultâneas
           sentRemindersLocal.push(app.id);
+          localStorage.setItem('barbershop_sent_reminders_local', JSON.stringify(sentRemindersLocal));
           updatedLocal = true;
           
           await sendWhatsApp2HourReminder(app, barber, service);
@@ -531,7 +540,7 @@ const Appointments = () => {
           if (app.userId) {
             await notificationManager.sendPushNotification(
               app.userId,
-            'Aviso de Agendamento',
+              'Aviso de Agendamento',
               `Faltam 2 horas para o seu serviço de ${service.name} na Tanaka Barbearia!`,
               '/dashboard'
             );
@@ -556,7 +565,7 @@ const Appointments = () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [appointments, barbers, services]);
+  }, []);
 
 
 

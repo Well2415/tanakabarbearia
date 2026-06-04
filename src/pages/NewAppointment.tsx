@@ -275,7 +275,7 @@ const NewAppointment = () => {
         setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
       }
     } else {
-      setFilteredTimes([]);
+      setFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
   }, [date, formData.barberId, barbers, lastBarberDate, appointments]);
 
