@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { notificationManager } from '@/lib/notifications';
 import { getWhatsAppManualLink } from '@/lib/whatsapp';
+import { supabase } from '@/lib/supabase';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -167,6 +168,29 @@ const MyAppointments = () => {
     };
 
     initAndFetch();
+
+    // Escuta mudanças em tempo real para manter o painel atualizado
+    const channel = supabase
+      .channel('barber-schedule-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          console.log('📡 [MySchedule] Agendamento alterado ao vivo!');
+          storage.initialize(true).then(() => {
+            initAndFetch();
+          });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [MySchedule] Conectado ao Realtime com sucesso!');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [navigate, toast, startDate, endDate, user?.barberId]);
 
   if (!user || user.role !== 'barber') return null;
