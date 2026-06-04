@@ -55,11 +55,21 @@ const NotificationLogs = () => {
                     .range(from, to);
                 
                 if (error) throw error;
-                setLogs(data?.map(log => ({ ...log, createdAt: log.created_at })) || []);
+                setLogs(data?.map(log => ({ 
+                    ...log, 
+                    createdAt: log.created_at, 
+                    userId: log.user_id, 
+                    errorMessage: log.error_message 
+                })) || []);
                 if (countAlt !== null) setTotalCount(countAlt);
             } else {
                 if (logsError) throw logsError;
-                setLogs(logsData || []);
+                setLogs(logsData?.map(log => ({ 
+                    ...log, 
+                    createdAt: log.created_at || log.createdAt, 
+                    userId: log.user_id || log.userId, 
+                    errorMessage: log.error_message || log.errorMessage 
+                })) || []);
                 if (count !== null) setTotalCount(count);
             }
 
