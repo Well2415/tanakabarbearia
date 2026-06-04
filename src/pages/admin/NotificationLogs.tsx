@@ -46,32 +46,19 @@ const NotificationLogs = () => {
             }
 
             const { data: logsData, error: logsError, count } = await query
-                .order('createdAt', { ascending: false })
+                .order('created_at', { ascending: false })
                 .range(from, to);
 
-            if (logsError && logsError.message.includes('createdAt')) {
-                const { data, error, count: countAlt } = await query
-                    .order('created_at', { ascending: false })
-                    .range(from, to);
-                
-                if (error) throw error;
-                setLogs(data?.map(log => ({ 
-                    ...log, 
-                    createdAt: log.created_at, 
-                    userId: log.user_id, 
-                    errorMessage: log.error_message 
-                })) || []);
-                if (countAlt !== null) setTotalCount(countAlt);
-            } else {
-                if (logsError) throw logsError;
-                setLogs(logsData?.map(log => ({ 
-                    ...log, 
-                    createdAt: log.created_at || log.createdAt, 
-                    userId: log.user_id || log.userId, 
-                    errorMessage: log.error_message || log.errorMessage 
-                })) || []);
-                if (count !== null) setTotalCount(count);
-            }
+            if (logsError) throw logsError;
+
+            setLogs(logsData?.map(log => ({ 
+                ...log, 
+                createdAt: log.created_at || log.createdAt, 
+                userId: log.user_id || log.userId, 
+                errorMessage: log.error_message || log.errorMessage 
+            })) || []);
+
+            if (count !== null) setTotalCount(count);
 
             setUsers(storage.getUsers());
         } catch (error) {
