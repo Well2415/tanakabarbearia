@@ -168,7 +168,7 @@ const GuestBooking = () => {
       const allUsers = storage.getUsers();
       const primaryService = services.find(s => s.id === newAppointment.serviceId);
       const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
-      const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+      const notificationBody = `Novo agendamento de ${newAppointment.guestName} - ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
 
       // 1. Notificar Barbeiro específico da reserva
       const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
