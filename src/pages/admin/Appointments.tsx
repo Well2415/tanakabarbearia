@@ -8,7 +8,7 @@ import { sendWhatsAppConfirmation, getWhatsAppManualLink, sendWhatsApp2HourRemin
 import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO, isAfter, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -117,6 +117,7 @@ const Appointments = () => {
   // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
   useEffect(() => {
     // Configura a escuta da tabela de agendamentos
+    console.log('📡 [Appointments] Conectando ao Realtime de Agendamentos...');
     const channel = supabase
       .channel('appointments-realtime')
       .on(
@@ -127,11 +128,16 @@ const Appointments = () => {
           table: 'appointments'
         },
         (payload) => {
+          console.log('📡 [Appointments] Agendamento alterado ao vivo!', payload.eventType);
           // Recarrega os dados do storage para garantir sincronia total
           initStorage(true);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [Appointments] Conectado ao Realtime com sucesso!');
+        }
+      });
 
     // Limpeza da conexão ao sair da tela
     return () => {
@@ -1237,7 +1243,10 @@ const Appointments = () => {
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl text-center">Concluir Agendamento</DialogTitle>
+            <DialogDescription className="hidden">Modal de conclusão de agendamento</DialogDescription>
+          </DialogHeader>
           <div className="py-4 space-y-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">
@@ -1319,8 +1328,6 @@ const Appointments = () => {
               </Select>
             </div>
 
-            {/* Seção de Pix Dinâmico removida para unificação de gateway */}
-
             {paymentType === 'link' && isMPConfigured() && (
               <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/20 flex flex-col items-center text-center shadow-inner">
                 {!preferenceUrl ? (
@@ -1393,7 +1400,10 @@ const Appointments = () => {
       {/* Edit Appointment Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Editar Agendamento</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-bold mb-2">Editar Agendamento</DialogTitle>
+            <DialogDescription className="hidden">Modal para edição de agendamento</DialogDescription>
+          </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
               <Label>Data</Label>
@@ -1531,7 +1541,10 @@ const Appointments = () => {
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[400px] p-4 sm:p-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription className="hidden">Modal para excluir agendamento</DialogDescription>
+          </DialogHeader>
           <div className="py-4">
             <p>Tem certeza que deseja excluir o agendamento de <span className="font-bold">{getClientName(appointmentToDelete!)}</span>?</p>
             <p className="text-sm text-muted-foreground">Esta ação não pode ser desfeita.</p>
@@ -1547,7 +1560,8 @@ const Appointments = () => {
       <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-md p-6 outline-none pb-28 md:pb-6 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
-            <DialogTitle>Marcar Horário Manualmente</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">Novo Agendamento Manual</DialogTitle>
+            <DialogDescription className="hidden">Modal para criar agendamento manual</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
             <div>

@@ -7,7 +7,7 @@ import { storage } from '@/lib/storage';
 import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO, isAfter, isBefore, isSameDay, startOfDay } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -601,7 +601,10 @@ const MyAppointments = () => {
       {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[500px] p-5 max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Finalizar Agendamento</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl text-center">Concluir Agendamento</DialogTitle>
+            <DialogDescription className="hidden">Modal de conclusão de agendamento</DialogDescription>
+          </DialogHeader>
           <div className="py-2 space-y-4">
             <p className="mb-2 text-sm text-muted-foreground">
               Finalizando atendimento de <span className="font-bold text-foreground">{getClientName(currentAppointmentToComplete!)}</span>.<br />
@@ -723,7 +726,10 @@ const MyAppointments = () => {
       {/* Edit Appointment Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6" aria-describedby={undefined}>
-          <DialogHeader><DialogTitle>Corrigir Agendamento</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl font-bold mb-2">Editar Agendamento</DialogTitle>
+            <DialogDescription className="hidden">Modal para edição de agendamento</DialogDescription>
+          </DialogHeader>
           <div className="py-4 space-y-4">
             <div>
               <Label>Data</Label>
