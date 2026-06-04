@@ -725,10 +725,15 @@ const Appointments = () => {
       }
     })
     .sort((a, b) => {
-      // Pending first
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      
+      const priority = (status: string) => {
+        if (status === 'pending') return 1;
+        if (status === 'in_progress') return 2;
+        return 3;
+      };
+      const pA = priority(a.status);
+      const pB = priority(b.status);
+      if (pA !== pB) return pA - pB;
+
       const dateA = new Date(`${a.date}T${a.time}`).getTime();
       const dateB = new Date(`${b.date}T${b.time}`).getTime();
       return dateB - dateA; // Newest first

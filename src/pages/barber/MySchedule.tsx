@@ -560,10 +560,15 @@ const MyAppointments = () => {
             <Card className="p-8 text-center border-border"><p className="text-muted-foreground">Nenhum agendamento encontrado para você.</p></Card>
           ) : (
             appointments.sort((a, b) => {
-              // Pending first
-              if (a.status === 'pending' && b.status !== 'pending') return -1;
-              if (a.status !== 'pending' && b.status === 'pending') return 1;
-              // Then newest date first
+              const priority = (status: string) => {
+                if (status === 'pending') return 1;
+                if (status === 'in_progress') return 2;
+                return 3;
+              };
+              const pA = priority(a.status);
+              const pB = priority(b.status);
+              if (pA !== pB) return pA - pB;
+
               return new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime();
             }).map((appointment) => (
               <Card key={appointment.id} className="p-6 border-border">
