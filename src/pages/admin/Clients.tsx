@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -13,7 +13,6 @@ import { AdminMenu } from '@/components/admin/AdminMenu';
 import { CreateClientDialog } from '@/components/admin/CreateClientDialog';
 import { useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -28,9 +27,6 @@ const Clients = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [viewingHistoryClient, setViewingHistoryClient] = useState<User | null>(null);
-  const [clientHistory, setClientHistory] = useState<Appointment[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,7 +34,6 @@ const Clients = () => {
   const [searchParams] = useSearchParams();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'points_desc' | 'points_asc'>('name');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (searchParams.get('action') === 'new-client') {
@@ -47,8 +42,24 @@ const Clients = () => {
     }
   }, [searchParams]);
 
-  const [totalItems, setTotalItems] = useState(0);
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const filteredClients = useMemo(() => {
+    const filtered = clients.filter(client => {
+      const search = searchTerm.toLowerCase();
+      const nameMatch = client.fullName.toLowerCase().includes(search);
+      const emailMatch = client.email?.toLowerCase().includes(search);
+      const phoneMatch = client.phone?.includes(search);
+      return nameMatch || emailMatch || phoneMatch;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'points_desc') return (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0);
+      if (sortBy === 'points_asc') return (a.loyaltyPoints || 0) - (b.loyaltyPoints || 0);
+      return a.fullName.localeCompare(b.fullName);
+    });
+  }, [clients, searchTerm, sortBy]);
+
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const displayedClients = filteredClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Effect to load loyalty target only once on mount
   useEffect(() => {
@@ -58,53 +69,21 @@ const Clients = () => {
   }, []); // Empty dependency array means it runs once on mount
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || user.role !== 'admin') {
-        toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
-        navigate('/dashboard');
-        return;
+    if (!user || (user.role !== 'admin' && user.role !== 'barber')) {
+      toast({ title: "Acesso Negado", description: "Você não tem permissão para acessar esta página.", variant: "destructive" });
+      navigate('/dashboard');
+    } else {
+      const newClients = storage.getUsers().filter(u => u.role === 'client');
+      const newAppointments = storage.getAppointments();
+
+      if (JSON.stringify(newClients) !== JSON.stringify(clients)) {
+        setClients(newClients);
       }
-
-      setLoading(true);
-      try {
-        await storage.initializeConfig();
-        
-        let sortField = 'fullName';
-        let sortOrder: 'asc' | 'desc' = 'asc';
-
-        if (sortBy === 'points_desc') {
-          sortField = 'loyaltyPoints';
-          sortOrder = 'desc';
-        } else if (sortBy === 'points_asc') {
-          sortField = 'loyaltyPoints';
-          sortOrder = 'asc';
-        }
-
-        const { data: usersList, total } = await storage.fetchUsers(
-          itemsPerPage, 
-          (currentPage - 1) * itemsPerPage, 
-          searchTerm,
-          sortField,
-          sortOrder
-        );
-
-        setClients(usersList.filter(u => u.role === 'client'));
-        setTotalItems(total);
-        
-        // Busca apenas agendamentos recentes (últimos 100) para evitar sobrecarga no banco de dados
-        // e exceder a cota de transferência (Egress) do Supabase.
-        const { data: apptsList } = await storage.fetchAppointments(undefined, undefined, 100);
-        setAppointments(apptsList);
-      } catch (error) {
-        console.error('❌ [Clients] Erro ao carregar dados:', error);
-      } finally {
-        setLoading(false);
+      if (JSON.stringify(newAppointments) !== JSON.stringify(appointments)) {
+        setAppointments(newAppointments);
       }
-    };
-
-    fetchData();
-  }, [user, navigate, toast, currentPage, searchTerm, sortBy]);
-
+    }
+  }, [user, navigate, toast, clients, appointments]);
 
   useEffect(() => {
     if (editingClient) {
@@ -112,7 +91,7 @@ const Clients = () => {
     }
   }, [editingClient]);
 
-  if (!user || user.role !== 'admin') return null;
+  if (!user || (user.role !== 'admin' && user.role !== 'barber')) return null;
 
   // New function to handle saving loyalty target
   const handleSaveLoyaltyTarget = async () => {
@@ -144,10 +123,6 @@ const Clients = () => {
       toast({ title: 'Erro', description: 'Por favor, insira uma nova senha.', variant: 'destructive' });
       return;
     }
-    if (password !== confirmPassword) {
-      toast({ title: 'Erro', description: 'As senhas não coincidem.', variant: 'destructive' });
-      return;
-    }
 
     const allUsers = storage.getUsers();
     const updatedUsers = allUsers.map(u =>
@@ -160,20 +135,6 @@ const Clients = () => {
     setPassword('');
     setConfirmPassword('');
     toast({ title: 'Senha atualizada!', description: `A senha de ${editingClient.fullName} foi alterada com sucesso.` });
-  };
-
-  const handleViewHistory = async (client: User) => {
-    setViewingHistoryClient(client);
-    setLoadingHistory(true);
-    try {
-      const { data } = await storage.fetchAppointments(undefined, undefined, 200, 0, client.id);
-      setClientHistory(data);
-    } catch (error) {
-      console.error('Erro ao buscar histórico:', error);
-      toast({ title: 'Erro', description: 'Não foi possível carregar o histórico.', variant: 'destructive' });
-    } finally {
-      setLoadingHistory(false);
-    }
   };
 
   return (
@@ -237,14 +198,14 @@ const Clients = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {clients.length === 0 ? (
+          {displayedClients.length === 0 ? (
             <Card className="p-8 text-center border-border border-dashed bg-muted/20 col-span-full">
               <p className="text-muted-foreground">
                 {searchTerm ? 'Nenhum cliente encontrado para sua pesquisa.' : 'Nenhum cliente cadastrado ainda.'}
               </p>
             </Card>
           ) : (
-            clients.map((client) => (
+            displayedClients.map((client) => (
               <Card key={client.id} className="p-4 md:p-6 border-border flex flex-col hover:border-primary/30 transition-colors">
                 <div className="flex-grow">
                   <h3 className="text-lg md:text-xl font-bold mb-3">{client.fullName}</h3>
@@ -252,56 +213,17 @@ const Clients = () => {
                     {client.phone && <div className="flex items-center gap-2 text-zinc-500"><Phone className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{client.phone}</span></div>}
                     {client.email && <div className="flex items-center gap-2 text-zinc-500"><Mail className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm truncate">{client.email}</span></div>}
                     <div className="flex items-center gap-2 text-zinc-500"><Calendar className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{getClientAppointmentsCount(client.id)} agendamento(s)</span></div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20">
-                        <Star className="w-3.5 h-3.5" />
-                        <span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts</span>
-                      </div>
-                      
-                      {(client.noShowCount || 0) > 0 && (
-                        <div className={cn(
-                          "flex items-center gap-2 w-fit px-3 py-1 rounded-full border",
-                          (client.noShowCount || 0) >= 2 
-                            ? "bg-red-500/10 text-red-600 border-red-500/20 font-black" 
-                            : "bg-orange-500/10 text-orange-600 border-orange-500/20 font-bold"
-                        )}>
-                          <X className="w-3.5 h-3.5" />
-                          <span className="text-[11px] uppercase tracking-tighter">
-                            {(client.noShowCount || 0) >= 2 ? 'Restrito: ' : ''}
-                            {client.noShowCount} Falta(s)
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                    <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20"><Star className="w-3.5 h-3.5" /><span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts de fidelidade</span></div>
                   </div>
                   <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
-                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 grid grid-cols-2 gap-2">
-                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
-                    <Edit className="w-3.5 h-3.5 mr-1.5" />Pontos
+                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 gap-2">
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
+                    <Edit className="w-4 h-4 mr-2" />Pontos
                   </Button>
-                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => handleViewHistory(client)}>
-                    <Calendar className="w-3.5 h-3.5 mr-1.5" />Histórico
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
+                    <Lock className="w-4 h-4 mr-2" />Senha
                   </Button>
-                  <Button variant="outline" className="text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
-                    <Lock className="w-3.5 h-3.5 mr-1.5" />Senha
-                  </Button>
-                  {(client.noShowCount || 0) > 0 && (
-                    <Button 
-                      variant="outline" 
-                      className="text-xs h-10 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors rounded-xl font-medium" 
-                      onClick={async () => {
-                        const allUsers = storage.getUsers();
-                        const updatedUsers = allUsers.map(u => u.id === client.id ? { ...u, noShowCount: 0 } : u);
-                        await storage.saveUsers(updatedUsers);
-                        setClients(updatedUsers.filter(u => u.role === 'client'));
-                        toast({ title: 'Faltas Zeradas', description: `O contador de faltas de ${client.fullName} foi resetado.` });
-                      }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />Zerar
-                    </Button>
-                  )}
                 </CardFooter>
               </Card>
             ))
@@ -311,7 +233,7 @@ const Clients = () => {
         {/* Pagination Controls */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground text-center sm:text-left">
-            Mostrando <span className="font-medium">{clients.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> de <span className="font-medium">{totalItems}</span> clientes
+            Mostrando <span className="font-medium">{filteredClients.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredClients.length)}</span> de <span className="font-medium">{filteredClients.length}</span> clientes
           </p>
           <div className="flex items-center gap-2">
             <Button 
@@ -359,77 +281,37 @@ const Clients = () => {
 
       {/* Change Password Dialog */}
       <Dialog open={!!editingClient && isChangingPassword} onOpenChange={(isOpen) => !isOpen && (setEditingClient(null), setIsChangingPassword(false))}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[400px] p-4 rounded-xl">
           <DialogHeader>
-            <DialogTitle>Alterar Senha do Cliente</DialogTitle>
-            <DialogDescription>
-              Defina uma nova senha segura para o acesso deste cliente.
+            <DialogTitle className="text-xl">Acesso do Cliente</DialogTitle>
+            <DialogDescription className="text-sm">
+              Visualize ou altere os dados de acesso de <span className="font-bold text-foreground">{editingClient?.fullName}</span>.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }} className="py-4 space-y-4">
-            <p className="text-sm text-muted-foreground">Definindo nova senha para <span className="font-bold text-foreground">{editingClient?.fullName}</span></p>
-            <div className="space-y-2">
-              <Label htmlFor="new-password">Nova Senha</Label>
-              <Input id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
+          <form onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }} className="py-2 space-y-4">
+            <div className="bg-muted/30 p-4 rounded-xl border border-border/50 space-y-3">
+               <div>
+                 <Label className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Login (Usuário)</Label>
+                 <div className="font-medium text-base mt-0.5 select-all">{editingClient?.username || editingClient?.phone || 'Não definido'}</div>
+               </div>
+               <div>
+                 <Label className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Senha Atual</Label>
+                 <div className="font-medium text-base mt-0.5 select-all">{editingClient?.password || 'Não definida'}</div>
+               </div>
             </div>
             
-            <DialogFooter className="mt-6">
-              <DialogClose asChild><Button type="button" variant="ghost">Cancelar</Button></DialogClose>
-              <Button type="submit">Alterar Senha</Button>
+            <div className="pt-2 border-t border-border/50 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Definir Nova Senha</Label>
+                <Input id="new-password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Digite a nova senha" required className="h-12 text-base" />
+              </div>
+            </div>
+            
+            <DialogFooter className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <Button type="submit" className="w-full h-12 text-base font-bold">Salvar Nova Senha</Button>
+              <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* History Dialog */}
-      <Dialog open={!!viewingHistoryClient} onOpenChange={(isOpen) => !isOpen && setViewingHistoryClient(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Histórico de Agendamentos</DialogTitle>
-            <DialogDescription>
-              Agendamentos de <span className="font-bold text-foreground">{viewingHistoryClient?.fullName}</span>
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {loadingHistory ? (
-              <div className="flex justify-center py-8 text-muted-foreground italic">Carregando histórico...</div>
-            ) : clientHistory.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground italic">Nenhum agendamento encontrado para este cliente.</div>
-            ) : (
-              <div className="space-y-3">
-                {clientHistory.map(app => (
-                  <div key={app.id} className="p-4 border rounded-xl bg-card flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-sm">{new Date(app.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
-                      <p className="text-xs text-muted-foreground">{app.time}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{storage.getServices().find(s => s.id === (app.serviceIds?.[0] || app.serviceId))?.name || 'Serviço'}</p>
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase",
-                        app.status === 'completed' ? "bg-green-500/10 text-green-600" :
-                        app.status === 'cancelled' ? "bg-red-500/10 text-red-600" : "bg-zinc-500/10 text-zinc-600"
-                      )}>
-                        {app.status === 'pending' ? 'Pendente' : 
-                         app.status === 'confirmed' ? 'Confirmado' : 
-                         app.status === 'completed' ? 'Concluído' : 
-                         app.status === 'cancelled' ? 'Cancelado' : app.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Fechar</Button></DialogClose>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

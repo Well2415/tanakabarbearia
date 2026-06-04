@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { notificationManager } from '@/lib/notifications';
-import { supabase } from '@/lib/supabase';
+import { getWhatsAppManualLink } from '@/lib/whatsapp';
 
 const MyAppointments = () => {
   const navigate = useNavigate();
@@ -62,26 +62,28 @@ const MyAppointments = () => {
         return;
       }
 
+      const allAppointments = storage.getAppointments();
+      const recurringSchedules = storage.getRecurringSchedules();
       const barberProfile = storage.getBarbers().find(b => b.id === user.barberId);
 
       if (barberProfile && startDate && endDate) {
         const start = startOfDay(startDate);
         const end = startOfDay(endDate);
-        const startStr = format(start, 'yyyy-MM-dd');
-        const endStr = format(end, 'yyyy-MM-dd');
 
-        // 1. Busca agendamentos reais do barbeiro NO INTERVALO diretamente no Supabase
-        const { data: barberAppointments } = await storage.fetchAppointments(
-          startStr, 
-          endStr, 
-          500, 
-          0, 
-          undefined, 
-          user.barberId,
-          true // includeImportant = true (para mostrar pendentes de outras datas)
-        );
-        
-        const recurringSchedules = storage.getRecurringSchedules();
+        // 1. Agendamentos reais do barbeiro NO INTERVALO
+        const barberAppointments = allAppointments.filter(appt => {
+          if (appt.barberId !== barberProfile.id) return false;
+          
+          // Agendamentos pendentes OU com sinal pago sempre aparecem para o barbeiro
+          const hasSignal = appt.amountPaid && appt.amountPaid > 0;
+          const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
+          
+          if (isImportant) return true;
+
+          const apptDate = parseLocalDate(appt.date);
+          return (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
+                 (isSameDay(apptDate, end) || isBefore(apptDate, end));
+        });
         
         // 2. Agendamentos fixos (recorrentes) NO INTERVALO
         const virtualAppointments: Appointment[] = [];
@@ -120,7 +122,7 @@ const MyAppointments = () => {
                   serviceIds: sIds,
                   date: currentDayStr,
                   time: s.time,
-                  status: 'confirmed' as const,
+                  status: 'pending' as const,
                   servicePrice: totalPrice,
                   amountPaid: 0,
                   isRecurring: true,
@@ -167,103 +169,6 @@ const MyAppointments = () => {
     initAndFetch();
   }, [navigate, toast, startDate, endDate, user?.barberId]);
 
-  // Refs para manter os valores atuais acessíveis dentro da assinatura realtime estável
-  const startDateRef = useRef(startDate);
-  const endDateRef = useRef(endDate);
-  
-  useEffect(() => { startDateRef.current = startDate; }, [startDate]);
-  useEffect(() => { endDateRef.current = endDate; }, [endDate]);
-
-  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO) - Estável, criada apenas uma vez
-  useEffect(() => {
-    if (!user?.barberId) return;
-
-    console.log('🔌 [Realtime] Inicializando canal do barbeiro...');
-    
-    const channel = supabase
-      .channel(`barber-schedule-${user.barberId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
-          filter: `barberId=eq.${user.barberId}`
-        },
-        async (payload) => {
-          console.log('🔄 [Realtime] Nova mudança no banco detectada:', payload.eventType);
-          
-          const startStr = startDateRef.current ? format(startOfDay(startDateRef.current), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-          const endStr = endDateRef.current ? format(startOfDay(endDateRef.current), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-          
-          const { data: barberAppointments } = await storage.fetchAppointments(
-            startStr, 
-            endStr, 
-            500, 
-            0, 
-            undefined, 
-            user.barberId,
-            true // includeImportant = true para garantir que veja pendentes
-          );
-
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newAppt = payload.new as Appointment;
-            
-            if (payload.eventType === 'INSERT') {
-              const clientName = newAppt.guestName || 'Um cliente';
-              toast({
-                title: "Novo Agendamento! 🆕",
-                description: `${clientName} agendou para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
-                variant: "default",
-                className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
-              });
-              
-              // Tenta tocar um som sutil se o navegador permitir
-              try {
-                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-                audio.volume = 0.3;
-                audio.play().catch(() => {});
-              } catch (e) {}
-            }
-
-            // Atualiza cache local instantaneamente
-            const currentCache = storage.getAppointments();
-            const cacheIdx = currentCache.findIndex(a => a.id === newAppt.id);
-            if (cacheIdx >= 0) {
-              currentCache[cacheIdx] = newAppt;
-            } else {
-              currentCache.push(newAppt);
-            }
-            localStorage.setItem('appointments', JSON.stringify(currentCache));
-
-            // Atualiza estado local instantaneamente (sem esperar o fetch do banco)
-            setAppointments(prev => {
-              const virtuals = prev.filter(a => a.isRecurring);
-              const reals = [...barberAppointments];
-              
-              const existIdx = reals.findIndex(a => a.id === newAppt.id);
-              if (existIdx >= 0) {
-                reals[existIdx] = newAppt;
-              } else {
-                reals.push(newAppt);
-              }
-              
-              return [...reals, ...virtuals];
-            });
-          } else if (payload.eventType === 'DELETE') {
-            const oldAppt = payload.old as Appointment;
-            setAppointments(prev => prev.filter(a => a.id !== oldAppt.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔌 [Realtime] Desconectando canal do barbeiro.');
-      supabase.removeChannel(channel);
-    };
-  }, [user?.barberId]);
-
   if (!user || user.role !== 'barber') return null;
 
   const users = storage.getUsers();
@@ -283,22 +188,28 @@ const MyAppointments = () => {
   const updateAppointmentInStorage = async (updatedAppointment: Appointment) => {
     await storage.updateAppointment(updatedAppointment);
     
-    // Refresh local state by refetching from server
-    if (user?.barberId && startDate && endDate) {
-      const startStr = format(startOfDay(startDate), 'yyyy-MM-dd');
-      const endStr = format(startOfDay(endDate), 'yyyy-MM-dd');
-      const { data: barberAppointments } = await storage.fetchAppointments(
-        startStr, 
-        endStr, 
-        500, 
-        0, 
-        undefined, 
-        user.barberId,
-        true // includeImportant = true
-      );
-      
+    // Refresh local state
+    const all = storage.getAppointments();
+    const barberProfile = storage.getBarbers().find(b => b.id === user?.barberId);
+    if (barberProfile && startDate && endDate) {
+      const barberAppointments = all.filter(appt => {
+        if (appt.barberId !== barberProfile.id) return false;
+        const apptDate = parseLocalDate(appt.date);
+        return (isSameDay(apptDate, startDate) || isAfter(apptDate, startDate)) && 
+               (isSameDay(apptDate, endDate) || isBefore(apptDate, endDate));
+      });
       setAppointments(prev => {
-        const virtuals = prev.filter(p => p.isRecurring);
+        const virtuals = prev.filter(p => {
+          if (p.isRecurring && p.id.startsWith('recurring-v-')) {
+            // Evitar duplicados com agendamentos reais (mesma lógica do initAndFetch)
+            return !barberAppointments.some(ba => 
+              ba.date === p.date && 
+              ba.userId === p.userId && 
+              ba.status !== 'cancelled'
+            );
+          }
+          return false; // se não for virtual (id: recurring-v-...), não deve ficar em virtuals
+        });
         return [...barberAppointments, ...virtuals];
       });
     }
@@ -306,20 +217,6 @@ const MyAppointments = () => {
 
   const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
-      const availability = await storage.validateAvailability({
-        id: appointmentToEdit.id,
-        barberId: user?.barberId,
-        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
-        time: editedTime,
-        serviceIds: appointmentToEdit.serviceIds,
-        serviceId: editedServiceId
-      });
-
-      if (!availability.available) {
-        toast({ title: "Conflito de Horário", description: availability.message, variant: "destructive" });
-        return;
-      }
-
       const updatedAppointment: Appointment = {
         ...appointmentToEdit,
         id: appointmentToEdit.id,
@@ -356,7 +253,7 @@ const MyAppointments = () => {
 
       const recurring = storage.getRecurringSchedules();
       recurring
-        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active && isRecurringActive(s, editedDate))
+        .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active)
         .forEach(s => {
           busySlots.push(s.time);
         });
@@ -385,13 +282,6 @@ const MyAppointments = () => {
         const s = servicesData.find(srv => srv.id === id);
         return sum + (s?.price || 0);
       }, 0);
-
-      // Validar disponibilidade usando o agendamento virtual original
-      const availability = await storage.validateAvailability(appointment);
-      if (!availability.available) {
-        toast({ title: 'Horário Ocupado', description: 'Este horário fixo colidiu com outro agendamento manual feito recentemente.', variant: 'destructive' });
-        return;
-      }
 
       finalAppointment = {
         ...appointment,
@@ -518,6 +408,17 @@ const MyAppointments = () => {
 
     await updateAppointmentInStorage({ ...appointmentToUpdate, status });
     toast({ title: 'Status atualizado', description: 'O agendamento foi atualizado com sucesso' });
+    
+    if (status === 'confirmed') {
+      const barber = storage.getBarbers().find(b => b.id === appointmentToUpdate.barberId);
+      const serviceId = appointmentToUpdate.serviceIds?.[0] || appointmentToUpdate.serviceId;
+      const service = storage.getServices().find(s => s.id === serviceId);
+
+      if (barber && service) {
+        const link = getWhatsAppManualLink(appointmentToUpdate, barber, service);
+        if (link) window.open(link, '_blank');
+      }
+    }
   };
 
   const statusColors = {
@@ -607,27 +508,11 @@ const MyAppointments = () => {
             <Card className="p-8 text-center border-border"><p className="text-muted-foreground">Nenhum agendamento encontrado para você.</p></Card>
           ) : (
             appointments.sort((a, b) => {
-              // Prioridade de Status
-              const statusPriority: Record<string, number> = {
-                'pending': 1,
-                'in_progress': 2,
-                'confirmed': 3,
-                'completed': 4,
-                'cancelled': 5,
-                'no_show': 6
-              };
-
-              const priorityA = statusPriority[a.status] || 99;
-              const priorityB = statusPriority[b.status] || 99;
-
-              if (priorityA !== priorityB) {
-                return priorityA - priorityB;
-              }
-
-              // Se tiverem a mesma prioridade, ordena por hora (mais cedo primeiro)
-              const dateA = new Date(`${a.date}T${a.time}`).getTime();
-              const dateB = new Date(`${b.date}T${b.time}`).getTime();
-              return dateA - dateB;
+              // Pending first
+              if (a.status === 'pending' && b.status !== 'pending') return -1;
+              if (a.status !== 'pending' && b.status === 'pending') return 1;
+              // Then newest date first
+              return new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime();
             }).map((appointment) => (
               <Card key={appointment.id} className="p-6 border-border">
                 <div className="flex flex-col md:flex-row justify-between gap-4">

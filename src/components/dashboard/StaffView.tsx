@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react'; 
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
 import { Calendar, Users, Scissors, TrendingUp, Clock, UserCog, Star, Wallet } from 'lucide-react';
-import { User, Appointment } from '@/types';
-import { isSameMonth, format } from 'date-fns';
+import { User } from '@/types';
+import { isSameMonth } from 'date-fns';
 import { parseLocalDate } from '@/lib/timeUtils';
 
 interface StaffViewProps {
@@ -13,40 +11,11 @@ interface StaffViewProps {
 }
 
 export const StaffView = ({ user }: StaffViewProps) => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const appointments = storage.getAppointments();
   const services = storage.getServices();
   const clients = storage.getUsers().filter(u => u.role === 'client');
   
-  const fetchData = async () => {
-    // Busca agendamentos do barbeiro no Supabase (ou todos se for admin)
-    const targetBarberId = user.role === 'admin' ? undefined : (user.barberId || user.id);
-    
-    // Garantir que buscamos os dados de hoje explicitamente para os contadores
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const { data } = await storage.fetchAppointments(todayStr, todayStr, 500, 0, undefined, targetBarberId, true);
-    setAppointments(data);
-
-    // Se for admin, precisamos carregar os usuários para o contador de clientes
-    if (user.role === 'admin') {
-      await storage.fetchUsers(1000);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-
-    // Assinatura Realtime para atualizar o Dashboard instantaneamente
-    const channel = storage.subscribeToAppointments(() => {
-      fetchData();
-    });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [user.id, user.barberId, user.role]);
-
-  const now = new Date();
-  const today = format(now, 'yyyy-MM-dd');
+  const today = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter(a => a.date === today);
   const pendingAppointments = appointments.filter(a => a.status === 'pending');
   
@@ -61,6 +30,8 @@ export const StaffView = ({ user }: StaffViewProps) => {
 
   return (
     <>
+
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-8"> {/* Added mt-8 */}
         <Card className="p-6 border-border h-full flex flex-col justify-between"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground mb-1">Agendamentos Hoje</p><p className="text-3xl font-bold">{todayAppointments.length}</p></div><Calendar className="w-10 h-10 text-primary" /></div></Card>
         <Card className="p-6 border-border h-full flex flex-col justify-between"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground mb-1">Pendentes</p><p className="text-3xl font-bold">{pendingAppointments.length}</p></div><Calendar className="w-10 h-10 text-primary" /></div></Card>

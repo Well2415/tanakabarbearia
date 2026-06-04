@@ -47,80 +47,66 @@ const GuestBooking = () => {
   }, [barbers, formData.barberId]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (date && formData.barberId) {
+      const selectedBarber = barbers.find(b => b.id === formData.barberId);
+      if (!selectedBarber) return;
 
-    const loadTimes = async () => {
-      if (date && formData.barberId) {
-        const selectedBarber = barbers.find(b => b.id === formData.barberId);
-        if (!selectedBarber) return;
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      const allAppointments = storage.getAppointments();
+      const recurringSchedules = storage.getRecurringSchedules();
+      const dayOfWeek = date.getDay();
 
-        const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
-        const formattedDate = format(date, 'yyyy-MM-dd');
-        
-        // Busca dados frescos do banco para garantir consistência e evitar conflitos com agendamentos recém-criados
-        const { data: realAppointments } = await storage.fetchAppointments(formattedDate, formattedDate, 500, 0, undefined, formData.barberId);
-        
-        if (!isMounted) return;
+      const allBookedTimes: string[] = [];
 
-        const recurringSchedules = storage.getRecurringSchedules();
-        const dayOfWeek = date.getDay();
-
-        const allBookedTimes: string[] = [];
-
-        realAppointments
-          .filter(app => app.status !== 'cancelled' && app.status !== 'no_show')
-          .forEach(app => {
-            const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
-            const duration = getAppointmentDuration(serviceIds, services);
-            allBookedTimes.push(...getBlockedTimes(app.time, duration));
-          });
-
-        recurringSchedules
-          .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
-          .forEach(s => {
-            const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-            const duration = getAppointmentDuration(serviceIds, services);
-            allBookedTimes.push(...getBlockedTimes(s.time, duration));
-          });
-
-        const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
-
-        // Filtra horários que já passaram (se for hoje)
-        const now = new Date();
-        const todayStr = format(now, 'yyyy-MM-dd');
-        const isToday = formattedDate === todayStr;
-        const currentHour = now.getHours();
-        const currentMin = now.getMinutes();
-
-        const available = masterHours.filter(hour => {
-          if (isToday) {
-            const [h, m] = hour.split(':').map(Number);
-            if (h < currentHour || (h === currentHour && m <= currentMin)) {
-              return false;
-            }
-          }
-          return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      allAppointments
+        .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
         });
 
-        setFilteredTimes(available);
+      recurringSchedules
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
 
-        if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
-          setFormData(current => ({ ...current, time: '' }));
-          setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
+      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(hour => {
+        if (isToday) {
+          const [h, m] = hour.split(':').map(Number);
+          if (h < currentHour || (h === currentHour && m <= currentMin)) {
+            return false;
+          }
         }
-      } else {
-        setFilteredTimes([]);
-        if (lastBarberDate.barberId !== '' || lastBarberDate.date !== '') {
-          setFormData(current => ({ ...current, time: '' }));
-          setLastBarberDate({ barberId: '', date: '' });
-        }
+        return canAccommodateService(hour, requestedDuration, allBookedTimes, masterHours);
+      });
+
+      setFilteredTimes(available);
+
+      if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
+        setFormData(current => ({ ...current, time: '' }));
+        setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
       }
-    };
-
-    loadTimes();
-
-    return () => { isMounted = false; };
-  }, [date, formData.barberId, barbers, lastBarberDate, services]);
+    } else {
+      setFilteredTimes([]);
+      if (lastBarberDate.barberId !== '' || lastBarberDate.date !== '') {
+        setFormData(current => ({ ...current, time: '' }));
+        setLastBarberDate({ barberId: '', date: '' });
+      }
+    }
+  }, [date, formData.barberId, barbers, lastBarberDate]);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
     const s = services.find(srv => srv.id === id);
@@ -128,38 +114,21 @@ const GuestBooking = () => {
   }, 0);
   const depositValue = totalValue / 2;
 
-  const saveAppointment = async (isPaid: boolean = false, method: 'pix' | 'card' = 'pix', restoredForm?: typeof formData, restoredDate?: Date, existingId?: string) => {
+  const saveAppointment = async (isPaid: boolean = false, method: 'pix' | 'card' = 'pix', restoredForm?: typeof formData, restoredDate?: Date) => {
     setIsProcessing(true);
     const finalForm = restoredForm || formData;
     const finalDate = restoredDate || date;
 
     if (!finalDate) return;
-    
+
     try {
-      const availability = await storage.validateAvailability({
-        id: existingId,
-        barberId: finalForm.barberId,
-        date: format(finalDate, 'yyyy-MM-dd'),
-        time: finalForm.time,
-        serviceIds: finalForm.serviceIds,
-        serviceId: finalForm.serviceIds[0]
-      });
-
-      if (!availability.available) {
-        toast({ title: 'Horário Ocupado', description: availability.message, variant: 'destructive' });
-        setIsProcessing(false);
-        return null;
-      }
-
       const totalServicePrice = finalForm.serviceIds.reduce((sum, id) => {
         const s = services.find(srv => srv.id === id);
         return sum + (s?.price || 0);
       }, 0);
 
-      const appointmentId = existingId || Date.now().toString();
-
       const newAppointment: Appointment = {
-        id: appointmentId,
+        id: Date.now().toString(),
         userId: null,
         guestName: finalForm.name,
         guestEmail: finalForm.email,
@@ -176,12 +145,7 @@ const GuestBooking = () => {
         createdAt: new Date().toISOString()
       };
 
-      // Se já existe, usamos updateAppointment para não arriscar duplicar ou limpar cache indevidamente
-      if (existingId) {
-        await storage.updateAppointment(newAppointment);
-      } else {
-        await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
-      }
+      await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
 
       if (isPaid) {
         const selectedBarber = barbers.find(b => b.id === finalForm.barberId);
@@ -189,37 +153,39 @@ const GuestBooking = () => {
         if (selectedBarber && service) {
           await sendWhatsAppConfirmation(newAppointment, selectedBarber, service);
         }
-
-        toast({
-          title: 'Agendamento Confirmado!',
-          description: 'Pagamento aprovado. Seu horário está garantido!',
-        });
-
-        // Notificar Barbeiro e Administradores (Push) apenas na confirmação de pagamento
-        await storage.refreshUsers();
-        const allUsers = storage.getUsers();
-        const primaryService = services.find(s => s.id === newAppointment.serviceId);
-        const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
-        const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
-
-        const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
-        if (barberUser) {
-          await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
-        }
-
-        const admins = allUsers.filter(u => u.role === 'admin' && u.id !== barberUser?.id);
-        admins.forEach(admin => {
-          notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
-        });
-
-        navigate('/');
       }
-      
-      return appointmentId;
+
+      toast({
+        title: 'Agendamento Confirmado!',
+        description: isPaid
+          ? 'Pagamento aprovado. Seu horário está garantido!'
+          : 'Seu agendamento foi registrado e aguarda confirmação.',
+      });
+
+
+      // Notificar Barbeiro e Administradores (Push)
+      await storage.refreshUsers();
+      const allUsers = storage.getUsers();
+      const primaryService = services.find(s => s.id === newAppointment.serviceId);
+      const notificationTitle = 'Novo Agendamento (Convidado)! 💈';
+      const notificationBody = `${newAppointment.guestName} agendou ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+
+      // 1. Notificar Barbeiro específico da reserva
+      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
+      if (barberUser) {
+        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+      }
+
+      // 2. Notificar todos os Administradores para que possam confirmar
+      const admins = allUsers.filter(u => u.role === 'admin');
+      admins.forEach(admin => {
+        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+      });
+
+      navigate('/');
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({ title: 'Erro', description: 'Erro ao registrar agendamento.', variant: 'destructive' });
-      return null;
     } finally {
       setIsProcessing(false);
     }
@@ -234,8 +200,8 @@ const GuestBooking = () => {
       const pendingJson = localStorage.getItem('pending_guest_booking');
       if (pendingJson) {
         try {
-          const { formData: savedForm, date: savedDateStr, appointmentId } = JSON.parse(pendingJson);
-          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr), appointmentId);
+          const { formData: savedForm, date: savedDateStr } = JSON.parse(pendingJson);
+          saveAppointment(true, 'card', savedForm, parseLocalDate(savedDateStr));
           localStorage.removeItem('pending_guest_booking');
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (err) {
@@ -248,24 +214,9 @@ const GuestBooking = () => {
   const handleCheckout = async () => {
     setIsLoadingCheckout(true);
     try {
-      // 1. Salva como PENDENTE no banco de dados ANTES de redirecionar
-      // Isso garante que o admin veja a tentativa e o horário fique bloqueado
-      const appointmentId = await saveAppointment(false);
-      
-      if (!appointmentId) {
-        throw new Error("Falha ao pré-registrar agendamento");
-      }
-
       const selectedServices = formData.serviceIds.map(id => services.find(s => s.id === id)).filter(Boolean) as Service[];
       const description = `Sinal: ${selectedServices.map(s => s.name).join(', ')} - Barbearia (Convidado)`;
-      
-      // Armazena no localStorage incluindo o ID gerado para atualização posterior
-      localStorage.setItem('pending_guest_booking', JSON.stringify({ 
-        formData, 
-        date: date ? format(date, 'yyyy-MM-dd') : null,
-        appointmentId 
-      }));
-
+      localStorage.setItem('pending_guest_booking', JSON.stringify({ formData, date: date ? format(date, 'yyyy-MM-dd') : null }));
       const url = await createPreference(depositValue, description, formData.email, window.location.href);
       if (url) {
         window.location.href = url;
@@ -275,7 +226,6 @@ const GuestBooking = () => {
       }
     } catch (error) {
       console.error('Erro ao gerar checkout:', error);
-      toast({ title: 'Erro', description: 'Não foi possível processar seu agendamento. Tente novamente.', variant: 'destructive' });
     } finally {
       setIsLoadingCheckout(false);
     }

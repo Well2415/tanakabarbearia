@@ -1,5 +1,5 @@
 import { RecurringSchedule, Service } from '../types';
-import { differenceInCalendarWeeks, startOfDay } from 'date-fns';
+import { differenceInCalendarWeeks } from 'date-fns';
 
 /**
  * Converte uma string 'yyyy-MM-dd' em um objeto Date local (meia-noite) 
@@ -55,8 +55,7 @@ export const sortTimes = (times: string[]): string[] => {
 export const isRecurringActive = (schedule: RecurringSchedule, date: Date | string): boolean => {
   if (!schedule.active) return false;
   
-  // Normaliza para o início do dia para evitar problemas com horários próximos à meia-noite
-  const targetDate = startOfDay(typeof date === 'string' ? parseLocalDate(date) : date);
+  const targetDate = typeof date === 'string' ? parseLocalDate(date) : date;
   
   // Se não houver frequência definida ou for semanal, está sempre ativo
   if (!schedule.frequency || schedule.frequency === 'weekly') {
@@ -64,27 +63,13 @@ export const isRecurringActive = (schedule: RecurringSchedule, date: Date | stri
   }
 
   // Para frequências bi-semanais, verificamos a paridade das semanas em relação à data de início
-  if (schedule.frequency === 'biweekly') {
-    if (!schedule.startDate) {
-      // Se for bi-semanal mas não tiver data de início, não podemos calcular a paridade.
-      // Por segurança, retornamos false para não bloquear indevidamente se a configuração estiver incompleta.
-      return false; 
-    }
-
-    const start = startOfDay(parseLocalDate(schedule.startDate));
+  if (schedule.frequency === 'biweekly' && schedule.startDate) {
+    const start = parseLocalDate(schedule.startDate);
     
-    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo por padrão)
-    // Usamos weekStartsOn: 0 (Domingo) para consistência
+    // differenceInCalendarWeeks garante que a contagem mude a cada início de semana (domingo)
     const weeksDiff = Math.abs(differenceInCalendarWeeks(targetDate, start, { weekStartsOn: 0 }));
     
-    const isActive = weeksDiff % 2 === 0;
-
-    // Log de diagnóstico apenas para bi-semanais para ajudar a identificar problemas de paridade
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Paridade Bi-semanal] Schedule: ${schedule.id}, Target: ${targetDate.toISOString().split('T')[0]}, Start: ${schedule.startDate}, WeeksDiff: ${weeksDiff}, Active: ${isActive}`);
-    }
-    
-    return isActive;
+    return weeksDiff % 2 === 0;
   }
 
   return true;
@@ -109,11 +94,8 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
     const name = s.name.toLowerCase();
     const cat = (s.category || '').toLowerCase();
     
-    // Identificação robusta: verifica nome e categoria por termos comuns
-    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo') || name.includes('social') || name.includes('degradê') || name.includes('maquina');
-    const isBeard = name.includes('barba') || cat.includes('barba') || name.includes('barboterapia') || name.includes('aparar');
-    
-    // Um combo ou serviço principal é identificado se for cabelo ou barba
+    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo');
+    const isBeard = name.includes('barba') || cat.includes('barba');
     const isMain = isHair || isBeard;
 
     if (isHair) hasHair = true;

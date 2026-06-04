@@ -46,6 +46,7 @@ const Settings = () => {
     
     const handleSave = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
+        console.log('💾 [Settings] Botão Salvar clicado');
         setIsSaving(true);
         try {
             await storage.saveSettings({

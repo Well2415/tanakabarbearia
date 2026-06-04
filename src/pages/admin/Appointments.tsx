@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,11 +66,6 @@ const Appointments = () => {
     link: number;
   } | null>(null);
 
-  const [filters, setFilters] = useState({
-    userId: null as string | null,
-    barberId: null as string | null
-  });
-
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
 
@@ -96,149 +91,53 @@ const Appointments = () => {
   });
 
   const initStorage = async (force = false) => {
-    setIsSyncing(true);
+    // Se for forçado (Realtime), mostramos o pulso de "Sincronizando"
+    if (force) setIsSyncing(true);
+    else setIsSyncing(true); // Sempre mostra no início também
 
     try {
-      // 1. Inicializa configurações (barbeiros, serviços)
-      await storage.initializeConfig(force);
-      
-      // 2. Define o período de busca (padrão: hoje)
-      const startStr = startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-      const endStr = endDate ? format(endDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-      
-      // 3. Busca apenas agendamentos do período com filtros aplicados
-      const { data: appts } = await storage.fetchAppointments(
-        startStr, 
-        endStr, 
-        1000, 
-        0, 
-        filters.userId || undefined, 
-        filters.barberId || undefined,
-        true // includeImportant = true
-      );
-      setAppointments(appts);
-      
-      // 4. Busca lista básica de usuários para exibição de nomes
-      await storage.fetchUsers(100);
+      // Passa o parâmetro 'force' para o storage buscar dados novos no Supabase
+      await storage.initialize(force);
+      setAppointments(storage.getAppointments());
     } finally {
-      setIsSyncing(false);
+      // Pequeno delay para o usuário ver o feedback de "Sincronizando"
+      if (force) {
+        setTimeout(() => setIsSyncing(false), 2000);
+      } else {
+        setIsSyncing(false);
+      }
     }
   };
 
-  // Carregamento inicial e quando os filtros mudam
+  // Carregamento inicial
   useEffect(() => {
     initStorage();
-  }, [startDate, endDate, filters.userId, filters.barberId]);
+  }, [newBookingData.barberId]);
 
-  // Refs para manter os valores atuais acessíveis dentro da assinatura realtime estável
-  const startDateRef = useRef(startDate);
-  const endDateRef = useRef(endDate);
-  const filtersRef = useRef(filters);
-
-  useEffect(() => { startDateRef.current = startDate; }, [startDate]);
-  useEffect(() => { endDateRef.current = endDate; }, [endDate]);
-  useEffect(() => { filtersRef.current = filters; }, [filters]);
-
-  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO) - Estável, criada apenas uma vez
+  // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
   useEffect(() => {
-    console.log('🔌 [Realtime] Inicializando canal de agendamentos...');
-    
+    // Configura a escuta da tabela de agendamentos
     const channel = supabase
-      .channel('appointments-admin-realtime')
+      .channel('appointments-realtime')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Escuta INSERT, UPDATE e DELETE
           schema: 'public',
           table: 'appointments'
         },
-        async (payload) => {
-          console.log('🔄 [Realtime] Mudança detectada, atualizando dados...', payload.eventType);
-          
-          const startStr = startDateRef.current ? format(startDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-          const endStr = endDateRef.current ? format(endDateRef.current, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-          
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newAppt = payload.new as Appointment;
-            
-            if (payload.eventType === 'INSERT') {
-              const clientName = newAppt.guestName || 'Um cliente';
-              const barberName = storage.getBarbers().find(b => b.id === newAppt.barberId)?.name || 'um barbeiro';
-              
-              toast({
-                title: "Novo Agendamento! 💈",
-                description: `${clientName} agendou com ${barberName} para ${format(parseISO(newAppt.date), 'dd/MM')} às ${newAppt.time}.`,
-                variant: "default",
-                className: "bg-primary text-primary-foreground border-none shadow-2xl animate-bounce"
-              });
-
-              // Tenta tocar um som sutil
-              try {
-                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-                audio.volume = 0.3;
-                audio.play().catch(() => {});
-              } catch (e) {}
-            }
-
-            // Atualiza cache local instantaneamente
-            const currentCache = storage.getAppointments();
-            const cacheIdx = currentCache.findIndex(a => a.id === newAppt.id);
-            if (cacheIdx >= 0) {
-              currentCache[cacheIdx] = newAppt;
-            } else {
-              currentCache.push(newAppt);
-            }
-            localStorage.setItem('appointments', JSON.stringify(currentCache));
-          } else if (payload.eventType === 'DELETE') {
-            const oldAppt = payload.old as Appointment;
-            // Atualiza cache local removendo
-            const currentCache = storage.getAppointments().filter(a => a.id !== oldAppt.id);
-            localStorage.setItem('appointments', JSON.stringify(currentCache));
-          }
-
-          // Re-busca apenas se não estivermos já sincronizando
-          setIsSyncing(true);
-          try {
-            const { data: appts } = await storage.fetchAppointments(
-              startStr, 
-              endStr, 
-              1000, 
-              0, 
-              filtersRef.current.userId || undefined, 
-              filtersRef.current.barberId || undefined, 
-              true
-            );
-            
-            // Combina o que veio do fetch com o que chegou no payload para garantir
-            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-               const newAppt = payload.new as Appointment;
-               const existIdx = appts.findIndex(a => a.id === newAppt.id);
-               if (existIdx >= 0) {
-                  appts[existIdx] = newAppt;
-               } else {
-                  appts.push(newAppt);
-               }
-            }
-            
-            setAppointments(appts);
-          } catch (err) {
-            console.error('❌ [Realtime] Erro ao atualizar:', err);
-          } finally {
-            setIsSyncing(false);
-          }
+        (payload) => {
+          // Recarrega os dados do storage para garantir sincronia total
+          initStorage(true);
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') console.log('✅ [Realtime] Inscrito com sucesso.');
-        if (status === 'CLOSED') console.log('⚠️ [Realtime] Conexão fechada.');
-        if (status === 'CHANNEL_ERROR') console.error('❌ [Realtime] Erro no canal.');
-      });
+      .subscribe();
 
+    // Limpeza da conexão ao sair da tela
     return () => {
-      console.log('🔌 [Realtime] Removendo canal.');
       supabase.removeChannel(channel);
     };
-  }, []); // Dependência vazia: roda apenas uma vez
+  }, []);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);
   const [isManualCalendarOpen, setIsManualCalendarOpen] = useState(false);
@@ -275,7 +174,7 @@ const Appointments = () => {
       const dayOfWeek = newBookingData.date.getDay();
 
       recurringSchedules
-        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, newBookingData.date))
+        .filter(s => s.barberId === newBookingData.barberId && s.dayOfWeek === dayOfWeek && s.active)
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -334,7 +233,7 @@ const Appointments = () => {
       const dayOfWeek = editedDate.getDay();
 
       recurringSchedules
-        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, editedDate))
+        .filter(s => s.barberId === editedBarberId && s.dayOfWeek === dayOfWeek && s.active)
         .forEach(s => {
           const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
           const duration = getAppointmentDuration(serviceIds, services);
@@ -396,20 +295,6 @@ const Appointments = () => {
     const service = storage.getServices().find(s => s.id === serviceId);
     const barber = storage.getBarbers().find(b => b.id === barberId);
 
-    // Validação final de disponibilidade
-    const availability = await storage.validateAvailability({
-      barberId,
-      date: format(date, 'yyyy-MM-dd'),
-      time,
-      serviceId,
-      serviceIds: [serviceId]
-    });
-
-    if (!availability.available) {
-      toast({ title: "Horário Ocupado", description: availability.message, variant: "destructive" });
-      return;
-    }
-
     const newAppointment: Appointment = {
       id: Date.now().toString(),
       userId: userId || null,
@@ -453,21 +338,6 @@ const Appointments = () => {
 
   const handleUpdateAppointment = async () => {
     if (appointmentToEdit) {
-      // Validação final de disponibilidade
-      const availability = await storage.validateAvailability({
-        id: appointmentToEdit.id,
-        barberId: editedBarberId,
-        date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
-        time: editedTime,
-        serviceId: editedServiceId,
-        serviceIds: [editedServiceId]
-      });
-
-      if (!availability.available) {
-        toast({ title: "Conflito de Horário", description: availability.message, variant: "destructive" });
-        return;
-      }
-
       const updatedAppointment: Appointment = {
         ...appointmentToEdit,
         date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
@@ -497,8 +367,6 @@ const Appointments = () => {
       if (start && isBefore(apptDate, start)) return false;
       if (end && isAfter(apptDate, end)) return false;
       if (paymentTypeFilter !== 'all' && appt.paymentType !== paymentTypeFilter) return false;
-      if (filters.userId && appt.userId !== filters.userId) return false;
-      if (filters.barberId && appt.barberId !== filters.barberId) return false;
       return true;
     });
 
@@ -608,9 +476,8 @@ const Appointments = () => {
     const checkReminders = async () => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
-      const currentAppointments = storage.getAppointments();
 
-      const upcoming = currentAppointments.filter(app => {
+      const upcoming = appointments.filter(app => {
         // Apenas agendamentos confirmados hoje, sem lembrete enviado
         if (app.status !== 'confirmed' || app.reminderSent || app.date !== todayStr) return false;
 
@@ -645,8 +512,6 @@ const Appointments = () => {
             );
           }
 
-          // Marcar localmente para evitar múltiplas execuções caso o Supabase falhe ou ignore a coluna
-          app.reminderSent = true;
           // Marcar como enviado no storage
           await updateAppointmentInStorage({ ...app, reminderSent: true });
         }
@@ -660,7 +525,7 @@ const Appointments = () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [barbers, services]);
+  }, [appointments, barbers, services]);
 
 
 
@@ -699,12 +564,7 @@ const Appointments = () => {
           const dayOfWeek = d.getDay();
           
           const dayVirtuals = recurringSchedules
-            .filter(s => {
-              if (!s.active || s.dayOfWeek !== dayOfWeek || !isRecurringActive(s, d)) return false;
-              if (filters.userId && s.userId !== filters.userId) return false;
-              if (filters.barberId && s.barberId !== filters.barberId) return false;
-              return true;
-            })
+            .filter(s => s.active && s.dayOfWeek === dayOfWeek && isRecurringActive(s, d))
             .map(s => {
               const scheduleServiceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
               const totalPrice = scheduleServiceIds.reduce((sum, id) => {
@@ -713,7 +573,7 @@ const Appointments = () => {
               }, 0);
 
               return {
-                id: `recurring-v-${s.id}-${currentDayStr}`,
+                id: `recurring-${s.id}-${currentDayStr}`,
                 userId: s.userId,
                 barberId: s.barberId,
                 serviceId: s.serviceId,
@@ -788,30 +648,26 @@ const Appointments = () => {
     const uniqueVirtual = finalVirtual.filter(v => !realBusySlots.has(`${v.userId || v.guestName}-${v.date}-${v.barberId}`));
 
     return [...appointments, ...uniqueVirtual];
-  }, [appointments, services, startDate, endDate, users, filters]);
+  }, [appointments, services, startDate, endDate, users]);
 
   const filteredAppointments = displayAppointments
     .filter(appt => {
-      // 1. Barber and User Filters
-      if (filters.userId && appt.userId !== filters.userId) return false;
-      if (filters.barberId && appt.barberId !== filters.barberId) return false;
-
-      // 2. Search filter
+      // Search filter
       const clientName = (appt.guestName || users.find(u => u.id === appt.userId)?.fullName || '').toLowerCase();
       const matchesSearch = clientName.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
-      // 3. Date range filter
+      // Date range filter - Pending appointments and those with signals paid bypass this filter for visibility
       const apptDate = parseLocalDate(appt.date);
-      const isPending = appt.status === 'pending';
+      const hasSignal = appt.amountPaid && appt.amountPaid > 0;
+      const isImportant = appt.status === 'pending' || (hasSignal && appt.status === 'confirmed');
       
-      // Filtro por data (ignora para pendentes)
-      if (!isPending) {
+      if (!isImportant) {
         if (startDate && isBefore(apptDate, startOfDay(startDate))) return false;
         if (endDate && isAfter(apptDate, startOfDay(endDate))) return false;
       }
 
-      // 4. Tab filter
+      // Tab filter
       const todayFilter = new Date();
       switch (activeTab) {
         case 'pending':
@@ -819,7 +675,7 @@ const Appointments = () => {
         case 'confirmed':
           return appt.status === 'confirmed';
         case 'today':
-          // Mostra agendamentos do dia OU qualquer agendamento pendente
+          // Show today's appointments OR any pending appointment
           return isSameDay(apptDate, todayFilter) || appt.status === 'pending';
         case 'history':
           return appt.status === 'completed' || appt.status === 'cancelled' || appt.status === 'no_show';
@@ -829,27 +685,13 @@ const Appointments = () => {
       }
     })
     .sort((a, b) => {
-      // Prioridade de Status
-      const statusPriority: Record<string, number> = {
-        'pending': 1,
-        'in_progress': 2,
-        'confirmed': 3,
-        'completed': 4,
-        'cancelled': 5,
-        'no_show': 6
-      };
-
-      const priorityA = statusPriority[a.status] || 99;
-      const priorityB = statusPriority[b.status] || 99;
-
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
+      // Pending first
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
       
-      // Se tiverem a mesma prioridade de status, ordena por hora (mais cedo primeiro)
       const dateA = new Date(`${a.date}T${a.time}`).getTime();
       const dateB = new Date(`${b.date}T${b.time}`).getTime();
-      return dateA - dateB;
+      return dateB - dateA; // Newest first
     });
 
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
@@ -1149,75 +991,6 @@ const Appointments = () => {
             </div>
             <div className="flex items-end">
               <Button onClick={handleGenerateReport} className="w-full">Gerar Relatório</Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div>
-              <Label>Filtrar por Barbeiro</Label>
-              <Select 
-                value={filters.barberId || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, barberId: value === 'all' ? null : value }))}
-              >
-                <SelectTrigger><SelectValue placeholder="Todos os Barbeiros" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Barbeiros</SelectItem>
-                  {barbers.map(b => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Filtrar por Cliente</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {filters.userId ? storage.getUsers().find(u => u.id === filters.userId)?.fullName : "Todos os Clientes"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Buscar cliente..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem 
-                          value="all"
-                          onSelect={() => {
-                            setFilters(prev => ({ ...prev, userId: null }));
-                          }}
-                        >
-                          <CheckIcon className={cn("mr-2 h-4 w-4", !filters.userId ? "opacity-100" : "opacity-0")} />
-                          Todos os Clientes
-                        </CommandItem>
-                        {storage.getUsers().filter(u => u.role === 'client').map(client => (
-                          <CommandItem
-                            key={client.id}
-                            value={client.fullName}
-                            onSelect={() => {
-                              setFilters(prev => ({ ...prev, userId: client.id }));
-                            }}
-                          >
-                            <CheckIcon className={cn("mr-2 h-4 w-4", filters.userId === client.id ? "opacity-100" : "opacity-0")} />
-                            {client.fullName}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="flex items-end">
-              <Button 
-                variant="ghost" 
-                onClick={() => setFilters({ userId: null, barberId: null })}
-                className="w-full text-muted-foreground"
-              >
-                Limpar Filtros
-              </Button>
             </div>
           </div>
 

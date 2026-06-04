@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowDownRight, ArrowUpRight, DollarSign, Wallet, Plus, Calendar as CalendarIcon, Filter, Layers, Settings, Trash2, X, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, parseISO, isSameMonth, isSameYear, startOfToday, endOfMonth } from 'date-fns';
+import { format, parseISO, isSameMonth, isSameYear, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -90,23 +90,8 @@ const Finance = () => {
       setUsers(storage.getUsers());
       setCategories(storage.getExpenseCategories());
       
-      // Define o intervalo de busca baseado nos filtros
-      let startStr: string | undefined;
-      let endStr: string | undefined;
-
-      if (filterPeriod === 'month') {
-        const monthDate = parseISO(`${filterMonth}-01`);
-        startStr = `${filterMonth}-01`;
-        endStr = format(endOfMonth(monthDate), 'yyyy-MM-dd');
-      } else if (filterPeriod === 'year') {
-        startStr = `${filterYear}-01-01`;
-        endStr = `${filterYear}-12-31`;
-      }
-
-      // Busca dados reais do Supabase
-      const { data: allAppointments } = await storage.fetchAppointments(startStr, endStr, 1000);
-      const allExpenses = await storage.fetchExpenses(startStr, endStr);
-      
+      const allAppointments = storage.getAppointments();
+      const allExpenses = storage.getExpenses();
       const targetBarberId = currentUser.role === 'admin' ? null : (currentUser.barberId || currentUser.id);
       
       setAppointments(targetBarberId ? allAppointments.filter(a => a.barberId === targetBarberId) : allAppointments);
@@ -114,7 +99,7 @@ const Finance = () => {
     };
     
     initFinance();
-  }, [navigate, filterPeriod, filterMonth, filterYear]);
+  }, [navigate]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -199,7 +184,7 @@ const Finance = () => {
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      days.push(format(date, 'yyyy-MM-dd'));
+      days.push(date.toISOString().split('T')[0]);
     }
     
     return days.map(dateStr => {
@@ -480,35 +465,35 @@ const Finance = () => {
                 <div className="flex flex-col">
                   <div className="divide-y divide-border">
                     {displayedTransactions.map((tx) => (
-                      <div key={tx.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-muted/10 transition-colors gap-2">
-                        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                          <div className={`w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'revenue' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-muted/10 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'revenue' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
                             {tx.type === 'revenue' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <p className="font-bold text-xs md:text-sm truncate">{tx.description}</p>
+                          <div className="flex flex-col overflow-hidden">
+                            <p className="font-bold text-sm truncate max-w-[150px] md:max-w-full">{tx.description}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[9px] md:text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm truncate max-w-[80px] md:max-w-[120px]">
+                              <span className="text-[10px] uppercase font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm truncate max-w-[100px]">
                                 {tx.category}
                               </span>
-                              <span className="text-[10px] md:text-[11px] text-muted-foreground ml-1 shrink-0">
-                                {format(parseLocalDate(tx.date), 'dd/MM/yy')}
+                              <span className="text-[11px] text-muted-foreground ml-1">
+                                {format(parseLocalDate(tx.date), 'dd/MM/yyyy')}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 md:gap-4 shrink-0">
+                        <div className="flex items-center gap-4">
                           <div className="text-right shrink-0">
-                            <p className={`font-bold text-xs md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
+                            <p className={`font-bold text-sm md:text-base ${tx.type === 'revenue' ? 'text-green-500' : 'text-red-500'}`}>
                               {tx.type === 'revenue' ? '+' : '-'} R$ {tx.amount.toFixed(2).replace('.', ',')}
                             </p>
                           </div>
                           <button
                             onClick={() => handleDeleteClick(tx)}
-                            className="p-1.5 md:p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
+                            className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"
                             title="Excluir Lançamento"
                           >
-                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>

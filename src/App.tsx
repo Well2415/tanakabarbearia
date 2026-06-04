@@ -29,7 +29,6 @@ import AdminLogin from "./pages/admin/Login";
 import Products from "./pages/Products";
 import AdminProducts from "./pages/admin/Products";
 import NotificationLogs from "./pages/admin/NotificationLogs";
-import Notifications from "./pages/admin/Notifications";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -96,11 +95,10 @@ const App = () => {
               <Route path="/admin/barbers" element={<ProtectedRoute allowedRoles={['admin']}><AdminBarbers /></ProtectedRoute>} />
               <Route path="/admin/services" element={<ProtectedRoute allowedRoles={['admin']}><AdminServices /></ProtectedRoute>} />
               <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
-              <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><AdminClients /></ProtectedRoute>} />
+              <Route path="/admin/clients" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><AdminClients /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
-              <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><Notifications /></ProtectedRoute>} />
               <Route path="/admin/notifications/logs" element={<ProtectedRoute allowedRoles={['admin']}><NotificationLogs /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />

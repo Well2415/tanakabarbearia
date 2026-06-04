@@ -34,22 +34,14 @@ const Login = () => {
       storage.isInitialized = false; 
       await storage.initialize();
       
-      // Carrega especificamente os usuários (já que o initialize padrão não carrega mais para economizar dados)
-      await storage.refreshUsers();
-      
       const users = storage.getUsers();
-      const typedIdentifier = formData.username.trim().toLowerCase();
+      const typedUsername = formData.username.trim();
       const typedPassword = formData.password.trim();
-      const typedPhone = typedIdentifier.replace(/\D/g, ''); // Versão apenas números se for telefone
 
       const user = users.find(u => {
-        const usernameMatch = (u.username || "").trim().toLowerCase() === typedIdentifier;
-        const emailMatch = (u.email || "").trim().toLowerCase() === typedIdentifier;
-        const phoneMatch = (u.phone || "").replace(/\D/g, '') === typedPhone && typedPhone.length >= 8;
-        
+        const matchUsername = (u.username || "").trim().toLowerCase() === typedUsername.toLowerCase();
         const matchPassword = (u.password || "").trim() === typedPassword;
-        
-        return (usernameMatch || emailMatch || phoneMatch) && matchPassword;
+        return matchUsername && matchPassword;
       });
 
       if (user) {
@@ -60,14 +52,14 @@ const Login = () => {
         });
 
         if (user.role === 'admin' || user.role === 'barber') {
-          navigate('/admin/dashboard'); // Redireciona para o dashboard correto
+          navigate('/admin');
         } else {
           navigate('/new-appointment');
         }
       } else {
         toast({
           title: 'Erro de Login',
-          description: 'Credenciais incorretas. Tente usar seu e-mail ou telefone se esqueceu o usuário.',
+          description: 'Nome de usuário ou senha incorretos.',
           variant: 'destructive',
         });
       }

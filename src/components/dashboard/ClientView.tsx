@@ -21,22 +21,11 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Busca agendamentos específicos do usuário no Supabase
-      const { data: userAppointments } = await storage.fetchAppointments(
-        undefined, 
-        undefined, 
-        100, 
-        0, 
-        user.id
-      );
-      
-      setAppointments(userAppointments);
-      setServices(storage.getServices());
-      setBarbers(storage.getBarbers());
-    };
-    
-    fetchData();
+    const allAppointments = storage.getAppointments();
+    const userAppointments = allAppointments.filter(app => app.userId === user.id);
+    setAppointments(userAppointments);
+    setServices(storage.getServices());
+    setBarbers(storage.getBarbers());
   }, [user.id]);
 
   const handleCancelAppointment = (appId: string) => {
@@ -69,7 +58,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Barbeiro desconhecido';
 
   const loyaltyPoints = user.loyaltyPoints || 0;
-  const pointsToFreeHaircut = storage.getLoyaltyTarget();
+  const pointsToFreeHaircut = 10; // Example value
 
   const statusColors = {
     pending: 'bg-yellow-500/10 text-yellow-600',

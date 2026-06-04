@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { AdminMenu } from '@/components/admin/AdminMenu';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
@@ -33,16 +32,8 @@ const NotificationLogs = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            await storage.initializeConfig();
+            await storage.initialize();
             
-            // Limpeza preventiva: apaga logs com mais de 24h ao carregar a página
-            const oneDayAgo = new Date();
-            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-            await supabase
-                .from('notification_logs')
-                .delete()
-                .lt('created_at', oneDayAgo.toISOString());
-
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
@@ -55,21 +46,24 @@ const NotificationLogs = () => {
             }
 
             const { data: logsData, error: logsError, count } = await query
-                .order('created_at', { ascending: false })
+                .order('createdAt', { ascending: false })
                 .range(from, to);
 
-            if (logsError) throw logsError;
-            setLogs(logsData?.map(log => ({ 
-                ...log, 
-                createdAt: log.created_at || log.createdAt,
-                userId: log.user_id || log.userId
-            })) || []);
-            if (count !== null) setTotalCount(count);
+            if (logsError && logsError.message.includes('createdAt')) {
+                const { data, error, count: countAlt } = await query
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+                
+                if (error) throw error;
+                setLogs(data?.map(log => ({ ...log, createdAt: log.created_at })) || []);
+                if (countAlt !== null) setTotalCount(countAlt);
+            } else {
+                if (logsError) throw logsError;
+                setLogs(logsData || []);
+                if (count !== null) setTotalCount(count);
+            }
 
-            // Carrega usuários básicos para exibir nomes nos logs
-            const { data: usersData } = await storage.fetchUsers(100);
-            setUsers(usersData);
-
+            setUsers(storage.getUsers());
         } catch (error) {
             console.error('❌ [Logs] Falha ao carregar logs:', error);
         } finally {
@@ -126,14 +120,7 @@ const NotificationLogs = () => {
                             <History className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                             Histórico de Avisos
                         </h2>
-                        <div className="flex items-center gap-4">
-                            <p className="text-sm text-muted-foreground italic">Monitoramento de notificações PWA.</p>
-                            <Link to="/admin/notifications">
-                                <Button variant="link" className="text-xs p-0 h-auto text-primary flex items-center gap-1">
-                                    <Bell className="w-3 h-3" /> Configurações
-                                </Button>
-                            </Link>
-                        </div>
+                        <p className="text-sm text-muted-foreground italic">Monitoramento de notificações PWA.</p>
                     </div>
                     <div className="flex items-center gap-3 h-8">
                         <div className={cn("transition-opacity duration-300", loading ? "opacity-100" : "opacity-0")}>

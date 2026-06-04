@@ -1,8 +1,7 @@
 import { Barber, Service, Appointment, User, RecurringSchedule, Expense, Product } from '@/types';
 import { supabase } from './supabase';
 import { DEFAULT_SERVICES, DEFAULT_BARBERS, DEFAULT_USERS, DEFAULT_APPOINTMENTS, LOYALTY_TARGET_DEFAULT, DEFAULT_PRODUCTS } from './initialData';
-import { sortTimes, getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from './timeUtils';
-import { startOfDay } from 'date-fns';
+import { sortTimes } from './timeUtils';
 
 // Fallback genérico para a logo caso não esteja configurada no banco de dados.
 const LogoMenu = "/img/logo-tanaka.png";
@@ -71,229 +70,88 @@ export const storage = {
    * Conecta ao Supabase e carrega todos os dados necessários para o cache.
    * Deve ser chamado uma única vez no início do carregamento do App.
    */
-  isInitialized: false,
-  isConfigLoaded: false,
-
-  /**
-   * Inicializa apenas as configurações básicas e dados estáticos (barbeiros, serviços).
-   * Isso economiza muita transferência de dados (Egress).
-   */
-  async initializeConfig(force = false) {
-    if (this.isConfigLoaded && !force) return;
+    isInitialized: false,
+    async initialize(force = false) {
+    if (this.isInitialized && !force) return;
 
     try {
-      const [settingsRes, barbersRes, servicesRes, expenseCategoriesRes] = await Promise.all([
-        supabase.from('shop_settings').select('*'),
-        supabase.from('barbers').select('*'),
-        supabase.from('services').select('*'),
-        supabase.from('expense_categories').select('*')
-      ]);
-
-      if (settingsRes.error) console.error('❌ [Storage] Erro settings:', settingsRes.error);
-      if (barbersRes.error) console.error('❌ [Storage] Erro barbers:', barbersRes.error);
-
-      // Configurações básicas carregadas
-
+      // 1. Carregar Configurações (Settings)
+      const { data: settingsData } = await supabase.from('shop_settings').select('*');
       const settingsMap: Record<string, any> = {};
-      settingsRes.data?.forEach(s => {
+      settingsData?.forEach(s => {
         settingsMap[s.key] = s.value;
       });
       cache.settings = settingsMap;
 
+      // 2. Carregar Dados Principais em Paralelo
+      const [
+        barbersRes,
+        servicesRes,
+        usersRes,
+        appointmentsRes,
+        recurringRes,
+        expensesRes,
+        expenseCategoriesRes,
+        productsRes
+      ] = await Promise.all([
+        supabase.from('barbers').select('*'),
+        supabase.from('services').select('*'),
+        supabase.from('users').select('*'),
+        supabase.from('appointments').select('*'),
+        supabase.from('recurring_schedules').select('*'),
+        supabase.from('expenses').select('*'),
+        supabase.from('expense_categories').select('*'),
+        supabase.from('products').select('*')
+      ]);
+
+      if (barbersRes.error) console.error('Error fetching barbers:', barbersRes.error);
+      if (servicesRes.error) console.error('Error fetching services:', servicesRes.error);
+      if (productsRes.error && productsRes.error.code !== 'PGRST116') {
+        console.error('Error fetching products (Table might be missing):', productsRes.error);
+      }
+
+      cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
+      cache.products = (productsRes.data || []).map(p => ({
+        ...p,
+        image: normalizeImagePath(p.image),
+        image2: normalizeImagePath(p.image2),
+        image3: normalizeImagePath(p.image3),
+        image4: normalizeImagePath(p.image4)
+      }));
+
+      // Injetando scheduleByDay através dos settings (workaround para schema local)
       const barberSchedules = settingsMap['barber_schedules'] || {};
+
       cache.barbers = (barbersRes.data || []).map(b => ({
         ...b,
         photo: normalizeImagePath(b.photo),
         availableHours: sortTimes(b.availableHours || []),
         scheduleByDay: barberSchedules[b.id] || undefined
       }));
-
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
+      cache.users = usersRes.data || [];
+      cache.appointments = appointmentsRes.data || [];
+      cache.recurringSchedules = recurringRes.data || [];
+      cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
-
-      this.isConfigLoaded = true;
-      saveCacheToLocal();
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao carregar configurações:', error);
-    }
-  },
-
-  /**
-   * Método de compatibilidade que inicializa o básico.
-   * Não carrega mais agendamentos e usuários por padrão.
-   */
-  async initialize(force = false) {
-    // Se mudamos de projeto (URL do Supabase diferente da salva no cache), limpamos tudo
-    const lastUrl = localStorage.getItem('last_supabase_url');
-    const currentUrl = import.meta.env.VITE_SUPABASE_URL;
-    
-    if (lastUrl && lastUrl !== currentUrl) {
-      console.log('🔄 [Storage] Detectada troca de projeto Supabase. Limpando cache local...');
-      localStorage.clear();
-      cache = getInitialCache();
-      localStorage.setItem('last_supabase_url', currentUrl);
-    } else if (!lastUrl) {
-      localStorage.setItem('last_supabase_url', currentUrl);
-    }
-
-    if (this.isInitialized && !force) return;
-    await this.initializeConfig(force);
-    
-    // Carrega apenas agendamentos RECORRENTES e produtos (que costumam ser poucos)
-    const [recurringRes, productsRes] = await Promise.all([
-        supabase.from('recurring_schedules').select('*'),
-        supabase.from('products').select('*')
-    ]);
-
-    cache.recurringSchedules = recurringRes.data || [];
-    cache.products = (productsRes.data || []).map(p => ({
+      cache.products = (productsRes.data || []).map(p => ({
         ...p,
         image: normalizeImagePath(p.image),
         image2: normalizeImagePath(p.image2),
         image3: normalizeImagePath(p.image3),
         image4: normalizeImagePath(p.image4)
-    }));
+      }));
 
-    this.isInitialized = true;
-    saveCacheToLocal();
-  },
-
-  /**
-   * Assina eventos em tempo real para a tabela de agendamentos.
-   */
-  subscribeToAppointments(callback: (payload: any) => void) {
-    return supabase
-      .channel('appointments-realtime-global')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        callback
-      )
-      .subscribe();
-  },
-
-  /**
-   * Busca agendamentos em um intervalo de datas específico.
-   * Crucial para evitar carregar o histórico inteiro.
-   */
-  async fetchAppointments(startDate?: string, endDate?: string, limit = 100, offset = 0, userId?: string, barberId?: string, includeImportant = false) {
-    try {
-      let query = supabase.from('appointments').select('*', { count: 'exact' });
-      
-      if (includeImportant) {
-        // Se includeImportant for true, buscamos (dentro do intervalo OU pendente OU com sinal OU futuro)
-        let filterStr = "";
-        if (startDate && endDate) {
-            filterStr = `and(date.gte.${startDate},date.lte.${endDate})`;
-        } else if (startDate) {
-            filterStr = `date.gte.${startDate}`;
-        } else if (endDate) {
-            filterStr = `date.lte.${endDate}`;
-        }
-
-        const todayStr = new Date().toISOString().split('T')[0];
-        const orConditions = [
-            "status.eq.pending",
-            "amountPaid.gt.0",
-            `date.gt.${todayStr}`
-        ];
-        if (filterStr) orConditions.push(filterStr);
-        
-        query = query.or(orConditions.join(','));
-      } else {
-        if (startDate) query = query.gte('date', startDate);
-        if (endDate) query = query.lte('date', endDate);
+      // Se o banco estiver vazio ou sem configurações, registramos no console em vez de auto-seed
+      if (cache.services.length === 0 || Object.keys(cache.settings).length === 0) {
+        console.warn('⚠️ Banco de dados parece estar vazio ou inacessível.');
       }
 
-      if (userId) query = query.eq('userId', userId);
-      if (barberId) query = query.eq('barberId', barberId);
-      
-      const { data, count, error } = await query
-        .order('date', { ascending: false })
-        .order('time', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) throw error;
-
-      cache.appointments = data || [];
+      this.isInitialized = true;
       saveCacheToLocal();
-      
-      return { data: data || [], total: count || 0 };
     } catch (error) {
-      console.error('❌ [Storage] Erro ao buscar agendamentos:', error);
-      return { data: cache.appointments, total: cache.appointments.length };
-    }
-  },
-
-  /**
-   * Busca usuários com suporte a pesquisa e paginação no servidor.
-   */
-  async fetchUsers(limit = 100, offset = 0, searchTerm = '', sortBy = 'fullName', sortOrder: 'asc' | 'desc' = 'asc') {
-    try {
-      let query = supabase.from('users').select('*', { count: 'exact' });
-      
-      if (searchTerm) {
-        query = query.or(`fullName.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
-      }
-
-      const { data, count, error } = await query
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range(offset, offset + limit - 1);
-
-      if (error) throw error;
-
-      // Atualiza cache local mesclando com os novos dados
-      const fetchedIds = (data || []).map(u => u.id);
-      const otherUsers = cache.users.filter(u => !fetchedIds.includes(u.id));
-      cache.users = [...otherUsers, ...(data || [])];
-      saveCacheToLocal();
-
-      return { data: data || [], total: count || 0 };
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao buscar usuários:', error);
-      return { data: cache.users, total: cache.users.length };
-    }
-  },
-
-  /**
-   * Busca um único usuário pelo ID.
-   */
-  async fetchUser(id: string) {
-    try {
-      const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
-      if (error) throw error;
-      if (data) {
-        await this.updateUser(data);
-        return data as User;
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao buscar usuário individual:', error);
-      return null;
-    }
-  },
-
-  /**
-   * Busca despesas por período.
-   */
-  async fetchExpenses(startDate?: string, endDate?: string) {
-    try {
-      let query = supabase.from('expenses').select('*');
-      if (startDate) query = query.gte('date', startDate);
-      if (endDate) query = query.lte('date', endDate);
-      
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const fetchedIds = (data || []).map(e => e.id);
-      const otherExpenses = cache.expenses.filter(e => !fetchedIds.includes(e.id));
-      cache.expenses = [...otherExpenses, ...(data || [])];
-
-      saveCacheToLocal();
-      return cache.expenses;
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao buscar despesas:', error);
-      return cache.expenses;
+      console.error('❌ Error initializing Supabase:', error);
+      this.isInitialized = true;
     }
   },
   
@@ -307,7 +165,7 @@ export const storage = {
       if (error) throw error;
       cache.users = data || [];
       saveCacheToLocal();
-      // Sincronização concluída
+      console.log('✅ [Storage] Usuários recarregados com sucesso.');
     } catch (error) {
       console.error('❌ [Storage] Erro ao recarregar usuários:', error);
     }
@@ -439,75 +297,6 @@ export const storage = {
 
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
-
-  /**
-   * Verifica se um horário está disponível buscando os dados mais recentes do Supabase.
-   * Útil para evitar agendamentos duplicados por race conditions no cliente.
-   */
-  async validateAvailability(appointment: Partial<Appointment>): Promise<{ available: boolean; message?: string }> {
-    if (!appointment.barberId || !appointment.date || !appointment.time) {
-      return { available: false, message: 'Dados incompletos para validação.' };
-    }
-
-    try {
-      // 1. Busca agendamentos reais atualizados para este barbeiro e data
-      const { data: recentApps, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('barberId', appointment.barberId)
-        .eq('date', appointment.date)
-        .neq('status', 'cancelled');
-
-      if (error) throw error;
-
-      // 2. Filtra o próprio agendamento se for uma edição
-      const appsToCheck = recentApps.filter(a => a.id !== appointment.id);
-
-      // 3. Calcula horários ocupados pelos agendamentos reais
-      const allBookedTimes: string[] = [];
-      const services = this.getServices();
-
-      appsToCheck.forEach(app => {
-        const sIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
-        const duration = getAppointmentDuration(sIds, services);
-        allBookedTimes.push(...getBlockedTimes(app.time, duration));
-      });
-
-      // 4. Considera agendamentos recorrentes (bloqueios fixos)
-      const recurring = this.getRecurringSchedules();
-      const appointmentDate = startOfDay(new Date(appointment.date + 'T12:00:00'));
-      const dayOfWeek = appointmentDate.getDay();
-
-      recurring
-        .filter(s => s.barberId === appointment.barberId && s.dayOfWeek === dayOfWeek && s.active && isRecurringActive(s, appointmentDate))
-        .forEach(s => {
-          // Se for o agendamento recorrente que estamos tentando "efetivar", não bloqueia
-          if (appointment.id?.startsWith('recurring-') && appointment.id.includes(s.id)) return;
-          if (appointment.isRecurring && appointment.userId === s.userId && appointment.time === s.time) return;
-          
-          const sIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-          const duration = getAppointmentDuration(sIds, services);
-          allBookedTimes.push(...getBlockedTimes(s.time, duration));
-        });
-
-      // 5. Verifica se o novo agendamento cabe
-      const requestedDuration = getAppointmentDuration(appointment.serviceIds || [appointment.serviceId!], services);
-      const barber = this.getBarbers().find(b => b.id === appointment.barberId);
-      const masterHours = (barber?.scheduleByDay && barber.scheduleByDay[dayOfWeek]) || barber?.availableHours || [];
-
-      const isAvailable = canAccommodateService(appointment.time, requestedDuration, allBookedTimes, masterHours);
-
-      if (!isAvailable) {
-        return { available: false, message: 'Desculpe, este horário acabou de ser preenchido. Por favor, escolha outro.' };
-      }
-
-      return { available: true };
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao validar disponibilidade:', error);
-      // Em caso de erro na rede, permitimos por segurança do cache local mas logamos
-      return { available: true }; 
-    }
-  },
   
   /**
    * Atualiza apenas UM agendamento de forma atômica no Supabase e no Cache.
@@ -515,7 +304,12 @@ export const storage = {
    */
   async updateAppointment(appointment: Appointment) {
     // 1. Atualizar Cache Local e LocalStorage imediatamente (UI receptiva)
-    cache.appointments = cache.appointments.map(a => a.id === appointment.id ? appointment : a);
+    const exists = cache.appointments.some(a => a.id === appointment.id);
+    if (exists) {
+      cache.appointments = cache.appointments.map(a => a.id === appointment.id ? appointment : a);
+    } else {
+      cache.appointments = [...cache.appointments, appointment];
+    }
     localStorage.setItem('appointments', JSON.stringify(cache.appointments));
 
     // 2. Persistir no Supabase
@@ -636,30 +430,9 @@ export const storage = {
     console.log('✅ [Storage] Nova assinatura de push registrada.');
   },
 
-  /**
-   * Busca todos os usuários que possuem uma inscrição de push ativa.
-   * Útil para disparar mensagens em massa.
-   */
-  async fetchUsersWithPush() {
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, fullName, pushSubscription')
-      .not('pushSubscription', 'is', null);
-
-    if (error) {
-      console.error('❌ [Storage] Erro ao buscar usuários com push:', error);
-      return [];
-    }
-    return data || [];
-  },
-
   async saveUsers(users: User[]) {
-    // Atualiza o cache local mesclando (evita perder usuários não listados na página atual)
-    const userIds = users.map(u => u.id);
-    const otherUsers = cache.users.filter(u => !userIds.includes(u.id));
-    cache.users = [...otherUsers, ...users];
-    saveCacheToLocal();
-    
+    cache.users = users;
+    localStorage.setItem('users', JSON.stringify(users));
     const { error } = await supabase.from('users').upsert(users);
     if (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
@@ -681,35 +454,6 @@ export const storage = {
       user.latestCuts = [];
     }
     return user || null;
-  },
-
-  /**
-   * Recarrega os dados do usuário atual diretamente do Supabase.
-   * Garante que o noShowCount e outros campos estejam sincronizados.
-   */
-  async refreshCurrentUser() {
-    const userId = localStorage.getItem('barbershop_logged_in_user_id');
-    if (!userId) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        // Atualiza o cache local
-        cache.users = cache.users.map(u => u.id === data.id ? data : u);
-        saveCacheToLocal();
-        localStorage.setItem('currentUser', JSON.stringify(data));
-        return data as User;
-      }
-    } catch (error) {
-      console.error('❌ [Storage] Erro ao atualizar usuário atual:', error);
-    }
-    return this.getCurrentUser();
   },
 
   // --- CONFIGURAÇÕES DA BARBEARIA (SHOP SETTINGS) ---
@@ -841,22 +585,6 @@ export const storage = {
   saveMPPublicKey: async (key: string) => await storage.saveSetting('mp_public_key', key),
 
   getExpenses: (): Expense[] => cache.expenses,
-  async fetchExpenses(startDate?: string, endDate?: string) {
-    let query = supabase.from('expenses').select('*');
-    
-    if (startDate) query = query.gte('date', startDate);
-    if (endDate) query = query.lte('date', endDate);
-    
-    const { data, error } = await query.order('date', { ascending: false });
-    
-    if (error) {
-      console.error('❌ [Storage] Erro ao buscar despesas:', error);
-      return [];
-    }
-    
-    cache.expenses = data || [];
-    return cache.expenses;
-  },
   async saveExpenses(expenses: Expense[]) {
     cache.expenses = expenses;
     await supabase.from('expenses').upsert(expenses);

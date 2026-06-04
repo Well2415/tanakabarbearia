@@ -41,15 +41,8 @@ const NewAppointment = () => {
 
   useEffect(() => {
     const currentUser = storage.getCurrentUser();
-    if (!currentUser) {
-      navigate('/login');
-    } else {
-      setUser(currentUser);
-      // Sincroniza dados do usuário (faltas, pontos) ao entrar na página
-      storage.refreshCurrentUser().then(updated => {
-        if (updated) setUser(updated);
-      });
-    }
+    if (!currentUser) navigate('/login');
+    else setUser(currentUser);
   }, []);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
@@ -67,22 +60,8 @@ const NewAppointment = () => {
     const finalDate = restoredDate || date;
 
     if (!finalDate || !user) return;
-    
+
     try {
-      const availability = await storage.validateAvailability({
-        barberId: finalForm.barberId,
-        date: format(finalDate, 'yyyy-MM-dd'),
-        time: finalForm.time,
-        serviceIds: finalForm.serviceIds,
-        serviceId: finalForm.serviceIds[0]
-      });
-
-      if (!availability.available) {
-        toast({ title: 'Indisponível', description: availability.message, variant: 'destructive' });
-        setIsProcessing(false);
-        return;
-      }
-
       const totalServicePrice = finalForm.serviceIds.reduce((sum, id) => {
         const s = services.find(srv => srv.id === id);
         return sum + (s?.price || 0);
@@ -132,8 +111,8 @@ const NewAppointment = () => {
         await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
       }
 
-      // 2. Notificar todos os Administradores (exceto se o administrador já foi notificado como barbeiro)
-      const admins = allUsers.filter(u => u.role === 'admin' && u.id !== barberUser?.id);
+      // 2. Notificar todos os Administradores para que possam confirmar
+      const admins = allUsers.filter(u => u.role === 'admin');
       admins.forEach(admin => {
         notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
       });
@@ -207,75 +186,61 @@ const NewAppointment = () => {
   }, [barbers, formData.barberId]);
 
   useEffect(() => {
-    let isMounted = true;
+    if (date && formData.barberId) {
+      const selectedBarber = barbers.find(b => b.id === formData.barberId);
+      if (!selectedBarber) return;
+      const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      const allApps = storage.getAppointments();
+      const recurring = storage.getRecurringSchedules();
+      const dayOfWeek = date.getDay();
 
-    const loadTimes = async () => {
-      if (date && formData.barberId) {
-        const selectedBarber = barbers.find(b => b.id === formData.barberId);
-        if (!selectedBarber) return;
-        const masterHours = (selectedBarber.scheduleByDay && selectedBarber.scheduleByDay[date.getDay()]) || selectedBarber.availableHours;
-        const formattedDate = format(date, 'yyyy-MM-dd');
-        
-        // Busca dados frescos do banco para evitar conflitos de horários
-        const { data: realAppointments } = await storage.fetchAppointments(formattedDate, formattedDate, 500, 0, undefined, formData.barberId);
-        
-        if (!isMounted) return;
+      const allBookedTimes: string[] = [];
 
-        const recurring = storage.getRecurringSchedules();
-        const dayOfWeek = date.getDay();
-
-        const allBookedTimes: string[] = [];
-
-        realAppointments
-          .filter(app => app.status !== 'cancelled' && app.status !== 'no_show')
-          .forEach(app => {
-            const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
-            const duration = getAppointmentDuration(serviceIds, services);
-            allBookedTimes.push(...getBlockedTimes(app.time, duration));
-          });
-
-        recurring
-          .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
-          .forEach(s => {
-            const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
-            const duration = getAppointmentDuration(serviceIds, services);
-            allBookedTimes.push(...getBlockedTimes(s.time, duration));
-          });
-
-        const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
-
-        // Filtra horários que já passaram (se for hoje)
-        const now = new Date();
-        const todayStr = format(now, 'yyyy-MM-dd');
-        const isToday = formattedDate === todayStr;
-        const currentHour = now.getHours();
-        const currentMin = now.getMinutes();
-
-        const available = masterHours.filter(h => {
-          if (isToday) {
-            const [hour, min] = h.split(':').map(Number);
-            if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
-              return false;
-            }
-          }
-          return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
+      allApps
+        .filter(app => app.barberId === formData.barberId && app.date === formattedDate && app.status !== 'cancelled')
+        .forEach(app => {
+          const serviceIds = app.serviceIds && app.serviceIds.length > 0 ? app.serviceIds : [app.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(app.time, duration));
         });
 
-        setFilteredTimes(available);
+      recurring
+        .filter(s => String(s.barberId) === String(formData.barberId) && Number(s.dayOfWeek) === Number(dayOfWeek) && s.active && isRecurringActive(s, date))
+        .forEach(s => {
+          const serviceIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(serviceIds, services);
+          allBookedTimes.push(...getBlockedTimes(s.time, duration));
+        });
 
-        if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
-          setFormData(prev => ({ ...prev, time: '' }));
-          setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
+      const requestedDuration = getAppointmentDuration(formData.serviceIds, services);
+
+      // Filtra horários que já passaram (se for hoje)
+      const now = new Date();
+      const isToday = formattedDate === format(now, 'yyyy-MM-dd');
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      const available = masterHours.filter(h => {
+        if (isToday) {
+          const [hour, min] = h.split(':').map(Number);
+          if (hour < currentHour || (hour === currentHour && min <= currentMin)) {
+            return false;
+          }
         }
-      } else {
-        setFilteredTimes([]);
+        return canAccommodateService(h, requestedDuration, allBookedTimes, masterHours);
+      });
+
+      setFilteredTimes(available);
+
+      if (formData.barberId !== lastBarberDate.barberId || formattedDate !== lastBarberDate.date) {
+        setFormData(prev => ({ ...prev, time: '' }));
+        setLastBarberDate({ barberId: formData.barberId, date: formattedDate });
       }
-    };
-
-    loadTimes();
-
-    return () => { isMounted = false; };
-  }, [date, formData.barberId, barbers, lastBarberDate, services]);
+    } else {
+      setFilteredTimes([]);
+    }
+  }, [date, formData.barberId, barbers, lastBarberDate]);
 
   if (!user) return null;
 
@@ -286,16 +251,7 @@ const NewAppointment = () => {
         <div className="container mx-auto max-w-2xl">
           <h1 className="text-4xl font-bold text-center mb-4">Novo <span className="text-primary">Agendamento</span></h1>
           <p className="text-center text-muted-foreground mb-8">Olá, {user.fullName}. Preencha os dados abaixo.</p>
-          <Card className="p-8 border-border relative overflow-hidden">
-            {requiresPayment && (
-              <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-                <div className="text-destructive mt-0.5">⚠️</div>
-                <div>
-                  <p className="text-sm font-bold text-destructive">Pagamento Antecipado Obrigatório</p>
-                  <p className="text-xs text-muted-foreground">Devido a faltas em agendamentos anteriores, é necessário o pagamento de 50% do valor como sinal para garantir seu horário.</p>
-                </div>
-              </div>
-            )}
+          <Card className="p-8 border-border">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div><Label>Nome Completo</Label><Input value={user.fullName} disabled /></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -77,11 +77,6 @@ const Dashboard = () => {
           setPushEnabled(status === 'granted' && !!sub);
         }
       });
-
-      // Busca dados atualizados do usuário no banco (pontos de fidelidade, etc)
-      storage.fetchUser(currentUser.id).then(updated => {
-        if (updated) setUser({ ...updated });
-      });
     }
   }, [navigate]);
 
