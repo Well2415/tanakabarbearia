@@ -25,7 +25,7 @@ const Clients = () => {
   const [loyaltyTarget, setLoyaltyTarget] = useState(0);
   const [newLoyaltyTarget, setNewLoyaltyTarget] = useState(0); // New state for the input
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,22 +119,30 @@ const Clients = () => {
 
   const handlePasswordChange = async () => {
     if (!editingClient) return;
-    if (!password) {
-      toast({ title: 'Erro', description: 'Por favor, insira uma nova senha.', variant: 'destructive' });
+    if (!newUsername && !password) {
+      toast({ title: 'Erro', description: 'Por favor, insira o login ou uma nova senha.', variant: 'destructive' });
       return;
     }
 
     const allUsers = storage.getUsers();
-    const updatedUsers = allUsers.map(u =>
-      u.id === editingClient.id ? { ...u, password: password } : u
-    );
+    const updatedUsers = allUsers.map(u => {
+      if (u.id === editingClient.id) {
+        return { 
+          ...u, 
+          username: newUsername || u.username, 
+          ...(password ? { password } : {}) 
+        };
+      }
+      return u;
+    });
+    
     await storage.saveUsers(updatedUsers);
     setClients(updatedUsers.filter(u => u.role === 'client'));
     setEditingClient(null);
     setIsChangingPassword(false);
     setPassword('');
-    setConfirmPassword('');
-    toast({ title: 'Senha atualizada!', description: `A senha de ${editingClient.fullName} foi alterada com sucesso.` });
+    setNewUsername('');
+    toast({ title: 'Acesso atualizado!', description: `Os dados de acesso de ${editingClient.fullName} foram atualizados.` });
   };
 
   return (
@@ -221,8 +229,8 @@ const Clients = () => {
                   <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
                     <Edit className="w-4 h-4 mr-2" />Pontos
                   </Button>
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setIsChangingPassword(true); }}>
-                    <Lock className="w-4 h-4 mr-2" />Senha
+                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setNewUsername(client.username || client.phone || ''); setIsChangingPassword(true); }}>
+                    <Lock className="w-4 h-4 mr-2" />Acesso
                   </Button>
                 </CardFooter>
               </Card>
@@ -291,8 +299,8 @@ const Clients = () => {
           <form onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }} className="py-2 space-y-4">
             <div className="bg-muted/30 p-4 rounded-xl border border-border/50 space-y-3">
                <div>
-                 <Label className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Login (Usuário)</Label>
-                 <div className="font-medium text-base mt-0.5 select-all">{editingClient?.username || editingClient?.phone || 'Não definido'}</div>
+                 <Label htmlFor="edit-username" className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Login (Usuário / Telefone)</Label>
+                 <Input id="edit-username" type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className="mt-1 h-11 text-base bg-background" />
                </div>
                <div>
                  <Label className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Senha Atual</Label>
@@ -303,12 +311,12 @@ const Clients = () => {
             <div className="pt-2 border-t border-border/50 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">Definir Nova Senha</Label>
-                <Input id="new-password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Digite a nova senha" required className="h-12 text-base" />
+                <Input id="new-password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Deixe em branco para não alterar" className="h-12 text-base" />
               </div>
             </div>
             
             <DialogFooter className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Button type="submit" className="w-full h-12 text-base font-bold">Salvar Nova Senha</Button>
+              <Button type="submit" className="w-full h-12 text-base font-bold">Salvar Alterações</Button>
               <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
             </DialogFooter>
           </form>
