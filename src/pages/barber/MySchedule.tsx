@@ -176,9 +176,36 @@ const MyAppointments = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
         (payload) => {
-          console.log('📡 [MySchedule] Agendamento alterado ao vivo!');
-          storage.initialize(true).then(() => {
-            initAndFetch();
+          console.log('📡 [MySchedule] Agendamento alterado ao vivo!', payload.eventType);
+          setAppointments(prev => {
+            const updated = [...prev];
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newAppt = payload.new as Appointment;
+              
+              // Verifica se pertence a este barbeiro
+              if (newAppt.barberId !== user?.barberId) return updated;
+
+              const index = updated.findIndex(a => a.id === newAppt.id);
+              
+              // Verifica a mesma regra de exibição
+              const start = startDate ? startOfDay(startDate) : new Date();
+              const end = endDate ? startOfDay(endDate) : new Date();
+              const hasSignal = newAppt.amountPaid && newAppt.amountPaid > 0;
+              const isImportant = newAppt.status === 'pending' || (hasSignal && newAppt.status === 'confirmed');
+              const apptDate = parseLocalDate(newAppt.date);
+              const isWithinRange = (isSameDay(apptDate, start) || isAfter(apptDate, start)) && 
+                                    (isSameDay(apptDate, end) || isBefore(apptDate, end));
+
+              if (isImportant || isWithinRange) {
+                if (index >= 0) updated[index] = newAppt;
+                else updated.push(newAppt);
+              } else if (index >= 0) {
+                updated.splice(index, 1);
+              }
+            } else if (payload.eventType === 'DELETE') {
+              return updated.filter(a => a.id !== payload.old.id);
+            }
+            return updated;
           });
         }
       )
