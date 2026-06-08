@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Calendar, Star, Edit, Search, ChevronDown, ChevronLeft, ChevronRight, Lock, Trash2, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { User, Appointment } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -27,6 +28,8 @@ const Clients = () => {
   const [password, setPassword] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [viewingHistoryClient, setViewingHistoryClient] = useState<User | null>(null);
+  const [clientHistory, setClientHistory] = useState<Appointment[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +105,17 @@ const Clients = () => {
 
   const getClientAppointmentsCount = (userId: string) => {
     return appointments.filter(a => a.userId === userId).length;
+  };
+
+  const handleViewHistory = (client: User) => {
+    setViewingHistoryClient(client);
+    const history = appointments.filter(a => a.userId === client.id);
+    history.sort((a, b) => {
+      const dateA = new Date(a.date + 'T' + (a.time || '00:00')).getTime();
+      const dateB = new Date(b.date + 'T' + (b.time || '00:00')).getTime();
+      return dateB - dateA;
+    });
+    setClientHistory(history);
   };
 
   const handlePointsChange = async () => {
@@ -221,17 +235,68 @@ const Clients = () => {
                     {client.phone && <div className="flex items-center gap-2 text-zinc-500"><Phone className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{client.phone}</span></div>}
                     {client.email && <div className="flex items-center gap-2 text-zinc-500"><Mail className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm truncate">{client.email}</span></div>}
                     <div className="flex items-center gap-2 text-zinc-500"><Calendar className="w-4 h-4 shrink-0 text-primary/70" /><span className="text-sm">{getClientAppointmentsCount(client.id)} agendamento(s)</span></div>
-                    <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20"><Star className="w-3.5 h-3.5" /><span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts de fidelidade</span></div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <div className="flex items-center gap-2 text-primary font-bold bg-primary/10 w-fit px-3 py-1 rounded-full border border-primary/20">
+                        <Star className="w-3.5 h-3.5" />
+                        <span className="text-[11px]">{client.loyaltyPoints || 0}/{loyaltyTarget} pts de fidelidade</span>
+                      </div>
+                      
+                      {(client.noShowCount || 0) > 0 && (
+                        <div className={cn(
+                          "flex items-center gap-2 w-fit px-3 py-1 rounded-full border",
+                          (client.noShowCount || 0) >= 2 
+                            ? "bg-red-500/10 text-red-600 border-red-500/20 font-black animate-pulse" 
+                            : "bg-orange-500/10 text-orange-600 border-orange-500/20 font-bold"
+                        )}>
+                          <X className="w-3.5 h-3.5" />
+                          <span className="text-[11px] uppercase tracking-tighter">
+                            {(client.noShowCount || 0) >= 2 ? 'Restrito: ' : ''}
+                            {client.noShowCount} Falta(s)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground opacity-70">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-BR')}</p>
                 </div>
-                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 gap-2">
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => setEditingClient(client)}>
-                    <Edit className="w-4 h-4 mr-2" />Pontos
+                <CardFooter className="p-0 pt-4 mt-4 border-t border-border/50 flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 min-w-[110px] text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" 
+                    onClick={() => setEditingClient(client)}
+                  >
+                    <Edit className="w-3.5 h-3.5 mr-1.5" />Pontos
                   </Button>
-                  <Button variant="outline" className="flex-1 text-sm h-11 md:h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" onClick={() => { setEditingClient(client); setNewUsername(client.username || client.phone || ''); setIsChangingPassword(true); }}>
-                    <Lock className="w-4 h-4 mr-2" />Acesso
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 min-w-[110px] text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" 
+                    onClick={() => handleViewHistory(client)}
+                  >
+                    <Calendar className="w-3.5 h-3.5 mr-1.5" />Histórico
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 min-w-[110px] text-xs h-10 border-primary/20 text-primary hover:bg-primary/10 transition-colors rounded-xl font-medium" 
+                    onClick={() => { setEditingClient(client); setNewUsername(client.username || client.phone || ''); setIsChangingPassword(true); }}
+                  >
+                    <Lock className="w-3.5 h-3.5 mr-1.5" />Acesso
+                  </Button>
+                  {(client.noShowCount || 0) > 0 && (
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 min-w-[110px] text-xs h-10 border-red-500/20 text-red-500 hover:bg-red-500/10 transition-colors rounded-xl font-medium" 
+                      onClick={async () => {
+                        const allUsers = storage.getUsers();
+                        const updatedUsers = allUsers.map(u => u.id === client.id ? { ...u, noShowCount: 0 } : u);
+                        await storage.saveUsers(updatedUsers);
+                        setClients(updatedUsers.filter(u => u.role === 'client'));
+                        toast({ title: 'Faltas Zeradas', description: `O contador de faltas de ${client.fullName} foi resetado.` });
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />Zerar
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))
@@ -320,6 +385,55 @@ const Clients = () => {
               <DialogClose asChild><Button type="button" variant="ghost" className="w-full h-12">Cancelar</Button></DialogClose>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={!!viewingHistoryClient} onOpenChange={(isOpen) => !isOpen && setViewingHistoryClient(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-[600px] p-4 rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Histórico de Agendamentos</DialogTitle>
+            <DialogDescription className="text-sm">
+              Agendamentos de <span className="font-bold text-foreground">{viewingHistoryClient?.fullName}</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {clientHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground italic">Nenhum agendamento encontrado para este cliente.</div>
+            ) : (
+              <div className="space-y-3">
+                {clientHistory.map(app => (
+                  <div key={app.id} className="p-4 border border-border/50 rounded-xl bg-card flex justify-between items-center gap-4">
+                    <div>
+                      <p className="font-bold text-sm">{new Date(app.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-muted-foreground">{app.time}</p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <p className="text-sm font-medium">{storage.getServices().find(s => s.id === (app.serviceIds?.[0] || app.serviceId))?.name || 'Serviço'}</p>
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border",
+                        app.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" :
+                        app.status === 'cancelled' ? "bg-red-500/10 text-red-600 border-red-500/20" :
+                        app.status === 'no_show' ? "bg-rose-500/10 text-rose-600 border-rose-500/20 font-black animate-pulse" :
+                        "bg-zinc-500/10 text-zinc-600 border-zinc-500/10"
+                      )}>
+                        {app.status === 'pending' ? 'Pendente' : 
+                         app.status === 'confirmed' ? 'Confirmado' : 
+                         app.status === 'completed' ? 'Concluído' : 
+                         app.status === 'cancelled' ? 'Cancelado' : 
+                         app.status === 'no_show' ? 'Falta' : app.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline" className="w-full sm:w-auto h-12">Fechar</Button></DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
