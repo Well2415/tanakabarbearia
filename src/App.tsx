@@ -99,7 +99,7 @@ const App = () => {
               <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
-              <Route path="/admin/notifications/logs" element={<ProtectedRoute allowedRoles={['admin']}><NotificationLogs /></ProtectedRoute>} />
+              <Route path="/admin/notifications/logs" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><NotificationLogs /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
