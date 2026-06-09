@@ -43,6 +43,13 @@ const NotificationLogs = () => {
         fetchData();
     }, [currentPage, statusFilter]);
 
+    // Busca a contagem de dispositivos ativos UMA ÚNICA VEZ na montagem
+    useEffect(() => {
+        storage.fetchUsersWithPush().then(users => {
+            setPushUserCount(users.length);
+        });
+    }, []);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -75,10 +82,6 @@ const NotificationLogs = () => {
             if (count !== null) setTotalCount(count);
 
             setUsers(storage.getUsers());
-
-            // Buscar contagem de usuários com notificações ativas
-            const pushUsers = await storage.fetchUsersWithPush();
-            setPushUserCount(pushUsers.length);
         } catch (error) {
             console.error('❌ [Logs] Falha ao carregar logs:', error);
         } finally {
