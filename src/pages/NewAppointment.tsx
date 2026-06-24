@@ -243,7 +243,7 @@ const NewAppointment = () => {
     } else {
       setFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
-  }, [date, formData.barberId, barbers, lastBarberDate, appointments]);
+  }, [date, formData.barberId, formData.serviceIds, barbers, lastBarberDate, appointments, services]);
 
   if (!user) return null;
 

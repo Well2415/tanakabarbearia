@@ -88,7 +88,7 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
   let hasBeard = false;
 
   serviceIds.forEach(id => {
-    const s = services.find(srv => srv.id === id);
+    const s = services.find(srv => String(srv.id) === String(id));
     if (!s) return;
 
     const name = s.name.toLowerCase();
@@ -110,7 +110,7 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
   // Se nenhum serviço principal foi selecionado (ex: só marcou pezinho), 
   // usa o tempo do primeiro serviço ou no mínimo 30 min.
   if (!hasMainService) {
-    const firstService = services.find(srv => srv.id === serviceIds[0]);
+    const firstService = services.find(srv => String(srv.id) === String(serviceIds[0]));
     return Math.max(30, firstService?.duration ?? 30);
   }
 

@@ -225,7 +225,7 @@ const Appointments = () => {
     } else {
       setManualFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
-  }, [newBookingData.date, newBookingData.barberId, appointments, barbers]);
+  }, [newBookingData.date, newBookingData.barberId, newBookingData.serviceId, appointments, barbers, services]);
 
   useEffect(() => {
     if (editedDate && editedBarberId) {
@@ -290,7 +290,7 @@ const Appointments = () => {
     } else {
       setEditFilteredTimes(prev => prev.length > 0 ? [] : prev);
     }
-  }, [editedDate, editedBarberId, appointments, barbers, appointmentToEdit]);
+  }, [editedDate, editedBarberId, editedServiceId, appointments, barbers, appointmentToEdit, services]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
