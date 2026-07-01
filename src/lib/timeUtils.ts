@@ -94,7 +94,7 @@ export const getAppointmentDuration = (serviceIds: string[], services: Service[]
     const name = s.name.toLowerCase();
     const cat = (s.category || '').toLowerCase();
     
-    const isHair = name.includes('corte') || name.includes('cabelo') || cat.includes('corte') || cat.includes('cabelo');
+    const isHair = name.includes('corte') || name.includes('cabelo') || name.includes('degradê') || name.includes('degrade') || name.includes('social') || cat.includes('corte') || cat.includes('cabelo') || cat.includes('degradê') || cat.includes('degrade');
     const isBeard = name.includes('barba') || cat.includes('barba');
     const isMain = isHair || isBeard;
 

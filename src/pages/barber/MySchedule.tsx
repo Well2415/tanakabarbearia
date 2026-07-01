@@ -274,6 +274,7 @@ const MyAppointments = () => {
         date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
         time: editedTime,
         serviceId: editedServiceId,
+        serviceIds: [editedServiceId],
         status: editedStatus as any,
       };
       await updateAppointmentInStorage(updatedAppointment);
@@ -306,7 +307,9 @@ const MyAppointments = () => {
       recurring
         .filter(s => s.barberId === barber.id && s.dayOfWeek === editedDate.getDay() && s.active)
         .forEach(s => {
-          busySlots.push(s.time);
+          const sIds = s.serviceIds && s.serviceIds.length > 0 ? s.serviceIds : [s.serviceId];
+          const duration = getAppointmentDuration(sIds, services);
+          busySlots.push(...getBlockedTimes(s.time, duration));
         });
 
       const available = masterHours.filter(h => !busySlots.includes(h) || (appointmentToEdit && h === appointmentToEdit.time && editedDate && format(editedDate, 'yyyy-MM-dd') === appointmentToEdit.date));

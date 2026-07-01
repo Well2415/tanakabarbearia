@@ -359,6 +359,7 @@ const Appointments = () => {
         date: editedDate ? format(editedDate, 'yyyy-MM-dd') : appointmentToEdit.date,
         time: editedTime,
         serviceId: editedServiceId,
+        serviceIds: [editedServiceId],
         barberId: editedBarberId,
         paymentType: editedPaymentType as any,
         extraCharges: editedExtraCharges,
