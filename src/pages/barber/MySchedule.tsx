@@ -21,6 +21,7 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { notificationManager } from '@/lib/notifications';
+import { processClientLoyaltyOnCompletion } from '@/lib/loyalty';
 import { getWhatsAppManualLink } from '@/lib/whatsapp';
 import { supabase } from '@/lib/supabase';
 
@@ -384,35 +385,25 @@ const MyAppointments = () => {
       if (currentAppointmentToComplete.userId) {
         const userToUpdate = storage.getUsers().find(u => u.id === currentAppointmentToComplete.userId);
         if (userToUpdate) {
-          const updatedUser = { ...userToUpdate };
-
-          // Incrementa contador de cortes
-          updatedUser.cutsCount = (updatedUser.cutsCount || 0) + 1;
-
-          // Atribui exatamente 1 ponto por visita (independente dos serviços)
-          const pointsEarned = 1;
-          updatedUser.loyaltyPoints = (updatedUser.loyaltyPoints || 0) + pointsEarned;
+          const loyaltyTarget = storage.getLoyaltyTarget();
+          const { updatedUser, reachedGoal } = processClientLoyaltyOnCompletion(
+            userToUpdate,
+            currentAppointmentToComplete,
+            services,
+            loyaltyTarget
+          );
 
           // Verifica se atingiu a meta de fidelidade e notifica admins
-          const loyaltyTarget = storage.getLoyaltyTarget();
-          if (updatedUser.loyaltyPoints >= loyaltyTarget) {
+          if (reachedGoal) {
             const allAdmins = storage.getUsers().filter(u => u.role === 'admin');
             allAdmins.forEach(admin => {
               notificationManager.sendPushNotification(
                 admin.id,
                 "Meta de Fidelidade Atingida! 🏆",
-                `O cliente ${updatedUser.fullName} completou ${updatedUser.loyaltyPoints} pontos e já pode ganhar um prêmio!`,
+                `O cliente ${updatedUser.fullName} completou ${loyaltyTarget} pontos e ganhou um corte grátis! Os pontos foram zerados automaticamente.`,
                 "/admin/clients"
               ).catch(err => console.error('Erro ao notificar admin:', err));
             });
-          }
-
-          // Atualiza preferências de estilo
-          const service = services.find(s => s.id === currentAppointmentToComplete.serviceId);
-          if (service && updatedUser.stylePreferences && !updatedUser.stylePreferences.includes(service.name)) {
-            updatedUser.stylePreferences = [...updatedUser.stylePreferences, service.name];
-          } else if (service && !updatedUser.stylePreferences) {
-            updatedUser.stylePreferences = [service.name];
           }
 
           await storage.updateUser(updatedUser);
