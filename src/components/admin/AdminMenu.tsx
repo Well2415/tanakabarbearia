@@ -52,14 +52,12 @@ export const AdminMenu = () => {
         { name: 'Serviços', path: '/admin/services', icon: Scissors },
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
-        { name: 'Sorteios', path: '/admin/raffles', icon: Ticket },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Avisos', path: '/admin/notifications/logs', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
-        { name: 'Sorteios', path: '/admin/raffles', icon: Ticket },
         { name: 'Produtos', path: '/products', icon: ShoppingBag },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Avisos', path: '/admin/notifications/logs', icon: Bell },
@@ -301,9 +299,9 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                         
                         <DialogClose asChild>
                             <Link to="/admin/raffles">
-                                <Button variant="outline" className="w-full justify-start gap-3 h-12 border-purple-500/20 text-purple-600 hover:bg-purple-500/10 font-bold transition-all">
-                                    <Ticket className="w-5 h-5 text-purple-600" />
-                                    Gestão de Sorteios 🎟️
+                                <Button variant="outline" className="w-full justify-start gap-3 h-12 border-primary/20 hover:bg-primary/10 hover:text-primary transition-all">
+                                    <Ticket className="w-5 h-5 text-primary" />
+                                    Gestão de Sorteios
                                 </Button>
                             </Link>
                         </DialogClose>

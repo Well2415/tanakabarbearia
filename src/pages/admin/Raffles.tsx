@@ -214,37 +214,39 @@ export default function Raffles() {
     <div className="min-h-screen bg-background pb-32">
       <AdminMenu />
 
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
-              <Ticket className="w-8 h-8 text-purple-600" /> Gestão de Sorteios
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Ticket className="w-8 h-8 text-primary" /> Gestão de Sorteios
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Configure o prêmio, valide números únicos, realize sorteios com roleta e resete para a próxima campanha.
+              Configure prêmios, acompanhe bilhetes ativos, realize sorteios ao vivo e resete para novas campanhas.
             </p>
           </div>
           <Button
             onClick={handleStartDraw}
             disabled={activeTickets.length === 0}
             size="lg"
-            className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold h-12 shadow-lg shadow-purple-500/20 gap-2"
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 shadow-md gap-2"
           >
             <Sparkles className="w-5 h-5 animate-pulse" /> Realizar Sorteio
           </Button>
         </div>
 
         {/* Top Cards (Stats & Config) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Configuração da Campanha */}
-          <Card className="md:col-span-2 border-purple-500/20 shadow-md">
+          <Card className="md:col-span-2 border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-purple-600" /> Campanha de Sorteio Ativa
+                  <Award className="w-5 h-5 text-primary" /> Campanha de Sorteio Ativa
                 </span>
-                <Badge className="bg-purple-600 text-white font-bold">EM ANDAMENTO</Badge>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold">
+                  EM ANDAMENTO
+                </Badge>
               </CardTitle>
               <CardDescription>Defina o prêmio e o período de validade das rifas</CardDescription>
             </CardHeader>
@@ -256,7 +258,7 @@ export default function Raffles() {
                   value={editPrizeName}
                   onChange={(e) => setEditPrizeName(e.target.value)}
                   placeholder="Ex: Kit Churrasco Completo"
-                  className="h-11 mt-1 font-semibold border-purple-200 focus-visible:ring-purple-400"
+                  className="h-11 mt-1 font-semibold border-border bg-card focus-visible:ring-primary"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -267,7 +269,7 @@ export default function Raffles() {
                     type="date"
                     value={editStartDate}
                     onChange={(e) => setEditStartDate(e.target.value)}
-                    className="h-11 mt-1"
+                    className="h-11 mt-1 border-border bg-card"
                   />
                 </div>
                 <div>
@@ -277,25 +279,25 @@ export default function Raffles() {
                     type="date"
                     value={editEndDate}
                     onChange={(e) => setEditEndDate(e.target.value)}
-                    className="h-11 mt-1"
+                    className="h-11 mt-1 border-border bg-card"
                   />
                 </div>
               </div>
-              <Button onClick={handleSaveConfig} variant="outline" className="w-full sm:w-auto h-10 border-purple-300 text-purple-700 hover:bg-purple-50 font-bold">
+              <Button onClick={handleSaveConfig} variant="outline" className="w-full sm:w-auto h-10 border-primary/30 text-primary hover:bg-primary/10 font-bold">
                 Salvar Configurações da Campanha
               </Button>
             </CardContent>
           </Card>
 
           {/* Resumo de Participantes */}
-          <Card className="bg-gradient-to-br from-purple-900/10 via-background to-indigo-900/10 border-purple-500/20 shadow-md flex flex-col justify-between">
+          <Card className="border-border shadow-sm flex flex-col justify-between bg-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm uppercase font-bold text-muted-foreground flex items-center justify-between">
-                Participantes Ativos <Ticket className="w-4 h-4 text-purple-600" />
+              <CardTitle className="text-xs uppercase font-bold text-muted-foreground flex items-center justify-between">
+                Participantes Ativos <Ticket className="w-4 h-4 text-primary" />
               </CardTitle>
             </CardHeader>
             <CardContent className="py-2">
-              <div className="text-4xl font-extrabold text-purple-600 font-mono">
+              <div className="text-4xl font-black text-primary font-mono">
                 {activeTickets.length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -303,8 +305,8 @@ export default function Raffles() {
               </p>
             </CardContent>
             <div className="p-4 pt-0">
-              <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-200/40 text-xs font-medium text-purple-700 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 shrink-0" />
+              <div className="p-3 bg-muted rounded-xl border border-border text-xs font-medium text-muted-foreground flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-primary shrink-0" />
                 Ao sortear, os números são salvos e resetados automaticamente.
               </div>
             </div>
@@ -314,12 +316,12 @@ export default function Raffles() {
         {/* Barra de Busca e Filtro */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
           <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por cliente ou número (#1042)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-11 border-border"
+              className="pl-9 h-11 border-border bg-card"
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -330,11 +332,11 @@ export default function Raffles() {
         {/* Lista Responsiva de Bilhetes Ativos */}
         <div className="space-y-4 mb-10">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <Ticket className="w-5 h-5 text-purple-600" /> Bilhetes da Rodada Atual
+            <Ticket className="w-5 h-5 text-primary" /> Bilhetes da Rodada Atual
           </h2>
 
           {filteredTickets.length === 0 ? (
-            <Card className="p-8 text-center border-dashed">
+            <Card className="p-8 text-center border-dashed border-border">
               <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-40" />
               <p className="font-bold text-base">Nenhum Número da Sorte Encontrado</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -346,22 +348,22 @@ export default function Raffles() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTickets.map((ticket) => (
-                <Card key={ticket.id} className="p-4 border-2 border-purple-500/20 hover:border-purple-500/40 transition-all shadow-sm">
+                <Card key={ticket.id} className="p-4 border border-border hover:border-primary/40 transition-all shadow-sm bg-card">
                   <div className="flex items-start justify-between mb-3">
-                    <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300 font-mono text-base font-extrabold px-3 py-1">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-base font-extrabold px-3 py-1">
                       #{ticket.raffleNumber}
                     </Badge>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600">
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-200">
                       Concluído
                     </span>
                   </div>
                   <div className="space-y-1">
                     <p className="font-bold text-base truncate">{getClientName(ticket)}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Scissors className="w-3.5 h-3.5 text-primary" /> {getServiceName(ticket.serviceIds || ticket.serviceId)}
+                      <Scissors className="w-3.5 h-3.5 text-primary/70" /> {getServiceName(ticket.serviceIds || ticket.serviceId)}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <UserCog className="w-3.5 h-3.5 text-primary" /> Barbeiro: {getBarberName(ticket.barberId)}
+                      <UserCog className="w-3.5 h-3.5 text-primary/70" /> Barbeiro: {getBarberName(ticket.barberId)}
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 pt-1">
                       <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> {new Date(ticket.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {ticket.time}
@@ -380,22 +382,22 @@ export default function Raffles() {
           </h2>
 
           {history.length === 0 ? (
-            <Card className="p-6 text-center text-muted-foreground text-sm">
+            <Card className="p-6 text-center text-muted-foreground text-sm border-border">
               Nenhum sorteio foi encerrado ainda. Quando realizar o primeiro sorteio, o histórico aparecerá aqui.
             </Card>
           ) : (
             <div className="space-y-3">
               {history.map((record) => (
-                <Card key={record.id} className="p-4 bg-gradient-to-r from-amber-500/5 via-background to-purple-500/5 border-amber-500/30">
+                <Card key={record.id} className="p-4 bg-muted/20 border-border">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl">
+                      <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
                         <Trophy className="w-6 h-6" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-base">{record.prizeName}</span>
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-700 font-mono font-extrabold">
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono font-extrabold">
                             #{record.raffleNumber}
                           </Badge>
                         </div>
@@ -418,17 +420,17 @@ export default function Raffles() {
 
       {/* Modal da Roleta de Sorteio */}
       <Dialog open={showSpinnerModal} onOpenChange={() => {}}>
-        <DialogContent className="max-w-[90vw] sm:max-w-[400px] text-center p-8 bg-background border-2 border-purple-500/40">
+        <DialogContent className="max-w-[90vw] sm:max-w-[400px] text-center p-8 bg-card border-2 border-primary/40">
           <DialogHeader>
             <DialogTitle className="text-2xl font-extrabold flex items-center justify-center gap-2">
-              <Sparkles className="w-6 h-6 text-purple-600 animate-spin" /> Sorteando Ganhador...
+              <Sparkles className="w-6 h-6 text-primary animate-spin" /> Sorteando Ganhador...
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Cruzando os bilhetes ativos para o prêmio: <strong className="text-purple-600">{raffleConfig.prizeName}</strong>
+              Cruzando os bilhetes ativos para o prêmio: <strong className="text-primary">{raffleConfig.prizeName}</strong>
             </DialogDescription>
           </DialogHeader>
           <div className="py-8">
-            <div className="text-6xl font-black font-mono text-purple-600 bg-purple-500/10 py-6 rounded-2xl border-2 border-purple-500/30 animate-pulse tracking-wider">
+            <div className="text-6xl font-black font-mono text-primary bg-primary/10 py-6 rounded-2xl border-2 border-primary/30 animate-pulse tracking-wider">
               #{displayNumber}
             </div>
             <p className="text-xs text-muted-foreground mt-4 italic">Aguarde a roleta parar no bilhete vencedor...</p>
@@ -438,12 +440,12 @@ export default function Raffles() {
 
       {/* Modal do Ganhador & Resete */}
       <Dialog open={showWinnerDialog} onOpenChange={setShowWinnerDialog}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[480px] p-6 text-center border-2 border-amber-500/40">
+        <DialogContent className="max-w-[95vw] sm:max-w-[480px] p-6 text-center border-2 border-primary/40">
           <DialogHeader>
-            <div className="mx-auto p-4 bg-amber-500/10 text-amber-500 rounded-full w-20 h-20 flex items-center justify-center mb-2 animate-bounce">
+            <div className="mx-auto p-4 bg-primary/10 text-primary rounded-full w-20 h-20 flex items-center justify-center mb-2 animate-bounce">
               <Trophy className="w-10 h-10" />
             </div>
-            <DialogTitle className="text-2xl sm:text-3xl font-black text-amber-600">
+            <DialogTitle className="text-2xl sm:text-3xl font-black text-primary">
               PARABÉNS AO GANHADOR! 🎉
             </DialogTitle>
             <DialogDescription className="text-sm font-medium">
@@ -455,7 +457,7 @@ export default function Raffles() {
             <div className="my-4 p-4 bg-muted/40 rounded-2xl border border-border space-y-3 text-left">
               <div className="flex items-center justify-between border-b pb-3">
                 <span className="text-xs uppercase font-bold text-muted-foreground">Número Sorteado</span>
-                <Badge className="bg-purple-600 text-white font-mono text-lg font-black px-3 py-1">
+                <Badge className="bg-primary text-primary-foreground font-mono text-lg font-black px-3 py-1">
                   #{winningAppointment.raffleNumber}
                 </Badge>
               </div>
@@ -477,8 +479,8 @@ export default function Raffles() {
             </div>
           )}
 
-          <div className="p-3 bg-purple-500/10 rounded-xl text-xs text-purple-700 text-left flex items-start gap-2 mb-4">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="p-3 bg-primary/10 rounded-xl text-xs text-foreground text-left flex items-start gap-2 mb-4">
+            <AlertCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <span>
               Ao clicar em <strong>Confirmar e Resetar Números</strong>, o ganhador será gravado no Histórico e os números dos agendamentos serão resetados para iniciar a próxima campanha livremente.
             </span>
@@ -488,7 +490,7 @@ export default function Raffles() {
             <Button
               onClick={handleConfirmWinnerAndReset}
               size="lg"
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold h-12 gap-2"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 gap-2"
             >
               <CheckCircle2 className="w-5 h-5" /> Confirmar Ganhador & Resetar Números
             </Button>
