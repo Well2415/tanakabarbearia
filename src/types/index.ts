@@ -75,6 +75,7 @@ export interface Appointment {
   finalPrice?: number; // New: Final price after all adjustments
   amountPaid?: number; // New: Amount already paid (e.g. deposit/signal)
   isRecurring?: boolean; // Identifica se é um agendamento virtual vindo de horário fixo
+  raffleNumber?: string; // Número da sorte para sorteios (ex: Kit Churrasco)
 }
 export interface RecurringSchedule {
   id: string;

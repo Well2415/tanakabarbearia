@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
-import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink, Clock } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, QrCode, Copy, Loader2, CreditCard, ExternalLink, Clock, Ticket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -35,6 +35,7 @@ const MyAppointments = () => {
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const [discountInput, setDiscountInput] = useState(0);
+  const [raffleNumberInput, setRaffleNumberInput] = useState('');
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
@@ -380,6 +381,7 @@ const MyAppointments = () => {
       extraCharges: extraChargesInput,
       discount: discountInput,
       finalPrice: finalPrice,
+      raffleNumber: raffleNumberInput.trim() || undefined,
       status: 'completed' as const,
     };
     try {
@@ -418,6 +420,7 @@ const MyAppointments = () => {
       setPaymentType('');
       setExtraChargesInput(0);
       setDiscountInput(0);
+      setRaffleNumberInput('');
       setShowPaymentDialog(false); // Fechar o diálogo após sucesso
       toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: R$ ${finalPrice.toFixed(2)}.` });
     } catch (error) {
@@ -602,13 +605,20 @@ const MyAppointments = () => {
                       </Badge>
                     )}
                     {appointment.status === 'completed' && appointment.finalPrice && <p className="text-muted-foreground"><span className="font-medium">Valor Pago:</span> R$ {appointment.finalPrice.toFixed(2)}</p>}
+                    {appointment.raffleNumber && (
+                      <div>
+                        <Badge variant="outline" className="mt-2 bg-purple-500/10 text-purple-600 border-purple-200 gap-1 font-mono font-bold">
+                          <Ticket className="w-3.5 h-3.5" /> Nº da Sorte: #{appointment.raffleNumber}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-border">
                     {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
                       <Button size="sm" onClick={() => handleStartService(appointment)} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto h-11 md:h-9"><Play className="w-4 h-4 mr-2" />Iniciar Corte</Button>
                     )}
                     {appointment.status === 'in_progress' && (
-                      <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700 w-full md:w-auto h-11 md:h-9"><DollarSign className="w-4 h-4 mr-2" />Finalizar</Button>
+                      <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setRaffleNumberInput(appointment.raffleNumber || ''); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700 w-full md:w-auto h-11 md:h-9"><DollarSign className="w-4 h-4 mr-2" />Finalizar</Button>
                     )}
                     {appointment.status === 'pending' && (
                       <div className="flex gap-2 w-full md:w-auto">
@@ -676,6 +686,32 @@ const MyAppointments = () => {
                   <SelectItem value="link">Mercado Pago (Pix/Cartão)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="raffleNumber">Nº da Sorte (Sorteio / Rifa)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                  onClick={() => {
+                    const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+                    setRaffleNumberInput(randomNum);
+                  }}
+                >
+                  <Ticket className="w-3 h-3" /> Gerar Nº
+                </Button>
+              </div>
+              <Input
+                id="raffleNumber"
+                type="text"
+                className="h-12 mt-1 border-purple-300 focus-visible:ring-purple-400 font-mono font-bold text-purple-700"
+                placeholder="Ex: 1042 (Número para o sorteio)"
+                value={raffleNumberInput}
+                onChange={(e) => setRaffleNumberInput(e.target.value)}
+              />
             </div>
 
             {/* Seção de Pix removida para unificação com Mercado Pago */}

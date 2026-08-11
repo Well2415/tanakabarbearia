@@ -6,7 +6,7 @@ import { format, parse, differenceInHours, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { XCircle, Clock } from 'lucide-react';
+import { XCircle, Clock, Ticket } from 'lucide-react';
 import { parseLocalDate } from '@/lib/timeUtils';
 
 interface ClientViewProps {
@@ -95,6 +95,11 @@ export const ClientView = ({ user }: ClientViewProps) => {
                         <p className="font-bold">{getServiceName(app.serviceIds || app.serviceId)}</p>
                         <p className="text-sm text-muted-foreground">com {getBarberName(app.barberId)}</p>
                         <p className="text-sm text-muted-foreground">{format(parseLocalDate(app.date), 'PPP', { locale: ptBR })} às {app.time}</p>
+                        {app.raffleNumber && (
+                          <span className="inline-flex items-center text-xs font-mono font-bold text-purple-600 bg-purple-500/10 border border-purple-200 px-2 py-0.5 rounded-md mt-1">
+                            <Ticket className="w-3 h-3 mr-1" /> Seu Nº da Sorte: #{app.raffleNumber}
+                          </span>
+                        )}
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[app.status] || 'bg-gray-500/10 text-gray-600'}`}>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
 import { sendWhatsAppConfirmation, getWhatsAppManualLink, sendWhatsApp2HourReminder } from '@/lib/whatsapp';
-import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle, Ticket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -52,6 +52,7 @@ const Appointments = () => {
   const [paymentType, setPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [extraChargesInput, setExtraChargesInput] = useState(0);
   const [discountInput, setDiscountInput] = useState(0);
+  const [raffleNumberInput, setRaffleNumberInput] = useState('');
   const finalPrice = Math.max(0, (currentAppointmentToComplete?.servicePrice || 0) + extraChargesInput - discountInput);
   const [preferenceUrl, setPreferenceUrl] = useState<string | null>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
@@ -78,6 +79,7 @@ const Appointments = () => {
   const [editedBarberId, setEditedBarberId] = useState('');
   const [editedPaymentType, setEditedPaymentType] = useState<'cash' | 'credit_card' | 'debit_card' | 'pix' | 'link' | ''>('');
   const [editedExtraCharges, setEditedExtraCharges] = useState(0);
+  const [editedRaffleNumber, setEditedRaffleNumber] = useState('');
   const [editedStatus, setEditedStatus] = useState<string>('');
 
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -364,6 +366,7 @@ const Appointments = () => {
         barberId: editedBarberId,
         paymentType: editedPaymentType as any,
         extraCharges: editedExtraCharges,
+        raffleNumber: editedRaffleNumber.trim() || undefined,
         status: editedStatus as any,
         finalPrice: (appointmentToEdit.servicePrice || 0) + editedExtraCharges,
       };
@@ -696,7 +699,8 @@ const Appointments = () => {
     .filter(appt => {
       // Search filter
       const clientName = (appt.guestName || users.find(u => u.id === appt.userId)?.fullName || '').toLowerCase();
-      const matchesSearch = clientName.includes(searchTerm.toLowerCase());
+      const raffleNum = (appt.raffleNumber || '').toLowerCase();
+      const matchesSearch = clientName.includes(searchTerm.toLowerCase()) || raffleNum.includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
 
       // Date range filter - Pending appointments and those with signals paid bypass this filter for visibility
@@ -791,6 +795,7 @@ const Appointments = () => {
       extraCharges: extraChargesInput,
       discount: discountInput,
       finalPrice: finalPrice, // Usar o finalPrice calculado
+      raffleNumber: raffleNumberInput.trim() || undefined,
       status: 'completed' as const,
     };
     await updateAppointmentInStorage(updatedAppointment);
@@ -831,6 +836,7 @@ const Appointments = () => {
     setPaymentType('');
     setExtraChargesInput(0);
     setDiscountInput(0);
+    setRaffleNumberInput('');
     toast({ title: 'Serviço Finalizado', description: `O corte de ${getClientName(currentAppointmentToComplete)} foi concluído e pago via ${paymentType}. Total: ${formatCurrency(finalPrice)}.` });
   };
 
@@ -1148,6 +1154,13 @@ const Appointments = () => {
                             </Badge>
                           </div>
                         )}
+                        {appointment.raffleNumber && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-200 font-bold font-mono gap-1">
+                              <Ticket className="w-3.5 h-3.5" /> Nº DA SORTE: #{appointment.raffleNumber}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1159,7 +1172,7 @@ const Appointments = () => {
                           </Button>
                         )}
                         {appointment.status === 'in_progress' && (
-                          <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700 h-9 px-4">
+                          <Button size="sm" onClick={() => { setCurrentAppointmentToComplete(appointment); setRaffleNumberInput(appointment.raffleNumber || ''); setShowPaymentDialog(true); }} className="bg-green-600 hover:bg-green-700 h-9 px-4">
                             <DollarSign className="w-4 h-4 mr-2" /> Finalizar
                           </Button>
                         )}
@@ -1209,6 +1222,7 @@ const Appointments = () => {
                           setEditedBarberId(appointment.barberId);
                           setEditedPaymentType(appointment.paymentType || '');
                           setEditedExtraCharges(appointment.extraCharges || 0);
+                          setEditedRaffleNumber(appointment.raffleNumber || '');
                           setEditedStatus(appointment.status);
                           setShowEditDialog(true);
                         }}>
@@ -1342,6 +1356,32 @@ const Appointments = () => {
                   <SelectItem value="link">Mercado Pago (Pix/Cartão)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="raffleNumber">Nº da Sorte (Sorteio / Rifa)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                  onClick={() => {
+                    const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+                    setRaffleNumberInput(randomNum);
+                  }}
+                >
+                  <Ticket className="w-3 h-3" /> Gerar Nº
+                </Button>
+              </div>
+              <Input
+                id="raffleNumber"
+                type="text"
+                className="h-11 mt-1 border-purple-300 focus-visible:ring-purple-400 font-mono font-bold text-purple-700"
+                placeholder="Ex: 1042 (Número para o sorteio)"
+                value={raffleNumberInput}
+                onChange={(e) => setRaffleNumberInput(e.target.value)}
+              />
             </div>
 
             {paymentType === 'link' && isMPConfigured() && (
@@ -1537,6 +1577,31 @@ const Appointments = () => {
                       <SelectItem value="link">Link de Pagamento</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="editRaffleNumber">Nº da Sorte (Sorteio / Rifa)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
+                      onClick={() => {
+                        const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+                        setEditedRaffleNumber(randomNum);
+                      }}
+                    >
+                      <Ticket className="w-3 h-3" /> Gerar Nº
+                    </Button>
+                  </div>
+                  <Input
+                    id="editRaffleNumber"
+                    type="text"
+                    className="h-11 mt-1 border-purple-300 focus-visible:ring-purple-400 font-mono font-bold text-purple-700"
+                    placeholder="Ex: 1042 (Número para o sorteio)"
+                    value={editedRaffleNumber}
+                    onChange={(e) => setEditedRaffleNumber(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="editFinalPrice">Preço Final</Label>

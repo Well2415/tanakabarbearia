@@ -73,8 +73,12 @@ CREATE TABLE IF NOT EXISTS appointments (
   "guestPhone" TEXT,
   "reminderSent" BOOLEAN DEFAULT false,
   "cancelledReason" TEXT,
+  "raffleNumber" TEXT,
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+-- MIGRAÇÃO SEGURA PARA COLUNA RAFFLENUMBER
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS "raffleNumber" TEXT;
 
 -- TABELA DE AGENDAMENTOS RECORRENTES (BLOQUEIOS)
 CREATE TABLE IF NOT EXISTS recurring_schedules (

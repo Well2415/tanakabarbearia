@@ -2,7 +2,8 @@ import { Service, Appointment, User } from '@/types';
 
 /**
  * Verificador de elegibilidade do serviço para acúmulo de pontos de fidelidade.
- * Apenas serviços relacionados a Cabelo, Barba ou Combos somam pontos.
+ * Apenas serviços que incluem CORTE DE CABELO (ou combos que incluem corte/cabelo) somam pontos.
+ * Serviços isolados de Barba, Pezinho, Sobrancelha, etc., NÃO somam pontos.
  */
 export function isLoyaltyEligibleService(service: Service | undefined): boolean {
   if (!service) return false;
@@ -10,29 +11,25 @@ export function isLoyaltyEligibleService(service: Service | undefined): boolean 
   const category = (service.category || '').toLowerCase().trim();
   const name = (service.name || '').toLowerCase().trim();
 
-  // Categorias elegíveis
-  const eligibleCategories = ['cortes', 'corte', 'barba', 'combos', 'combo', 'cabelo'];
-  if (eligibleCategories.some(cat => category.includes(cat))) {
-    return true;
-  }
+  // Palavras-chave relacionadas a Corte de Cabelo / Combos de Cabelo
+  const hairKeywords = ['corte', 'cortes', 'cabelo', 'degradê', 'degrade', 'platinado', 'luzes', 'selagem', 'alinhamento', 'combo', 'combos'];
+  
+  const hasHairCategory = ['cortes', 'corte', 'cabelo', 'combos', 'combo'].some(cat => category.includes(cat));
+  const hasHairKeyword = hairKeywords.some(keyword => name.includes(keyword));
 
-  // Palavras-chave no nome do serviço que indicam Cabelo ou Barba
-  const eligibleKeywords = ['corte', 'barba', 'cabelo', 'degradê', 'degrade', 'barboterapia', 'selagem', 'pigmentação', 'pigmentacao', 'luzes', 'platinado', 'alinhamento'];
-  const isEligibleName = eligibleKeywords.some(keyword => name.includes(keyword));
+  // Exclusões explícitas para serviços isolados sem cabelo (Barba, Pezinho, Sobrancelha, etc.)
+  const nonEligibleKeywords = ['barba', 'barboterapia', 'pezinho', 'sobrancelha', 'risquinho', 'depilação', 'depilacao'];
+  const isOnlyNonHair = nonEligibleKeywords.some(non => name.includes(non) || category.includes(non)) && !hasHairKeyword && !hasHairCategory;
 
-  // Exclusões explícitas se for APENAS acabamento isolado e não tiver palavras-chave de corte/barba
-  const nonEligibleNames = ['risquinho', 'sobrancelha', 'pezinho', 'depilação', 'depilacao'];
-  const isOnlyNonEligible = nonEligibleNames.some(non => name.includes(non)) && !isEligibleName;
-
-  if (isOnlyNonEligible) {
+  if (isOnlyNonHair) {
     return false;
   }
 
-  return isEligibleName;
+  return hasHairCategory || hasHairKeyword;
 }
 
 /**
- * Verifica se um agendamento inclui ao menos um serviço elegível para fidelidade (Cabelo ou Barba).
+ * Verifica se um agendamento inclui ao menos um serviço de Cabelo/Corte para fidelidade.
  */
 export function hasEligibleLoyaltyService(appointment: Appointment, services: Service[]): boolean {
   const serviceIdsToCheck: string[] = [];
