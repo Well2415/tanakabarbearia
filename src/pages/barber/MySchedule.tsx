@@ -370,8 +370,39 @@ const MyAppointments = () => {
     }
   };
 
+  const generateUniqueRaffleNumber = () => {
+    const existingNumbers = new Set(
+      storage.getAppointments()
+        .map(a => a.raffleNumber?.trim().toLowerCase())
+        .filter(Boolean)
+    );
+    let candidate = Math.floor(1000 + Math.random() * 9000).toString();
+    let attempts = 0;
+    while (existingNumbers.has(candidate) && attempts < 1000) {
+      candidate = Math.floor(1000 + Math.random() * 9000).toString();
+      attempts++;
+    }
+    return candidate;
+  };
+
   const handleCompleteService = async () => {
     if (!currentAppointmentToComplete || !paymentType) return;
+
+    const cleanRaffleNum = raffleNumberInput.trim();
+    if (cleanRaffleNum) {
+      const duplicateAppt = storage.getAppointments().find(a => 
+        a.id !== currentAppointmentToComplete.id && 
+        a.raffleNumber?.trim().toLowerCase() === cleanRaffleNum.toLowerCase()
+      );
+      if (duplicateAppt) {
+        toast({
+          title: "Número da Sorte Duplicado!",
+          description: `O número #${cleanRaffleNum} já pertence ao agendamento de ${getClientName(duplicateAppt)}. Escolha outro número.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
 
     const now = new Date();
     const updatedAppointment = {
@@ -697,8 +728,8 @@ const MyAppointments = () => {
                   size="sm"
                   className="h-7 text-xs gap-1 text-purple-600 border-purple-200 hover:bg-purple-50"
                   onClick={() => {
-                    const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
-                    setRaffleNumberInput(randomNum);
+                    const uniqueNum = generateUniqueRaffleNumber();
+                    setRaffleNumberInput(uniqueNum);
                   }}
                 >
                   <Ticket className="w-3 h-3" /> Gerar Nº

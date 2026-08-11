@@ -29,6 +29,7 @@ import AdminLogin from "./pages/admin/Login";
 import Products from "./pages/Products";
 import AdminProducts from "./pages/admin/Products";
 import NotificationLogs from "./pages/admin/NotificationLogs";
+import Raffles from "./pages/admin/Raffles";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -100,6 +101,7 @@ const App = () => {
               <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/recurring-schedules" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><RecurringSchedules /></ProtectedRoute>} />
               <Route path="/admin/notifications/logs" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><NotificationLogs /></ProtectedRoute>} />
+              <Route path="/admin/raffles" element={<ProtectedRoute allowedRoles={['admin', 'barber']}><Raffles /></ProtectedRoute>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

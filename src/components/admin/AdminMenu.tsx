@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
-import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag, Bell } from 'lucide-react';
+import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag, Bell, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
@@ -52,12 +52,14 @@ export const AdminMenu = () => {
         { name: 'Serviços', path: '/admin/services', icon: Scissors },
         { name: 'Produtos', path: '/admin/products', icon: ShoppingBag },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
+        { name: 'Sorteios', path: '/admin/raffles', icon: Ticket },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Avisos', path: '/admin/notifications/logs', icon: Bell },
         { name: 'Ajustes', path: '/admin/settings', icon: Settings },
     ] : [
         { name: 'Minha Agenda', path: '/my-schedule', icon: Calendar },
         { name: 'Clientes', path: '/admin/clients', icon: Users },
+        { name: 'Sorteios', path: '/admin/raffles', icon: Ticket },
         { name: 'Produtos', path: '/products', icon: ShoppingBag },
         { name: 'Financeiro', path: '/barber/finance', icon: TrendingUp },
         { name: 'Avisos', path: '/admin/notifications/logs', icon: Bell },
@@ -296,6 +298,15 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                                 </DialogClose>
                             </>
                         )}
+                        
+                        <DialogClose asChild>
+                            <Link to="/admin/raffles">
+                                <Button variant="outline" className="w-full justify-start gap-3 h-12 border-purple-500/20 text-purple-600 hover:bg-purple-500/10 font-bold transition-all">
+                                    <Ticket className="w-5 h-5 text-purple-600" />
+                                    Gestão de Sorteios 🎟️
+                                </Button>
+                            </Link>
+                        </DialogClose>
                         
                         <DialogClose asChild>
                             <Link to="/admin/recurring-schedules">
