@@ -116,3 +116,18 @@ All colors MUST be HSL.
 .embla__container {
   transition-timing-function: linear !important;
 }
+
+/* Deixa o ícone nativo de calendário (input type="date") branco em temas escuros */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+input[type="date"] {
+  color-scheme: dark;
+}
