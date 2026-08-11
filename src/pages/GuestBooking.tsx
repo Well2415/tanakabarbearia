@@ -109,7 +109,7 @@ const GuestBooking = () => {
         setLastBarberDate({ barberId: '', date: '' });
       }
     }
-  }, [date, formData.barberId, barbers, lastBarberDate, appointments]);
+  }, [date, formData.barberId, formData.serviceIds, barbers, lastBarberDate, appointments, services]);
 
   const totalValue = formData.serviceIds.reduce((sum, id) => {
     const s = services.find(srv => srv.id === id);
