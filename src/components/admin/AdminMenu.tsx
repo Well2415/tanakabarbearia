@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
 import { LayoutDashboard, Calendar, Scissors, Users, TrendingUp, LogOut, Home, Plus, UserCog, Settings, Clock, Palmtree, UmbrellaOff, Shield, ShoppingBag, Bell, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CreateClientDialog } from './CreateClientDialog';
@@ -237,9 +237,10 @@ export const AdminQuickActions = ({ isHolidayMode, toggleHolidayMode, role }: { 
                         <Plus className="w-7 h-7" />
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <DialogHeader>
                         <DialogTitle>Ações Rápidas</DialogTitle>
+                        <DialogDescription className="hidden">Menu de ações rápidas</DialogDescription>
                     </DialogHeader>
                     <div className="grid grid-cols-1 gap-4 py-4">
                         {role === 'admin' && (
