@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import { supabase } from '@/lib/supabase';
 
 const Appointments = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const user = storage.getCurrentUser();
   const users = storage.getUsers();
@@ -296,13 +297,13 @@ const Appointments = () => {
   }, [editedDate, editedBarberId, editedServiceId, appointments, barbers, appointmentToEdit, services]);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('action') === 'book') {
       setShowBookingDialog(true);
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [location.search]);
 
   const handleCreateManualAppointment = async () => {
     const { clientName, clientPhone, serviceId, barberId, date, time, userId } = newBookingData;
