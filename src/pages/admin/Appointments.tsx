@@ -329,9 +329,8 @@ const Appointments = () => {
       createdAt: new Date().toISOString()
     };
 
-    const updated = [...appointments, newAppointment];
-    await storage.saveAppointments(updated);
-    setAppointments(updated);
+    await storage.updateAppointment(newAppointment);
+    setAppointments(prev => [...prev, newAppointment]);
 
     // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário)
     if (clientPhone && barber && service) {
@@ -346,9 +345,8 @@ const Appointments = () => {
 
   const handleDeleteAppointment = async () => {
     if (appointmentToDelete) {
-      const updatedAppointments = appointments.filter(appt => appt.id !== appointmentToDelete.id);
-      await storage.saveAppointments(updatedAppointments);
-      setAppointments(updatedAppointments);
+      await storage.deleteAppointment(appointmentToDelete.id);
+      setAppointments(prev => prev.filter(appt => appt.id !== appointmentToDelete.id));
       toast({ title: "Agendamento Excluído", description: "O agendamento foi removido com sucesso." });
       setShowDeleteDialog(false);
       setAppointmentToDelete(null);

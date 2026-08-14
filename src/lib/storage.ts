@@ -327,11 +327,18 @@ export const storage = {
     }
   },
 
+  /**
+   * Faz upsert de uma lista de agendamentos (não remove nada do banco).
+   * IMPORTANTE: Esta função NÃO infere exclusões a partir de diferenças com o cache local.
+   * Cada página mantém sua própria cópia local dos agendamentos, e o Realtime só atualiza
+   * o estado local dos componentes (não este cache), então o cache pode ficar "desatualizado"
+   * em relação ao que outra aba/dispositivo já criou. Antes, essa função apagava do Supabase
+   * qualquer id que estivesse no cache mas ausente da lista recebida - isso causava o
+   * desaparecimento de agendamentos recém-criados (ex: agendamento manual) sempre que alguma
+   * outra ação salvava uma lista incompleta depois. Exclusões devem ser feitas explicitamente
+   * via deleteAppointment(id).
+   */
   async saveAppointments(appointments: Appointment[]) {
-    const currentIds = cache.appointments.map(a => a.id);
-    const newIds = appointments.map(a => a.id);
-    const deletedIds = currentIds.filter(id => !newIds.includes(id));
-
     cache.appointments = appointments;
     localStorage.setItem('appointments', JSON.stringify(appointments));
 
@@ -344,11 +351,6 @@ export const storage = {
 
     const { error } = await supabase.from('appointments').upsert(dbAppointments);
     if (error) console.error('Error saving appointments:', error);
-
-    if (deletedIds.length > 0) {
-      const { error: deleteError } = await supabase.from('appointments').delete().in('id', deletedIds);
-      if (deleteError) console.error('Error deleting appointments:', deleteError);
-    }
   },
 
   async deleteAppointment(id: string) {
