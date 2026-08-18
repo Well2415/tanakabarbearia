@@ -118,6 +118,18 @@ const Appointments = () => {
     initStorage();
   }, [newBookingData.barberId]);
 
+  /**
+   * Revalida SOMENTE a lista de agendamentos direto do banco (leitura pura).
+   * Serve de rede de segurança para quando o Realtime cai silenciosamente
+   * (celular em segundo plano, troca de rede, notebook hibernando) e um
+   * agendamento novo não chega "ao vivo". A própria storage.refreshAppointments
+   * já se protege contra chamadas em excesso (mínimo 15s entre consultas reais).
+   */
+  const syncAppointmentsFromServer = async () => {
+    await storage.refreshAppointments();
+    setAppointments(storage.getAppointments());
+  };
+
   // ASSINATURA REALTIME (AGENDAMENTOS AO VIVO)
   useEffect(() => {
     // Configura a escuta da tabela de agendamentos
@@ -150,6 +162,9 @@ const Appointments = () => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ [Appointments] Conectado ao Realtime com sucesso!');
+          // Reconectou (primeira vez ou depois de uma queda) - revalida para
+          // recuperar qualquer alteração perdida enquanto estava desconectado.
+          syncAppointmentsFromServer();
         }
       });
 
@@ -157,6 +172,26 @@ const Appointments = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, []);
+
+  // Revalida quando a aba volta a ficar visível (ex: usuário voltou do WhatsApp)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncAppointmentsFromServer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Rede de segurança adicional: revalida a cada 5 minutos, independente de
+  // qualquer evento (o limitador em storage.refreshAppointments evita excesso).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      syncAppointmentsFromServer();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
   const [editFilteredTimes, setEditFilteredTimes] = useState<string[]>([]);

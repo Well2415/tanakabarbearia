@@ -56,6 +56,10 @@ const MyAppointments = () => {
   useEffect(() => {
     const initAndFetch = async () => {
       await storage.initialize();
+      // Revalida só a tabela de agendamentos (leitura pura, com limitador embutido
+      // contra excesso de consultas) para pegar qualquer alteração perdida caso o
+      // Realtime tenha caído silenciosamente desde a última sincronização.
+      await storage.refreshAppointments();
       const user = storage.getCurrentUser();
 
       const isBarber = user?.role === 'barber';
@@ -214,11 +218,30 @@ const MyAppointments = () => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ [MySchedule] Conectado ao Realtime com sucesso!');
+          // Reconectou (primeira vez ou depois de uma queda) - revalida para
+          // recuperar qualquer alteração perdida enquanto estava desconectado.
+          initAndFetch();
         }
       });
 
+    // Revalida quando a aba volta a ficar visível (ex: usuário voltou do WhatsApp)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        initAndFetch();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // Rede de segurança adicional: revalida a cada 5 minutos, independente de
+    // qualquer evento (o limitador em storage.refreshAppointments evita excesso).
+    const interval = setInterval(() => {
+      initAndFetch();
+    }, 5 * 60 * 1000);
+
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
     };
   }, [navigate, toast, startDate, endDate, user?.barberId]);
 

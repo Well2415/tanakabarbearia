@@ -302,7 +302,33 @@ export const storage = {
 
   // --- AGENDAMENTOS E HORÁRIOS ---
   getAppointments: (): Appointment[] => cache.appointments,
-  
+
+  /**
+   * Recarrega SOMENTE a tabela de agendamentos do Supabase (leitura pura, não grava nada).
+   * Serve para as telas de admin/barbeiro se recuperarem sozinhas quando a conexão Realtime
+   * cai silenciosamente (ex: celular em segundo plano) e um agendamento novo não chega ao vivo.
+   * Tem um limitador embutido (mínimo 15s entre chamadas reais) para nunca gerar rajadas de
+   * consultas ao banco, mesmo se for chamada várias vezes seguidas por engano.
+   */
+  _lastAppointmentsSyncAt: 0,
+  async refreshAppointments(): Promise<Appointment[]> {
+    const now = Date.now();
+    if (now - this._lastAppointmentsSyncAt < 15000) {
+      return cache.appointments;
+    }
+    this._lastAppointmentsSyncAt = now;
+
+    try {
+      const { data, error } = await supabase.from('appointments').select('*');
+      if (error) throw error;
+      cache.appointments = data || [];
+      saveCacheToLocal();
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao recarregar agendamentos:', error);
+    }
+    return cache.appointments;
+  },
+
   /**
    * Atualiza apenas UM agendamento de forma atômica no Supabase e no Cache.
    * Evita race conditions de sobrescrita total.
