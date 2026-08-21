@@ -59,6 +59,48 @@ const normalizeImagePath = (src: string): string => {
   return `/${cleanSrc}`;
 };
 
+// O Supabase/PostgREST devolve no máximo 1000 linhas por select(), mesmo sem pedir isso.
+// A tabela de agendamentos já passou desse limite, então um select('*') simples deixa
+// agendamentos recentes de fora do cache silenciosamente. Paginamos em blocos fixos.
+const APPOINTMENTS_PAGE_SIZE = 1000;
+// Teto rígido de páginas: garante que o loop SEMPRE termina, mesmo em cenário
+// inesperado (até 200 x 1000 = 200.000 linhas, bem acima do necessário hoje).
+const APPOINTMENTS_MAX_PAGES = 200;
+
+/**
+ * Busca TODOS os agendamentos do Supabase, paginando com .range() em vez de um
+ * select('*') único. Cada página faz uma chamada normal à API (mesmo custo de
+ * antes por linha); a diferença é que agora nenhuma linha fica de fora quando a
+ * tabela cresce além de 1000 registros.
+ */
+const fetchAllAppointments = async (): Promise<Appointment[]> => {
+  const all: Appointment[] = [];
+  let from = 0;
+
+  for (let page = 0; page < APPOINTMENTS_MAX_PAGES; page++) {
+    const to = from + APPOINTMENTS_PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      console.error('❌ [Storage] Erro ao paginar agendamentos:', error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+
+    all.push(...data);
+
+    // Página veio incompleta = era a última. Encerra sem fazer mais chamadas.
+    if (data.length < APPOINTMENTS_PAGE_SIZE) break;
+    from += APPOINTMENTS_PAGE_SIZE;
+  }
+
+  return all;
+};
+
 // Variável de controle removida do escopo global para o objeto storage
 
 /**
@@ -88,7 +130,7 @@ export const storage = {
         barbersRes,
         servicesRes,
         usersRes,
-        appointmentsRes,
+        appointmentsData,
         recurringRes,
         expensesRes,
         expenseCategoriesRes,
@@ -97,7 +139,7 @@ export const storage = {
         supabase.from('barbers').select('*'),
         supabase.from('services').select('*'),
         supabase.from('users').select('*'),
-        supabase.from('appointments').select('*'),
+        fetchAllAppointments(),
         supabase.from('recurring_schedules').select('*'),
         supabase.from('expenses').select('*'),
         supabase.from('expense_categories').select('*'),
@@ -130,7 +172,7 @@ export const storage = {
       }));
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
       cache.users = usersRes.data || [];
-      cache.appointments = appointmentsRes.data || [];
+      cache.appointments = appointmentsData || [];
       cache.recurringSchedules = recurringRes.data || [];
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
@@ -319,9 +361,7 @@ export const storage = {
     this._lastAppointmentsSyncAt = now;
 
     try {
-      const { data, error } = await supabase.from('appointments').select('*');
-      if (error) throw error;
-      cache.appointments = data || [];
+      cache.appointments = await fetchAllAppointments();
       saveCacheToLocal();
     } catch (error) {
       console.error('❌ [Storage] Erro ao recarregar agendamentos:', error);
