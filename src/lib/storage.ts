@@ -218,6 +218,54 @@ export const storage = {
     return cache.users.filter(u => u.pushSubscription && u.pushSubscription !== '');
   },
 
+  /**
+   * Recarrega do Supabase os dados "base" usados pelos formulários de agendamento
+   * (configurações, barbeiros, serviços, usuários e horários fixos) SEM reprocessar
+   * a tabela inteira de agendamentos.
+   *
+   * Motivo: em aparelhos onde o app (PWA) fica dias aberto, o cache local pode
+   * ficar defasado - ex.: um serviço recriado com outro id. Ao marcar um horário,
+   * o id antigo do cache não existe mais no banco e o INSERT é recusado por
+   * chave estrangeira. Chamar isto ao abrir o modal de "Marcar Horário" garante
+   * que as opções refletem o banco atual.
+   */
+  async refreshCoreData() {
+    try {
+      const [settingsRes, barbersRes, servicesRes, usersRes, recurringRes] = await Promise.all([
+        supabase.from('shop_settings').select('*'),
+        supabase.from('barbers').select('*'),
+        supabase.from('services').select('*'),
+        supabase.from('users').select('*'),
+        supabase.from('recurring_schedules').select('*'),
+      ]);
+
+      if (settingsRes.data) {
+        const settingsMap: Record<string, unknown> = {};
+        settingsRes.data.forEach(s => { settingsMap[s.key] = s.value; });
+        cache.settings = settingsMap;
+      }
+
+      const barberSchedules = cache.settings['barber_schedules'] || {};
+      if (!barbersRes.error) {
+        cache.barbers = (barbersRes.data || []).map(b => ({
+          ...b,
+          photo: normalizeImagePath(b.photo),
+          availableHours: sortTimes(b.availableHours || []),
+          scheduleByDay: barberSchedules[b.id] || undefined,
+        }));
+      }
+      if (!servicesRes.error) {
+        cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
+      }
+      if (!usersRes.error) cache.users = usersRes.data || [];
+      if (!recurringRes.error) cache.recurringSchedules = recurringRes.data || [];
+
+      saveCacheToLocal();
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao recarregar dados base:', error);
+    }
+  },
+
   async seedDefaultData() {
     console.log('🌱 Seeding default data to Supabase...');
     await supabase.from('services').insert(DEFAULT_SERVICES);
