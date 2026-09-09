@@ -145,41 +145,62 @@ export const getBlockedTimes = (startTime: string, durationMinutes: number): str
 };
 
 /**
- * Regra da lista OPCIONAL de "datas de trabalho" do barbeiro (availableDates).
+ * Regra das "datas de trabalho" do barbeiro (availableDates).
  *
- * Quando o barbeiro preenche availableDates (lista de "yyyy-MM-dd"), o cliente
- * só pode agendar nessas datas. O problema: essa lista é mantida na mão e, quando
- * fica desatualizada (todas as datas já passaram), a regra antiga passava a
- * bloquear TODAS as datas do calendário - derrubando o agendamento no site
- * inteiro, inclusive a marcação manual do admin.
+ * O barbeiro precisa cadastrar explicitamente os dias em que vai atender. A
+ * agenda só oferece uma data quando ela está nessa lista:
  *
- * Agora só consideramos as datas que ainda são hoje ou no futuro. Se a lista
- * estiver vazia OU inteiramente no passado, tratamos como "agenda aberta"
- * (sem restrição) em vez de travar tudo.
+ *  - data cadastrada e que ainda não passou  -> LIBERADA
+ *  - data fora da lista                        -> BLOQUEADA
+ *  - lista vazia / não definida               -> TODAS bloqueadas (agenda fechada)
+ *  - datas da lista já no passado             -> contam como não cadastradas
  *
- * @returns true se a data deve ficar BLOQUEADA por causa da lista de datas.
+ * Ou seja: se o barbeiro não cadastrar nada, não aparece horário nenhum para
+ * agendar - nem para o cliente, nem na marcação manual. É intencional.
+ *
+ * IMPORTANTE (histórico): quando as datas cadastradas vão ficando no passado e
+ * ninguém renova a lista, a agenda fecha sozinha. Há um aviso no painel admin
+ * ("Datas de trabalho do barbeiro") justamente para isso não passar batido.
+ *
+ * @returns true se a data deve ficar BLOQUEADA.
  */
+const toLocalYmd = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export const isDateBlockedByBarberDates = (
   availableDates: string[] | undefined | null,
   calendarDate: Date,
   today: Date = new Date()
 ): boolean => {
-  if (!Array.isArray(availableDates) || availableDates.length === 0) return false;
+  const wanted = toLocalYmd(calendarDate);
 
-  const toLocalYmd = (d: Date): string => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
+  // Passado nunca é agendável.
+  if (wanted < toLocalYmd(today)) return true;
 
+  const list = Array.isArray(availableDates)
+    ? availableDates.filter((d): d is string => typeof d === 'string')
+    : [];
+
+  // Sem datas cadastradas => nada liberado. Só libera o que o barbeiro cadastrou.
+  return !list.includes(wanted);
+};
+
+/**
+ * Retorna quantas datas de trabalho FUTURAS (hoje ou depois) o barbeiro ainda
+ * tem cadastradas. Zero = a agenda dele está fechada para novos agendamentos.
+ * Usado para exibir o aviso no painel.
+ */
+export const countFutureBarberDates = (
+  availableDates: string[] | undefined | null,
+  today: Date = new Date()
+): number => {
+  if (!Array.isArray(availableDates)) return 0;
   const todayStr = toLocalYmd(today);
-  const futureDates = availableDates.filter(d => typeof d === 'string' && d >= todayStr);
-
-  // Lista existe mas está toda no passado (desatualizada): não restringe nada.
-  if (futureDates.length === 0) return false;
-
-  return !futureDates.includes(toLocalYmd(calendarDate));
+  return availableDates.filter(d => typeof d === 'string' && d >= todayStr).length;
 };
 
 /**

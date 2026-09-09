@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
 import { sendWhatsAppConfirmation, getWhatsAppManualLink, sendWhatsApp2HourReminder } from '@/lib/whatsapp';
-import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle, Ticket } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle, Ticket, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -33,7 +33,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive, isDateBlockedByBarberDates } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive, isDateBlockedByBarberDates, countFutureBarberDates } from '@/lib/timeUtils';
 
 import { supabase } from '@/lib/supabase';
 
@@ -1081,6 +1081,29 @@ const Appointments = () => {
             </Button>
           </div>
         </div>
+
+        {(() => {
+          const closedBarbers = barbers.filter(b => countFutureBarberDates(b.availableDates) === 0);
+          if (closedBarbers.length === 0) return null;
+          return (
+            <div className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold text-amber-700">
+                  {closedBarbers.length === 1
+                    ? 'Agenda fechada para novos agendamentos'
+                    : 'Agendas fechadas para novos agendamentos'}
+                </p>
+                <p className="text-amber-700/90">
+                  {closedBarbers.map(b => b.name).join(', ')}{' '}
+                  {closedBarbers.length === 1 ? 'está' : 'estão'} sem datas de trabalho futuras cadastradas.
+                  Enquanto não houver datas, nenhum horário aparece para o cliente nem na marcação manual.
+                  Cadastre as próximas datas em <span className="font-semibold">Barbeiros</span> (ou o barbeiro em “Gerenciar Disponibilidade”).
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         <Card className="p-6 mb-8 border-border">
           <h3 className="font-bold text-xl mb-4">Relatório de Pagamentos</h3>
