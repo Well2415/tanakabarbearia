@@ -33,7 +33,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive, isDateBlockedByBarberDates } from '@/lib/timeUtils';
 
 import { supabase } from '@/lib/supabase';
 
@@ -1891,9 +1891,8 @@ const Appointments = () => {
 
                       if (newBookingData.barberId) {
                         const selectedBarber = barbers.find(b => b.id === newBookingData.barberId);
-                        if (selectedBarber && selectedBarber.availableDates && selectedBarber.availableDates.length > 0) {
-                          const formattedCalendarDate = format(calendarDate, 'yyyy-MM-dd');
-                          return !selectedBarber.availableDates.includes(formattedCalendarDate);
+                        if (isDateBlockedByBarberDates(selectedBarber?.availableDates, calendarDate)) {
+                          return true;
                         }
                       }
                       return false;

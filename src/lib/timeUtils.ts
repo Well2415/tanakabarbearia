@@ -145,6 +145,44 @@ export const getBlockedTimes = (startTime: string, durationMinutes: number): str
 };
 
 /**
+ * Regra da lista OPCIONAL de "datas de trabalho" do barbeiro (availableDates).
+ *
+ * Quando o barbeiro preenche availableDates (lista de "yyyy-MM-dd"), o cliente
+ * só pode agendar nessas datas. O problema: essa lista é mantida na mão e, quando
+ * fica desatualizada (todas as datas já passaram), a regra antiga passava a
+ * bloquear TODAS as datas do calendário - derrubando o agendamento no site
+ * inteiro, inclusive a marcação manual do admin.
+ *
+ * Agora só consideramos as datas que ainda são hoje ou no futuro. Se a lista
+ * estiver vazia OU inteiramente no passado, tratamos como "agenda aberta"
+ * (sem restrição) em vez de travar tudo.
+ *
+ * @returns true se a data deve ficar BLOQUEADA por causa da lista de datas.
+ */
+export const isDateBlockedByBarberDates = (
+  availableDates: string[] | undefined | null,
+  calendarDate: Date,
+  today: Date = new Date()
+): boolean => {
+  if (!Array.isArray(availableDates) || availableDates.length === 0) return false;
+
+  const toLocalYmd = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayStr = toLocalYmd(today);
+  const futureDates = availableDates.filter(d => typeof d === 'string' && d >= todayStr);
+
+  // Lista existe mas está toda no passado (desatualizada): não restringe nada.
+  if (futureDates.length === 0) return false;
+
+  return !futureDates.includes(toLocalYmd(calendarDate));
+};
+
+/**
  * Verifica se um horário específico consegue acomodar o tempo do serviço sem colidir com bloqueios.
  */
 export const canAccommodateService = (
