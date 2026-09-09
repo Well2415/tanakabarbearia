@@ -35,8 +35,63 @@ const getInitialCache = () => {
 
 let cache = getInitialCache();
 
+// Chaves legadas: são escritas por métodos antigos mas ninguém as LÊ (só
+// 'barbershop_cache' é lido na inicialização). Podem ser descartadas com
+// segurança quando o localStorage estoura a cota.
+const LEGACY_BULK_KEYS = ['appointments', 'users', 'barbers', 'services', 'recurring_schedules', 'currentUser'];
+
+/**
+ * localStorage.setItem que NUNCA lança.
+ *
+ * Em celulares (Safari/iOS costuma ter ~5 MB) o cache pode estourar a cota. Antes
+ * isso derrubava a GRAVAÇÃO do agendamento: em updateAppointment() o setItem vinha
+ * ANTES do upsert no Supabase, então um "QuotaExceededError" (código 22) abortava
+ * a função e o agendamento não era salvo no banco - mesmo com internet e banco ok.
+ * Sintoma real: gravava no PC e falhava no celular do barbeiro.
+ *
+ * Agora, se estourar, limpamos as chaves legadas volumosas e tentamos de novo; se
+ * ainda assim não couber, seguimos em frente sem cache local (os dados de verdade
+ * estão no Supabase e são recarregados no próximo boot).
+ */
+const safeSetItem = (key: string, value: string): void => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`⚠️ [Storage] localStorage cheio ao gravar "${key}". Limpando chaves legadas e tentando de novo.`, err);
+    try {
+      LEGACY_BULK_KEYS.filter(k => k !== key).forEach(k => localStorage.removeItem(k));
+      localStorage.setItem(key, value);
+    } catch (err2) {
+      console.warn(`⚠️ [Storage] Sem espaço no localStorage para "${key}". Seguindo sem persistir o cache local.`, err2);
+    }
+  }
+};
+
+/**
+ * Cópia do cache para persistir no localStorage: mantém tudo, mas só os
+ * agendamentos RELEVANTES (em aberto, ou dos últimos 60 dias / futuros). O cache
+ * EM MEMÓRIA continua completo - isto só evita estourar a cota do navegador
+ * conforme a tabela de agendamentos cresce. Seguro porque o app só renderiza
+ * depois de storage.initialize() recarregar a lista completa do Supabase.
+ */
+const buildPersistableCache = () => {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 60);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const appts: Array<{ status?: string; date?: string }> = Array.isArray(cache.appointments) ? cache.appointments : [];
+    const trimmed = appts.filter((a) => {
+      const emAberto = a?.status === 'pending' || a?.status === 'confirmed' || a?.status === 'in_progress';
+      return emAberto || (typeof a?.date === 'string' && a.date >= cutoffStr);
+    });
+    return { ...cache, appointments: trimmed };
+  } catch {
+    return cache;
+  }
+};
+
 const saveCacheToLocal = () => {
-  localStorage.setItem('barbershop_cache', JSON.stringify(cache));
+  safeSetItem('barbershop_cache', JSON.stringify(buildPersistableCache()));
 };
 
 // Helper simples para caminhos de imagem
@@ -332,7 +387,7 @@ export const storage = {
 
     // 1. Update local cache
     cache.barbers = cache.barbers.map(b => b.id === barber.id ? barber : b);
-    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+    saveCacheToLocal();
 
     // 2. Prepare for DB
     const barberSchedules = cache.settings['barber_schedules'] || {};
@@ -349,13 +404,13 @@ export const storage = {
 
   async deleteBarber(id: string) {
     cache.barbers = cache.barbers.filter(b => b.id !== id);
-    localStorage.setItem('barbers', JSON.stringify(cache.barbers));
+    saveCacheToLocal();
     await supabase.from('barbers').delete().eq('id', id);
   },
 
   async saveBarbers(barbers: Barber[]) {
     cache.barbers = barbers;
-    localStorage.setItem('barbers', JSON.stringify(barbers));
+    saveCacheToLocal();
 
     const barberSchedules: Record<string, any> = {};
     const dbBarbers = barbers.map(b => {
@@ -374,19 +429,19 @@ export const storage = {
 
   async updateService(service: Service) {
     cache.services = cache.services.map(s => s.id === service.id ? service : s);
-    localStorage.setItem('services', JSON.stringify(cache.services));
+    saveCacheToLocal();
     await supabase.from('services').upsert(service);
   },
 
   async deleteService(id: string) {
     cache.services = cache.services.filter(s => s.id !== id);
-    localStorage.setItem('services', JSON.stringify(cache.services));
+    saveCacheToLocal();
     await supabase.from('services').delete().eq('id', id);
   },
 
   async saveServices(services: Service[]) {
     cache.services = services;
-    localStorage.setItem('services', JSON.stringify(services));
+    saveCacheToLocal();
     await supabase.from('services').upsert(services);
   },
 
@@ -429,7 +484,7 @@ export const storage = {
     } else {
       cache.appointments = [...cache.appointments, appointment];
     }
-    localStorage.setItem('appointments', JSON.stringify(cache.appointments));
+    saveCacheToLocal();
 
     // 2. Persistir no Supabase
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -454,7 +509,7 @@ export const storage = {
    */
   async saveAppointments(appointments: Appointment[]) {
     cache.appointments = appointments;
-    localStorage.setItem('appointments', JSON.stringify(appointments));
+    saveCacheToLocal();
 
     // Limpar flags de UI antes do upsert
     const dbAppointments = appointments.map(appt => {
@@ -469,7 +524,7 @@ export const storage = {
 
   async deleteAppointment(id: string) {
     cache.appointments = cache.appointments.filter(a => a.id !== id);
-    localStorage.setItem('appointments', JSON.stringify(cache.appointments));
+    saveCacheToLocal();
     const { error } = await supabase.from('appointments').delete().eq('id', id);
     if (error) {
       console.error('❌ [Storage] Erro ao excluir agendamento:', error);
@@ -492,7 +547,7 @@ export const storage = {
     saveCacheToLocal();
     const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
     if (loggedInId === user.id) {
-       localStorage.setItem('currentUser', JSON.stringify(user));
+       safeSetItem('currentUser', JSON.stringify(user));
     }
     
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -514,7 +569,7 @@ export const storage = {
       
       const loggedInId = localStorage.getItem('barbershop_logged_in_user_id');
       if (loggedInId === userId) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        safeSetItem('currentUser', JSON.stringify(user));
       }
     }
 
@@ -553,7 +608,7 @@ export const storage = {
 
   async saveUsers(users: User[]) {
     cache.users = users;
-    localStorage.setItem('users', JSON.stringify(users));
+    saveCacheToLocal();
     const { error } = await supabase.from('users').upsert(users);
     if (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
@@ -562,7 +617,7 @@ export const storage = {
 
   // Auth
   loginUser: (userId: string) => {
-    localStorage.setItem('barbershop_logged_in_user_id', userId);
+    safeSetItem('barbershop_logged_in_user_id', userId);
   },
   logoutUser: () => {
     localStorage.removeItem('barbershop_logged_in_user_id');
@@ -674,7 +729,7 @@ export const storage = {
     const deletedIds = currentIds.filter(id => !newIds.includes(id));
 
     cache.recurringSchedules = schedules;
-    localStorage.setItem('recurring_schedules', JSON.stringify(schedules));
+    saveCacheToLocal();
 
     const dbPayload = schedules.map(s => ({
       id: s.id,
