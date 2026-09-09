@@ -365,13 +365,25 @@ const Appointments = () => {
       createdAt: new Date().toISOString()
     };
 
-    await storage.updateAppointment(newAppointment);
+    try {
+      await storage.updateAppointment(newAppointment);
+    } catch (err) {
+      console.error('Erro ao salvar agendamento manual:', err);
+      toast({ title: 'Erro', description: 'Não foi possível salvar o agendamento. Tente novamente.', variant: 'destructive' });
+      return;
+    }
+
     setAppointments(prev => [...prev, newAppointment]);
 
-    // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário)
-    if (clientPhone && barber && service) {
-      const link = getWhatsAppManualLink(newAppointment, barber, service);
-      if (link) window.open(link, '_blank');
+    // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário).
+    // Best-effort: nunca pode travar o fluxo nem impedir o toast de sucesso.
+    try {
+      if (clientPhone && barber && service) {
+        const link = getWhatsAppManualLink(newAppointment, barber, service);
+        if (link) window.open(link, '_blank');
+      }
+    } catch (err) {
+      console.error('WhatsApp (agendamento manual) falhou, seguindo mesmo assim:', err);
     }
 
     setShowBookingDialog(false);
@@ -944,18 +956,32 @@ const Appointments = () => {
 
     const newAppointment = { ...updatedAppointment, status };
 
-    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular
+    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular.
+    // É best-effort: qualquer falha aqui (link, window.open, serviço ausente) NUNCA
+    // pode impedir a confirmação de acontecer. Antes, um erro nesta etapa abortava
+    // toda a função e o botão "Confirmar" parecia não fazer nada - o "Cancelar" não
+    // passa por aqui, por isso funcionava normalmente.
     if (status === 'confirmed') {
-      const barber = barbers.find(b => b.id === updatedAppointment.barberId);
-      const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
-      if (barber && service) {
-        // Envio MANUAL para economizar API nas confirmações por botão
-        const link = getWhatsAppManualLink(newAppointment, barber, service);
-        if (link) window.open(link, '_blank');
+      try {
+        const barber = barbers.find(b => b.id === updatedAppointment.barberId);
+        const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
+        if (barber && service) {
+          // Envio MANUAL para economizar API nas confirmações por botão
+          const link = getWhatsAppManualLink(newAppointment, barber, service);
+          if (link) window.open(link, '_blank');
+        }
+      } catch (err) {
+        console.error('WhatsApp (confirmação) falhou, seguindo mesmo assim:', err);
       }
     }
 
-    await updateAppointmentInStorage(newAppointment);
+    try {
+      await updateAppointmentInStorage(newAppointment);
+    } catch (err) {
+      console.error('Erro ao atualizar status do agendamento:', err);
+      toast({ title: 'Erro', description: 'Não foi possível atualizar o agendamento. Tente novamente.', variant: 'destructive' });
+      return;
+    }
 
     if (status === 'confirmed') {
       const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
