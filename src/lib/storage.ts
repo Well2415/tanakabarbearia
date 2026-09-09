@@ -156,6 +156,75 @@ const fetchAllAppointments = async (): Promise<Appointment[]> => {
   return all;
 };
 
+// --- Janela "quente" de agendamentos (economia de banda) ------------------------
+// O app inteiro carregava SEMPRE a tabela completa de agendamentos (a cada boot,
+// foco de aba, reconexão do Realtime, poll periódico) para ~156 usuários. Isso é
+// o maior consumo de banda do plano grátis do Supabase. Agora o carregamento
+// padrão traz só o que o dia a dia precisa: agendamentos dos últimos N dias, os
+// futuros e os que ainda estão em aberto. O histórico antigo completo é buscado
+// sob demanda (ensureFullHistory) apenas nas telas que precisam dele
+// (Financeiro, Sorteios, tela de Agendamentos do admin com relatório/histórico).
+const APPOINTMENTS_WINDOW_DAYS = 180;
+
+const appointmentsWindowCutoff = (): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - APPOINTMENTS_WINDOW_DAYS);
+  return d.toISOString().slice(0, 10);
+};
+
+const isHotAppointment = (a: { date?: string; status?: string }, cutoff: string): boolean => {
+  if (a?.status === 'pending' || a?.status === 'confirmed' || a?.status === 'in_progress') return true;
+  return typeof a?.date === 'string' && a.date >= cutoff;
+};
+
+/**
+ * Busca só os agendamentos "quentes": últimos APPOINTMENTS_WINDOW_DAYS dias,
+ * futuros, ou ainda em aberto (pending/confirmed/in_progress em qualquer data).
+ */
+const fetchRecentAppointments = async (): Promise<Appointment[]> => {
+  const cutoff = appointmentsWindowCutoff();
+  const all: Appointment[] = [];
+
+  for (let page = 0; page < APPOINTMENTS_MAX_PAGES; page++) {
+    const from = page * APPOINTMENTS_PAGE_SIZE;
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .or(`date.gte.${cutoff},status.in.(pending,confirmed,in_progress)`)
+      .order('id', { ascending: true })
+      .range(from, from + APPOINTMENTS_PAGE_SIZE - 1);
+
+    if (error) {
+      // Se o filtro falhar por algum motivo, cai para a busca completa (comportamento
+      // antigo) em vez de deixar a tela sem agendamentos.
+      console.error('❌ [Storage] Erro ao buscar agendamentos recentes, usando busca completa:', error);
+      return fetchAllAppointments();
+    }
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < APPOINTMENTS_PAGE_SIZE) break;
+  }
+
+  return all;
+};
+
+/**
+ * Substitui a "janela quente" do cache pelos dados frescos do servidor, PRESERVANDO
+ * qualquer histórico antigo que já tenha sido carregado (via ensureFullHistory).
+ * Remove da janela os agendamentos que sumiram no servidor (ex: excluídos).
+ */
+const mergeRecentIntoCache = (recent: Appointment[]) => {
+  const cutoff = appointmentsWindowCutoff();
+  const byId = new Map<string, Appointment>();
+  // mantém só o histórico "frio" (fora da janela) que já estava em memória
+  (Array.isArray(cache.appointments) ? cache.appointments : []).forEach(a => {
+    if (!isHotAppointment(a, cutoff)) byId.set(a.id, a);
+  });
+  // a janela quente vem 100% do servidor
+  recent.forEach(a => byId.set(a.id, a));
+  cache.appointments = Array.from(byId.values());
+};
+
 // Variável de controle removida do escopo global para o objeto storage
 
 /**
@@ -194,7 +263,7 @@ export const storage = {
         supabase.from('barbers').select('*'),
         supabase.from('services').select('*'),
         supabase.from('users').select('*'),
-        fetchAllAppointments(),
+        fetchRecentAppointments(),
         supabase.from('recurring_schedules').select('*'),
         supabase.from('expenses').select('*'),
         supabase.from('expense_categories').select('*'),
@@ -228,6 +297,7 @@ export const storage = {
       cache.services = (servicesRes.data || []).map(s => ({ ...s, image: normalizeImagePath(s.image) }));
       cache.users = usersRes.data || [];
       cache.appointments = appointmentsData || [];
+      this._fullHistoryLoaded = false; // boot novo: só a janela quente foi carregada
       cache.recurringSchedules = recurringRes.data || [];
       cache.expenses = expensesRes.data || [];
       cache.expenseCategories = expenseCategoriesRes.data?.map(c => c.name) || [];
@@ -449,25 +519,47 @@ export const storage = {
   getAppointments: (): Appointment[] => cache.appointments,
 
   /**
-   * Recarrega SOMENTE a tabela de agendamentos do Supabase (leitura pura, não grava nada).
+   * Recarrega os agendamentos do Supabase (leitura pura, não grava nada).
    * Serve para as telas de admin/barbeiro se recuperarem sozinhas quando a conexão Realtime
    * cai silenciosamente (ex: celular em segundo plano) e um agendamento novo não chega ao vivo.
-   * Tem um limitador embutido (mínimo 15s entre chamadas reais) para nunca gerar rajadas de
-   * consultas ao banco, mesmo se for chamada várias vezes seguidas por engano.
+   *
+   * Traz apenas a JANELA QUENTE (recentes/futuros/em aberto) para economizar banda, e faz
+   * merge preservando o histórico antigo que já tenha sido carregado por ensureFullHistory().
+   * Tem um limitador embutido (mínimo 45s entre chamadas reais) para nunca gerar rajadas.
    */
   _lastAppointmentsSyncAt: 0,
   async refreshAppointments(): Promise<Appointment[]> {
     const now = Date.now();
-    if (now - this._lastAppointmentsSyncAt < 15000) {
+    if (now - this._lastAppointmentsSyncAt < 45000) {
       return cache.appointments;
     }
     this._lastAppointmentsSyncAt = now;
 
     try {
-      cache.appointments = await fetchAllAppointments();
+      const recent = await fetchRecentAppointments();
+      mergeRecentIntoCache(recent);
       saveCacheToLocal();
     } catch (error) {
       console.error('❌ [Storage] Erro ao recarregar agendamentos:', error);
+    }
+    return cache.appointments;
+  },
+
+  /**
+   * Garante que o histórico COMPLETO de agendamentos está no cache. Faz a busca
+   * paginada da tabela inteira uma única vez por sessão (a não ser que force=true).
+   * Chamado só pelas telas que realmente precisam de dados antigos: Financeiro,
+   * Sorteios e a tela de Agendamentos do admin (relatórios/histórico).
+   */
+  _fullHistoryLoaded: false,
+  async ensureFullHistory(force = false): Promise<Appointment[]> {
+    if (this._fullHistoryLoaded && !force) return cache.appointments;
+    try {
+      cache.appointments = await fetchAllAppointments();
+      this._fullHistoryLoaded = true;
+      saveCacheToLocal();
+    } catch (error) {
+      console.error('❌ [Storage] Erro ao carregar histórico completo de agendamentos:', error);
     }
     return cache.appointments;
   },

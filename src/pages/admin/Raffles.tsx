@@ -71,15 +71,13 @@ export default function Raffles() {
       return;
     }
 
-    const loadedAppointments = storage.getAppointments();
-    const loadedUsers = storage.getUsers();
-    const loadedBarbers = storage.getBarbers();
-    const loadedServices = storage.getServices();
+    setAppointments(storage.getAppointments());
+    setUsers(storage.getUsers());
+    setBarbers(storage.getBarbers());
+    setServices(storage.getServices());
 
-    setAppointments(loadedAppointments);
-    setUsers(loadedUsers);
-    setBarbers(loadedBarbers);
-    setServices(loadedServices);
+    // Números da sorte podem estar em agendamentos antigos -> carrega histórico completo.
+    storage.ensureFullHistory().then(all => setAppointments([...all]));
 
     // Carregar configurações de sorteio salvas
     const savedConfig = storage.getSetting('active_raffle_config', null);

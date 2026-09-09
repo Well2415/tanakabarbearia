@@ -80,16 +80,19 @@ const Finance = () => {
     const initFinance = async () => {
       await storage.initialize();
       const currentUser = storage.getCurrentUser();
-      
+
       if (!currentUser || (currentUser.role !== 'barber' && currentUser.role !== 'admin')) {
         navigate('/dashboard');
         return;
       }
-      
+
+      // Financeiro usa relatórios por mês/ano de todo o histórico -> carrega tudo.
+      await storage.ensureFullHistory();
+
       setUser(currentUser);
       setUsers(storage.getUsers());
       setCategories(storage.getExpenseCategories());
-      
+
       const allAppointments = storage.getAppointments();
       const allExpenses = storage.getExpenses();
       const targetBarberId = currentUser.role === 'admin' ? null : (currentUser.barberId || currentUser.id);

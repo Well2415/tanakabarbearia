@@ -232,11 +232,13 @@ const MyAppointments = () => {
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Rede de segurança adicional: revalida a cada 5 minutos, independente de
-    // qualquer evento (o limitador em storage.refreshAppointments evita excesso).
+    // Rede de segurança: revalida periodicamente, mas só com a aba visível.
+    // O Realtime é o canal principal; isto é backup. Intervalo de 20 min.
     const interval = setInterval(() => {
-      initAndFetch();
-    }, 5 * 60 * 1000);
+      if (document.visibilityState === 'visible') {
+        initAndFetch();
+      }
+    }, 20 * 60 * 1000);
 
     return () => {
       supabase.removeChannel(channel);
