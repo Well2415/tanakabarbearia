@@ -37,6 +37,30 @@ import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLo
 
 import { supabase } from '@/lib/supabase';
 
+/**
+ * Transforma o erro do Supabase/Postgres numa frase curta e legível para o toast.
+ * Serve para diagnosticar em produção (o barbeiro tira print da mensagem real)
+ * em vez de mostrar só um "tente novamente" genérico.
+ */
+const describeDbError = (err: unknown): string => {
+  const e = err as { message?: string; details?: string; hint?: string; code?: string } | null;
+  if (!e || typeof e !== 'object') return 'Erro desconhecido ao gravar no banco. Tente novamente.';
+  const parts = [e.message, e.details, e.hint].filter(Boolean);
+  const text = parts.join(' — ') || 'Falha ao gravar no banco.';
+  return e.code ? `${text} (código ${e.code})` : text;
+};
+
+/**
+ * Detecta erro de chave estrangeira do Postgres (código 23503). É o sintoma
+ * típico de cache local desatualizado: o id de serviço/cliente/barbeiro enviado
+ * não existe (mais) no banco.
+ */
+const isForeignKeyError = (err: unknown): boolean => {
+  const e = err as { code?: string; message?: string } | null;
+  if (!e || typeof e !== 'object') return false;
+  return e.code === '23503' || /foreign key constraint/i.test(e.message || '');
+};
+
 const Appointments = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -340,6 +364,15 @@ const Appointments = () => {
     }
   }, [location.search]);
 
+  // Ao abrir "Marcar Horário", recarrega barbeiros/serviços/clientes do banco.
+  // Evita que um cache local defasado (PWA aberto há dias) ofereça um serviço/
+  // cliente com id que não existe mais e faça o agendamento falhar por FK.
+  useEffect(() => {
+    if (!showBookingDialog) return;
+    // spread garante nova referência -> re-render para os selects pegarem os dados novos
+    storage.refreshCoreData().then(() => setAppointments([...storage.getAppointments()]));
+  }, [showBookingDialog]);
+
   const handleCreateManualAppointment = async () => {
     const { clientName, clientPhone, serviceId, barberId, date, time, userId } = newBookingData;
     if (!clientName || !serviceId || !barberId || !date || !time) {
@@ -349,6 +382,7 @@ const Appointments = () => {
 
     const service = storage.getServices().find(s => s.id === serviceId);
     const barber = storage.getBarbers().find(b => b.id === barberId);
+    const pickedServiceName = service?.name;
 
     const newAppointment: Appointment = {
       id: Date.now().toString(),
@@ -365,21 +399,64 @@ const Appointments = () => {
       createdAt: new Date().toISOString()
     };
 
+    let appointmentToPersist = newAppointment;
     try {
-      await storage.updateAppointment(newAppointment);
+      await storage.updateAppointment(appointmentToPersist);
     } catch (err) {
-      console.error('Erro ao salvar agendamento manual:', err);
-      toast({ title: 'Erro', description: 'Não foi possível salvar o agendamento. Tente novamente.', variant: 'destructive' });
-      return;
+      // Erro de chave estrangeira normalmente = cache local desatualizado (comum
+      // em celular com o PWA aberto há dias). Recarrega os dados do banco, tenta
+      // reparar os vínculos pelo nome do serviço e refaz UMA vez.
+      if (isForeignKeyError(err)) {
+        try {
+          await storage.refreshCoreData();
+          setAppointments([...storage.getAppointments()]);
+
+          const freshServices = storage.getServices();
+          const freshBarbers = storage.getBarbers();
+          const freshUsers = storage.getUsers();
+          const repaired: Appointment = { ...newAppointment };
+
+          if (!freshServices.some(s => String(s.id) === String(repaired.serviceId))) {
+            const byName = pickedServiceName
+              ? freshServices.find(s => s.name.trim().toLowerCase() === pickedServiceName.trim().toLowerCase())
+              : undefined;
+            if (!byName) throw new Error('O serviço selecionado não existe mais. Recarregue a página e selecione de novo.');
+            repaired.serviceId = byName.id;
+            repaired.serviceIds = [byName.id];
+            repaired.servicePrice = byName.price ?? repaired.servicePrice;
+          }
+          if (!freshBarbers.some(b => String(b.id) === String(repaired.barberId))) {
+            throw new Error('O barbeiro selecionado não existe mais. Recarregue a página.');
+          }
+          if (repaired.userId && !freshUsers.some(u => String(u.id) === String(repaired.userId))) {
+            throw new Error('O cliente selecionado não existe mais. Recarregue a página e selecione o cliente de novo.');
+          }
+
+          appointmentToPersist = repaired;
+          await storage.updateAppointment(appointmentToPersist);
+        } catch (err2) {
+          console.error('Erro ao salvar agendamento manual (após recarregar):', err2);
+          toast({ title: 'Erro ao salvar agendamento', description: describeDbError(err2), variant: 'destructive' });
+          return;
+        }
+      } else {
+        console.error('Erro ao salvar agendamento manual:', err);
+        toast({ title: 'Erro ao salvar agendamento', description: describeDbError(err), variant: 'destructive' });
+        return;
+      }
     }
 
-    setAppointments(prev => [...prev, newAppointment]);
+    // dedupe por id: o caminho de recuperação pode já ter inserido uma versão
+    // otimista com o mesmo id no estado antes do retry.
+    setAppointments(prev => [...prev.filter(a => a.id !== appointmentToPersist.id), appointmentToPersist]);
 
     // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário).
     // Best-effort: nunca pode travar o fluxo nem impedir o toast de sucesso.
     try {
-      if (clientPhone && barber && service) {
-        const link = getWhatsAppManualLink(newAppointment, barber, service);
+      const waBarber = storage.getBarbers().find(b => b.id === appointmentToPersist.barberId) || barber;
+      const waService = storage.getServices().find(s => s.id === appointmentToPersist.serviceId) || service;
+      if (clientPhone && waBarber && waService) {
+        const link = getWhatsAppManualLink(appointmentToPersist, waBarber, waService);
         if (link) window.open(link, '_blank');
       }
     } catch (err) {
@@ -979,7 +1056,7 @@ const Appointments = () => {
       await updateAppointmentInStorage(newAppointment);
     } catch (err) {
       console.error('Erro ao atualizar status do agendamento:', err);
-      toast({ title: 'Erro', description: 'Não foi possível atualizar o agendamento. Tente novamente.', variant: 'destructive' });
+      toast({ title: 'Erro ao atualizar agendamento', description: describeDbError(err), variant: 'destructive' });
       return;
     }
 
