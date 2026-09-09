@@ -37,6 +37,19 @@ import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLo
 
 import { supabase } from '@/lib/supabase';
 
+/**
+ * Transforma o erro do Supabase/Postgres numa frase curta e legível para o toast.
+ * Serve para diagnosticar em produção (o barbeiro tira print da mensagem real)
+ * em vez de mostrar só um "tente novamente" genérico.
+ */
+const describeDbError = (err: unknown): string => {
+  const e = err as { message?: string; details?: string; hint?: string; code?: string } | null;
+  if (!e || typeof e !== 'object') return 'Erro desconhecido ao gravar no banco. Tente novamente.';
+  const parts = [e.message, e.details, e.hint].filter(Boolean);
+  const text = parts.join(' — ') || 'Falha ao gravar no banco.';
+  return e.code ? `${text} (código ${e.code})` : text;
+};
+
 const Appointments = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -369,7 +382,7 @@ const Appointments = () => {
       await storage.updateAppointment(newAppointment);
     } catch (err) {
       console.error('Erro ao salvar agendamento manual:', err);
-      toast({ title: 'Erro', description: 'Não foi possível salvar o agendamento. Tente novamente.', variant: 'destructive' });
+      toast({ title: 'Erro ao salvar agendamento', description: describeDbError(err), variant: 'destructive' });
       return;
     }
 
@@ -979,7 +992,7 @@ const Appointments = () => {
       await updateAppointmentInStorage(newAppointment);
     } catch (err) {
       console.error('Erro ao atualizar status do agendamento:', err);
-      toast({ title: 'Erro', description: 'Não foi possível atualizar o agendamento. Tente novamente.', variant: 'destructive' });
+      toast({ title: 'Erro ao atualizar agendamento', description: describeDbError(err), variant: 'destructive' });
       return;
     }
 
