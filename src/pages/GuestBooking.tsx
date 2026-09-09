@@ -21,7 +21,7 @@ import { CalendarIcon, Palmtree } from 'lucide-react';
 import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, isRecurringActive, isDateBlockedByBarberDates, parseLocalDate } from '@/lib/timeUtils';
 import { supabase } from '@/lib/supabase';
 const LogoLoginImg = "/img/logo-tanaka.png";
 
@@ -366,9 +366,8 @@ const GuestBooking = () => {
                         if (calendarDate < today) return true;
                         if (formData.barberId) {
                           const selectedBarber = barbers.find(b => b.id === formData.barberId);
-                          if (selectedBarber && selectedBarber.availableDates && selectedBarber.availableDates.length > 0) {
-                            const formattedCalendarDate = format(calendarDate, 'yyyy-MM-dd');
-                            return !selectedBarber.availableDates.includes(formattedCalendarDate);
+                          if (isDateBlockedByBarberDates(selectedBarber?.availableDates, calendarDate)) {
+                            return true;
                           }
                         }
                         return false;

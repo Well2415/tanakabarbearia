@@ -20,7 +20,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { User, Appointment, Service } from '@/types';
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive, isDateBlockedByBarberDates } from '@/lib/timeUtils';
 import { supabase } from '@/lib/supabase';
 
 const NewAppointment = () => {
@@ -325,9 +325,8 @@ const NewAppointment = () => {
                         if (calendarDate < today) return true;
                         if (formData.barberId) {
                           const selectedBarber = barbers.find(b => b.id === formData.barberId);
-                          if (selectedBarber && selectedBarber.availableDates && selectedBarber.availableDates.length > 0) {
-                            const formattedCalendarDate = format(calendarDate, 'yyyy-MM-dd');
-                            return !selectedBarber.availableDates.includes(formattedCalendarDate);
+                          if (isDateBlockedByBarberDates(selectedBarber?.availableDates, calendarDate)) {
+                            return true;
                           }
                         }
                         return false;

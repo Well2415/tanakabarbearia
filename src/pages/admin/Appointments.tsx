@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { storage } from '@/lib/storage';
 import { sendWhatsAppConfirmation, getWhatsAppManualLink, sendWhatsApp2HourReminder } from '@/lib/whatsapp';
-import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle, Ticket } from 'lucide-react';
+import { ArrowLeft, Check, X, Play, DollarSign, Clock, Plus, Trash2, Scissors, UserCog, MessageSquare, ChevronLeft, ChevronRight, MessageCircle, Ticket, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
@@ -33,7 +33,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive } from '@/lib/timeUtils';
+import { getAppointmentDuration, getBlockedTimes, canAccommodateService, parseLocalDate, isRecurringActive, isDateBlockedByBarberDates, countFutureBarberDates } from '@/lib/timeUtils';
 
 import { supabase } from '@/lib/supabase';
 
@@ -365,13 +365,25 @@ const Appointments = () => {
       createdAt: new Date().toISOString()
     };
 
-    await storage.updateAppointment(newAppointment);
+    try {
+      await storage.updateAppointment(newAppointment);
+    } catch (err) {
+      console.error('Erro ao salvar agendamento manual:', err);
+      toast({ title: 'Erro', description: 'Não foi possível salvar o agendamento. Tente novamente.', variant: 'destructive' });
+      return;
+    }
+
     setAppointments(prev => [...prev, newAppointment]);
 
-    // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário)
-    if (clientPhone && barber && service) {
-      const link = getWhatsAppManualLink(newAppointment, barber, service);
-      if (link) window.open(link, '_blank');
+    // Abre WhatsApp manualmente para economizar API (conforme pedido pelo usuário).
+    // Best-effort: nunca pode travar o fluxo nem impedir o toast de sucesso.
+    try {
+      if (clientPhone && barber && service) {
+        const link = getWhatsAppManualLink(newAppointment, barber, service);
+        if (link) window.open(link, '_blank');
+      }
+    } catch (err) {
+      console.error('WhatsApp (agendamento manual) falhou, seguindo mesmo assim:', err);
     }
 
     setShowBookingDialog(false);
@@ -944,18 +956,32 @@ const Appointments = () => {
 
     const newAppointment = { ...updatedAppointment, status };
 
-    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular
+    // Abrir o WhatsApp ANTES do await para evitar bloqueio de pop-up no celular.
+    // É best-effort: qualquer falha aqui (link, window.open, serviço ausente) NUNCA
+    // pode impedir a confirmação de acontecer. Antes, um erro nesta etapa abortava
+    // toda a função e o botão "Confirmar" parecia não fazer nada - o "Cancelar" não
+    // passa por aqui, por isso funcionava normalmente.
     if (status === 'confirmed') {
-      const barber = barbers.find(b => b.id === updatedAppointment.barberId);
-      const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
-      if (barber && service) {
-        // Envio MANUAL para economizar API nas confirmações por botão
-        const link = getWhatsAppManualLink(newAppointment, barber, service);
-        if (link) window.open(link, '_blank');
+      try {
+        const barber = barbers.find(b => b.id === updatedAppointment.barberId);
+        const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
+        if (barber && service) {
+          // Envio MANUAL para economizar API nas confirmações por botão
+          const link = getWhatsAppManualLink(newAppointment, barber, service);
+          if (link) window.open(link, '_blank');
+        }
+      } catch (err) {
+        console.error('WhatsApp (confirmação) falhou, seguindo mesmo assim:', err);
       }
     }
 
-    await updateAppointmentInStorage(newAppointment);
+    try {
+      await updateAppointmentInStorage(newAppointment);
+    } catch (err) {
+      console.error('Erro ao atualizar status do agendamento:', err);
+      toast({ title: 'Erro', description: 'Não foi possível atualizar o agendamento. Tente novamente.', variant: 'destructive' });
+      return;
+    }
 
     if (status === 'confirmed') {
       const service = services.find(s => s.id === (updatedAppointment.serviceIds?.[0] || updatedAppointment.serviceId));
@@ -1055,6 +1081,29 @@ const Appointments = () => {
             </Button>
           </div>
         </div>
+
+        {(() => {
+          const closedBarbers = barbers.filter(b => countFutureBarberDates(b.availableDates) === 0);
+          if (closedBarbers.length === 0) return null;
+          return (
+            <div className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold text-amber-700">
+                  {closedBarbers.length === 1
+                    ? 'Agenda fechada para novos agendamentos'
+                    : 'Agendas fechadas para novos agendamentos'}
+                </p>
+                <p className="text-amber-700/90">
+                  {closedBarbers.map(b => b.name).join(', ')}{' '}
+                  {closedBarbers.length === 1 ? 'está' : 'estão'} sem datas de trabalho futuras cadastradas.
+                  Enquanto não houver datas, nenhum horário aparece para o cliente nem na marcação manual.
+                  Cadastre as próximas datas em <span className="font-semibold">Barbeiros</span> (ou o barbeiro em “Gerenciar Disponibilidade”).
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         <Card className="p-6 mb-8 border-border">
           <h3 className="font-bold text-xl mb-4">Relatório de Pagamentos</h3>
@@ -1891,9 +1940,8 @@ const Appointments = () => {
 
                       if (newBookingData.barberId) {
                         const selectedBarber = barbers.find(b => b.id === newBookingData.barberId);
-                        if (selectedBarber && selectedBarber.availableDates && selectedBarber.availableDates.length > 0) {
-                          const formattedCalendarDate = format(calendarDate, 'yyyy-MM-dd');
-                          return !selectedBarber.availableDates.includes(formattedCalendarDate);
+                        if (isDateBlockedByBarberDates(selectedBarber?.availableDates, calendarDate)) {
+                          return true;
                         }
                       }
                       return false;

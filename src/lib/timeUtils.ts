@@ -145,6 +145,65 @@ export const getBlockedTimes = (startTime: string, durationMinutes: number): str
 };
 
 /**
+ * Regra das "datas de trabalho" do barbeiro (availableDates).
+ *
+ * O barbeiro precisa cadastrar explicitamente os dias em que vai atender. A
+ * agenda só oferece uma data quando ela está nessa lista:
+ *
+ *  - data cadastrada e que ainda não passou  -> LIBERADA
+ *  - data fora da lista                        -> BLOQUEADA
+ *  - lista vazia / não definida               -> TODAS bloqueadas (agenda fechada)
+ *  - datas da lista já no passado             -> contam como não cadastradas
+ *
+ * Ou seja: se o barbeiro não cadastrar nada, não aparece horário nenhum para
+ * agendar - nem para o cliente, nem na marcação manual. É intencional.
+ *
+ * IMPORTANTE (histórico): quando as datas cadastradas vão ficando no passado e
+ * ninguém renova a lista, a agenda fecha sozinha. Há um aviso no painel admin
+ * ("Datas de trabalho do barbeiro") justamente para isso não passar batido.
+ *
+ * @returns true se a data deve ficar BLOQUEADA.
+ */
+const toLocalYmd = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+export const isDateBlockedByBarberDates = (
+  availableDates: string[] | undefined | null,
+  calendarDate: Date,
+  today: Date = new Date()
+): boolean => {
+  const wanted = toLocalYmd(calendarDate);
+
+  // Passado nunca é agendável.
+  if (wanted < toLocalYmd(today)) return true;
+
+  const list = Array.isArray(availableDates)
+    ? availableDates.filter((d): d is string => typeof d === 'string')
+    : [];
+
+  // Sem datas cadastradas => nada liberado. Só libera o que o barbeiro cadastrou.
+  return !list.includes(wanted);
+};
+
+/**
+ * Retorna quantas datas de trabalho FUTURAS (hoje ou depois) o barbeiro ainda
+ * tem cadastradas. Zero = a agenda dele está fechada para novos agendamentos.
+ * Usado para exibir o aviso no painel.
+ */
+export const countFutureBarberDates = (
+  availableDates: string[] | undefined | null,
+  today: Date = new Date()
+): number => {
+  if (!Array.isArray(availableDates)) return 0;
+  const todayStr = toLocalYmd(today);
+  return availableDates.filter(d => typeof d === 'string' && d >= todayStr).length;
+};
+
+/**
  * Verifica se um horário específico consegue acomodar o tempo do serviço sem colidir com bloqueios.
  */
 export const canAccommodateService = (
