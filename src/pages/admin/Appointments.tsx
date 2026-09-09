@@ -209,12 +209,15 @@ const Appointments = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  // Rede de segurança adicional: revalida a cada 5 minutos, independente de
-  // qualquer evento (o limitador em storage.refreshAppointments evita excesso).
+  // Rede de segurança: revalida periodicamente, mas SÓ com a aba visível (não
+  // adianta consumir banco com a tela em segundo plano). O Realtime é o canal
+  // principal; isto é só backup para quando ele cai calado. Intervalo de 20 min.
   useEffect(() => {
     const interval = setInterval(() => {
-      syncAppointmentsFromServer();
-    }, 5 * 60 * 1000);
+      if (document.visibilityState === 'visible') {
+        syncAppointmentsFromServer();
+      }
+    }, 20 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
   const [manualFilteredTimes, setManualFilteredTimes] = useState<string[]>([]);
@@ -643,6 +646,9 @@ const Appointments = () => {
       navigate('/dashboard');
     } else {
       setAppointments(storage.getAppointments());
+      // Esta tela tem histórico e relatório de pagamentos por período -> precisa
+      // do histórico completo, não só da janela recente.
+      storage.ensureFullHistory().then(all => setAppointments([...all]));
     }
   }, []);
 
