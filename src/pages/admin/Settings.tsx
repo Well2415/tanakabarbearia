@@ -59,7 +59,7 @@ const Settings = () => {
                 shop_email: shopEmail,
                 shop_opening_hours: shopOpeningHours,
                 shop_maps_link: shopMapsLink,
-                loyalty_target: parseInt(loyaltyTarget) || 10,
+                loyalty_target: Math.max(1, parseInt(loyaltyTarget) || 10),
                 whatsapp_api_url: whatsappApiUrl,
                 whatsapp_api_token: whatsappApiToken,
                 whatsapp_instance_id: whatsappInstanceId,

@@ -793,7 +793,11 @@ export const storage = {
     Object.assign(cache.settings, settings);
   },
 
-  getLoyaltyTarget: (): number => storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT),
+  // O valor pode estar salvo como texto ("15") no banco: sempre devolve número válido (>= 1).
+  getLoyaltyTarget: (): number => {
+    const n = Number(storage.getSetting('loyalty_target', LOYALTY_TARGET_DEFAULT));
+    return Number.isFinite(n) && n >= 1 ? Math.floor(n) : LOYALTY_TARGET_DEFAULT;
+  },
   saveLoyaltyTarget: async (target: number) => await storage.saveSetting('loyalty_target', target),
 
   getHolidayMode: (): boolean => storage.getSetting('holiday_mode', false),

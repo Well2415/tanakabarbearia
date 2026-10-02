@@ -66,7 +66,8 @@ export const ClientView = ({ user }: ClientViewProps) => {
   const getBarberName = (id: string) => barbers.find(b => b.id === id)?.name || 'Barbeiro desconhecido';
 
   const loyaltyPoints = user.loyaltyPoints || 0;
-  const pointsToFreeHaircut = 10; // Example value
+  // Meta definida pelo barbeiro/admin (Configurações ou Clientes), não um valor fixo.
+  const pointsToFreeHaircut = storage.getLoyaltyTarget();
 
   const statusColors = {
     pending: 'bg-yellow-500/10 text-yellow-600',
@@ -148,7 +149,7 @@ export const ClientView = ({ user }: ClientViewProps) => {
               <p className="text-6xl font-bold text-primary">{loyaltyPoints}</p>
               <p className="text-muted-foreground mb-4">pontos</p>
               <div className="w-full bg-border rounded-full h-2.5 mb-2">
-                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(loyaltyPoints / pointsToFreeHaircut) * 100}%` }}></div>
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${Math.min(100, (loyaltyPoints / pointsToFreeHaircut) * 100)}%` }}></div>
               </div>
               <p className="text-sm text-muted-foreground">
                 Faltam {Math.max(0, pointsToFreeHaircut - loyaltyPoints)} pontos para seu próximo corte grátis!
