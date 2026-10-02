@@ -98,5 +98,28 @@ export const notificationManager = {
     } catch (error: any) {
       return null;
     }
+  },
+
+  /**
+   * Avisa o barbeiro (e os admins) por push que uma tentativa de cadastro/agendamento de
+   * cliente FALHOU, com o motivo técnico. O cliente vê só uma mensagem simples; quem
+   * diagnostica é a barbearia. Usa a lista de usuários em memória (sem ir ao banco, que
+   * pode ser justamente o que está falhando) e nunca lança erro.
+   */
+  async notifyStaffOfFailure(what: string, details: string, error: any, barberId?: string) {
+    try {
+      const reason = [error?.code, error?.message].filter(Boolean).join(' - ') || 'erro desconhecido';
+      const title = '⚠️ Falha em ' + what;
+      const body = `${details}. Motivo: ${reason}`.slice(0, 300);
+
+      const users = storage.getUsers();
+      const targets = new Set<string>();
+      users.forEach(u => {
+        if (u.role === 'admin' || (barberId && u.barberId === barberId)) targets.add(u.id);
+      });
+      await Promise.all(Array.from(targets).map(id => this.sendPushNotification(id, title, body, '/admin/appointments')));
+    } catch (e) {
+      console.error('Erro ao avisar a equipe sobre a falha:', e);
+    }
   }
 };

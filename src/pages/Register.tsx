@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
+import { notificationManager } from '@/lib/notifications';
 import { useToast } from '@/hooks/use-toast';
 import { Palmtree } from 'lucide-react';
 
@@ -72,6 +73,12 @@ const Register = () => {
       await storage.createUser(newUser);
     } catch (error: any) {
       const duplicate = error?.code === '23505';
+      // Motivo técnico vai por push para o barbeiro/admins; o cliente vê só o aviso simples.
+      notificationManager.notifyStaffOfFailure(
+        'cadastro de cliente',
+        `${newUser.fullName} (${newUser.phone}) tentou se cadastrar e NÃO foi salvo`,
+        error
+      );
       toast({
         title: 'Não foi possível concluir o cadastro',
         description: duplicate

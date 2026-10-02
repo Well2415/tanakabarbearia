@@ -194,9 +194,16 @@ const GuestBooking = () => {
       navigate('/');
     } catch (error: any) {
       console.error('Erro ao salvar:', error);
+      // O motivo técnico vai por push para o barbeiro/admins; o cliente vê só o aviso simples.
+      notificationManager.notifyStaffOfFailure(
+        'agendamento (convidado)',
+        `${finalForm.name || 'Convidado'} tentou agendar ${format(finalDate, 'yyyy-MM-dd')} às ${finalForm.time} e NÃO foi salvo`,
+        error,
+        finalForm.barberId
+      );
       toast({
         title: 'Agendamento NÃO foi salvo',
-        description: `Não conseguimos registrar seu horário${error?.message ? ` (${error.message})` : ''}. Verifique sua conexão e tente novamente; se persistir, avise a barbearia.`,
+        description: 'Não conseguimos registrar seu horário. Verifique sua conexão e tente novamente; a barbearia já foi avisada.',
         variant: 'destructive',
       });
     } finally {
