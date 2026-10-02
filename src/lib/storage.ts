@@ -164,7 +164,9 @@ const fetchAllAppointments = async (): Promise<Appointment[]> => {
 // futuros e os que ainda estão em aberto. O histórico antigo completo é buscado
 // sob demanda (ensureFullHistory) apenas nas telas que precisam dele
 // (Financeiro, Sorteios, tela de Agendamentos do admin com relatório/histórico).
-const APPOINTMENTS_WINDOW_DAYS = 180;
+// 90 dias: a tabela cresce ~250 linhas/mes e cada carga/gravacao pesa com ela. Agendamentos mais
+// antigos (inclusive os que ficaram "confirmado" sem finalizar) so entram via ensureFullHistory().
+const APPOINTMENTS_WINDOW_DAYS = 90;
 
 const appointmentsWindowCutoff = (): string => {
   const d = new Date();
@@ -173,13 +175,12 @@ const appointmentsWindowCutoff = (): string => {
 };
 
 const isHotAppointment = (a: { date?: string; status?: string }, cutoff: string): boolean => {
-  if (a?.status === 'pending' || a?.status === 'confirmed' || a?.status === 'in_progress') return true;
   return typeof a?.date === 'string' && a.date >= cutoff;
 };
 
 /**
- * Busca só os agendamentos "quentes": últimos APPOINTMENTS_WINDOW_DAYS dias,
- * futuros, ou ainda em aberto (pending/confirmed/in_progress em qualquer data).
+ * Busca só os agendamentos "quentes": dos últimos APPOINTMENTS_WINDOW_DAYS dias em diante
+ * (inclui todos os futuros).
  */
 const fetchRecentAppointments = async (): Promise<Appointment[]> => {
   const cutoff = appointmentsWindowCutoff();
@@ -190,7 +191,7 @@ const fetchRecentAppointments = async (): Promise<Appointment[]> => {
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
-      .or(`date.gte.${cutoff},status.in.(pending,confirmed,in_progress)`)
+      .gte('date', cutoff)
       .order('id', { ascending: true })
       .range(from, from + APPOINTMENTS_PAGE_SIZE - 1);
 
@@ -223,6 +224,38 @@ const mergeRecentIntoCache = (recent: Appointment[]) => {
   // a janela quente vem 100% do servidor
   recent.forEach(a => byId.set(a.id, a));
   cache.appointments = Array.from(byId.values());
+};
+
+// --- Gravação resiliente -----------------------------------------------------------
+// Erros "de passagem" (rede móvel, timeout do banco) merecem nova tentativa; erros de
+// regra do banco (chave estrangeira, UNIQUE, etc.) não: repetir não adianta.
+const BATCH_SIZE = 100;
+
+const isTransientError = (error: any): boolean => {
+  if (!error) return false;
+  const code = String(error.code || '');
+  if (code.startsWith('23') || code.startsWith('22') || code.startsWith('42') || code.startsWith('PGRST')) return false;
+  return true; // sem código (falha de fetch/rede), 57014 (timeout), 5xx...
+};
+
+/** Executa a gravação e repete até 2 vezes (com pausa curta) só se o erro for transitório. */
+const withRetry = async <T extends { error: any }>(fn: () => PromiseLike<T>): Promise<T> => {
+  let result = await fn();
+  for (let attempt = 1; attempt <= 2 && result.error && isTransientError(result.error); attempt++) {
+    console.warn(`⚠️ [Storage] Falha transitória na gravação, tentativa ${attempt + 1}/3...`, result.error);
+    await new Promise(r => setTimeout(r, 700 * attempt));
+    result = await fn();
+  }
+  return result;
+};
+
+/** Upsert em blocos pequenos (evita requisições gigantes que estouram timeout/rede). */
+const upsertInBatches = async (table: string, rows: any[]) => {
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const chunk = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await withRetry(() => supabase.from(table).upsert(chunk));
+    if (error) throw error;
+  }
 };
 
 // Variável de controle removida do escopo global para o objeto storage
@@ -581,7 +614,7 @@ export const storage = {
     // 2. Persistir no Supabase
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isRecurring, ...dbAppointment } = appointment as any;
-    const { error } = await supabase.from('appointments').upsert(dbAppointment);
+    const { error } = await withRetry(() => supabase.from('appointments').upsert(dbAppointment));
     if (error) {
       console.error('❌ [Storage] Erro ao atualizar agendamento granular:', error);
       throw error;
@@ -600,18 +633,35 @@ export const storage = {
    * via deleteAppointment(id).
    */
   async saveAppointments(appointments: Appointment[]) {
+    // Só envia ao banco o que MUDOU em relação ao cache (novos ou alterados). Antes, toda
+    // chamada reenviava a lista inteira (1500+ linhas), o que estourava timeout/rede e ainda
+    // sobrescrevia dados atuais com cópias velhas do aparelho.
+    const before = new Map<string, string>(
+      (Array.isArray(cache.appointments) ? cache.appointments : []).map((a: Appointment) => [a.id, JSON.stringify(a)])
+    );
+    const changed = appointments.filter(a => before.get(a.id) !== JSON.stringify(a));
+
     cache.appointments = appointments;
     saveCacheToLocal();
 
-    // Limpar flags de UI antes do upsert
-    const dbAppointments = appointments.map(appt => {
+    // Limpar flags de UI antes do upsert; campo removido (undefined) vira null para limpar no banco
+    const dbAppointments = changed.map(appt => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { isRecurring, ...dbAppt } = appt as any;
+      Object.keys(dbAppt).forEach(k => { if (dbAppt[k] === undefined) dbAppt[k] = null; });
       return dbAppt;
     });
+    // Campos que existiam no cache e sumiram do objeto novo também precisam virar null
+    dbAppointments.forEach(dbAppt => {
+      const old = before.get(dbAppt.id);
+      if (!old) return;
+      Object.keys(JSON.parse(old)).forEach(k => { if (!(k in dbAppt)) dbAppt[k] = null; });
+    });
 
-    const { error } = await supabase.from('appointments').upsert(dbAppointments);
-    if (error) {
+    if (dbAppointments.length === 0) return;
+    try {
+      await upsertInBatches('appointments', dbAppointments);
+    } catch (error) {
       console.error('❌ [Storage] Erro ao salvar agendamentos:', error);
       throw error;
     }
@@ -626,16 +676,26 @@ export const storage = {
    * agendamento ser perdido em silêncio, enquanto o cliente via "sucesso" e o barbeiro
    * recebia o push. Lança erro se o banco recusar, para a tela mostrar a falha real.
    */
-  async createAppointment(appointment: Appointment) {
+  async createAppointment(appointment: Appointment): Promise<Appointment> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isRecurring, ...dbAppointment } = appointment as any;
-    const { error } = await supabase.from('appointments').upsert(dbAppointment);
+
+    // INSERT (e não upsert): se dois clientes gerarem o mesmo id no mesmo milissegundo, o banco
+    // recusa o segundo em vez de SOBRESCREVER o agendamento do primeiro. Nesse caso, gera outro id.
+    let row = dbAppointment;
+    let { error } = await withRetry(() => supabase.from('appointments').insert(row));
+    if (error && error.code === '23505' && /pkey/i.test(String(error.message || ''))) {
+      row = { ...dbAppointment, id: `${Date.now()}${Math.floor(Math.random() * 90 + 10)}` };
+      ({ error } = await withRetry(() => supabase.from('appointments').insert(row)));
+    }
     if (error) {
       console.error('❌ [Storage] Erro ao criar agendamento:', error);
       throw error;
     }
-    cache.appointments = [...cache.appointments.filter(a => a.id !== appointment.id), appointment];
+    const saved = { ...appointment, id: row.id } as Appointment;
+    cache.appointments = [...cache.appointments.filter((a: Appointment) => a.id !== saved.id), saved];
     saveCacheToLocal();
+    return saved;
   },
 
   async deleteAppointment(id: string) {
@@ -668,7 +728,7 @@ export const storage = {
     
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { pushSubscription, ...dbUser } = user; // Remove pushSubscription para evitar sobrescrever com null se não estiver no form
-    const { error } = await supabase.from('users').upsert(dbUser);
+    const { error } = await withRetry(() => supabase.from('users').upsert(dbUser));
     if (error) {
       console.error('❌ [Storage] Erro ao atualizar usuário:', error);
       throw error;
@@ -683,7 +743,7 @@ export const storage = {
   async createUser(user: User) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { pushSubscription, ...dbUser } = user;
-    const { error } = await supabase.from('users').insert(dbUser);
+    const { error } = await withRetry(() => supabase.from('users').insert(dbUser));
     if (error) {
       console.error('❌ [Storage] Erro ao cadastrar usuário:', error);
       throw error;
@@ -743,10 +803,21 @@ export const storage = {
   },
 
   async saveUsers(users: User[]) {
+    // Só envia usuários NOVOS ou ALTERADOS (não a lista inteira do cache do aparelho, que pode
+    // estar defasada e sobrescrever pontos/cadastros atuais de outros clientes). O pushSubscription
+    // fica de fora para não ser regravado com valor antigo.
+    const before = new Map<string, string>((cache.users as User[]).map(u => [u.id, JSON.stringify(u)]));
+    const changed = users.filter(u => before.get(u.id) !== JSON.stringify(u));
+
     cache.users = users;
     saveCacheToLocal();
-    const { error } = await supabase.from('users').upsert(users);
-    if (error) {
+
+    if (changed.length === 0) return;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const dbUsers = changed.map(({ pushSubscription, ...u }) => u);
+    try {
+      await upsertInBatches('users', dbUsers);
+    } catch (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
       throw error;
     }
