@@ -98,9 +98,15 @@ const Clients = () => {
 
   // New function to handle saving loyalty target
   const handleSaveLoyaltyTarget = async () => {
-    await storage.saveLoyaltyTarget(newLoyaltyTarget);
-    setLoyaltyTarget(newLoyaltyTarget);
-    toast({ title: 'Meta de Fidelidade Atualizada', description: `A nova meta de pontos de fidelidade é ${newLoyaltyTarget}.` });
+    const target = Math.floor(Number(newLoyaltyTarget));
+    if (!Number.isFinite(target) || target < 1) {
+      toast({ title: 'Meta inválida', description: 'Informe um número de cortes maior que zero.', variant: 'destructive' });
+      return;
+    }
+    await storage.saveLoyaltyTarget(target);
+    setLoyaltyTarget(target);
+    setNewLoyaltyTarget(target);
+    toast({ title: 'Meta de Fidelidade Atualizada', description: `A nova meta de pontos de fidelidade é ${target}.` });
   };
 
   const getClientAppointmentsCount = (userId: string) => {
