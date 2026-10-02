@@ -14,6 +14,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isHolidayMode = storage.getHolidayMode();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -25,15 +26,33 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const users = storage.getUsers();
-    const userExists = users.find(u => u.username.toLowerCase() === formData.username.toLowerCase());
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    if (userExists) {
+    // Lista fresca do banco: o cache do aparelho pode estar defasado e não conhecer
+    // um usuário/e-mail que já existe (UNIQUE no banco recusaria o cadastro).
+    await storage.refreshUsers();
+    const users = storage.getUsers();
+    const typedUsername = formData.username.trim().toLowerCase();
+    const typedEmail = formData.email?.trim().toLowerCase() || '';
+
+    if (users.some(u => (u.username || '').trim().toLowerCase() === typedUsername)) {
       toast({
         title: 'Erro de Cadastro',
         description: 'Este nome de usuário já está em uso. Por favor, escolha outro.',
         variant: 'destructive',
       });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (typedEmail && users.some(u => (u.email || '').trim().toLowerCase() === typedEmail)) {
+      toast({
+        title: 'Erro de Cadastro',
+        description: 'Este e-mail já está cadastrado. Faça login ou use outro e-mail.',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
       return;
     }
 
@@ -49,7 +68,21 @@ const Register = () => {
       role: 'client', // Default role for new registrations
     };
 
-    await storage.updateUser(newUser);
+    try {
+      await storage.createUser(newUser);
+    } catch (error: any) {
+      const duplicate = error?.code === '23505';
+      toast({
+        title: 'Não foi possível concluir o cadastro',
+        description: duplicate
+          ? 'Já existe uma conta com este usuário ou e-mail. Faça login ou escolha outros dados.'
+          : 'Houve um problema ao salvar seus dados. Verifique sua conexão e tente novamente.',
+        variant: 'destructive',
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     storage.loginUser(newUser.id);
 
     toast({
@@ -148,7 +181,7 @@ const Register = () => {
                   <p className="text-xs text-muted-foreground mt-2">Usado para recuperação de senha.</p>
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
+                <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                   Cadastrar e Agendar
                 </Button>
               </form>

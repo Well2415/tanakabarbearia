@@ -611,7 +611,31 @@ export const storage = {
     });
 
     const { error } = await supabase.from('appointments').upsert(dbAppointments);
-    if (error) console.error('Error saving appointments:', error);
+    if (error) {
+      console.error('❌ [Storage] Erro ao salvar agendamentos:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cria UM agendamento novo (caminho dos clientes/convidados).
+   *
+   * Grava só essa linha e SÓ atualiza o cache depois que o banco confirmou. Antes, o app
+   * fazia upsert de todos os agendamentos do cache do celular junto com o novo: bastava
+   * uma linha velha dar problema (ou a requisição grande falhar na rede móvel) para o novo
+   * agendamento ser perdido em silêncio, enquanto o cliente via "sucesso" e o barbeiro
+   * recebia o push. Lança erro se o banco recusar, para a tela mostrar a falha real.
+   */
+  async createAppointment(appointment: Appointment) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { isRecurring, ...dbAppointment } = appointment as any;
+    const { error } = await supabase.from('appointments').upsert(dbAppointment);
+    if (error) {
+      console.error('❌ [Storage] Erro ao criar agendamento:', error);
+      throw error;
+    }
+    cache.appointments = [...cache.appointments.filter(a => a.id !== appointment.id), appointment];
+    saveCacheToLocal();
   },
 
   async deleteAppointment(id: string) {
@@ -645,7 +669,27 @@ export const storage = {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { pushSubscription, ...dbUser } = user; // Remove pushSubscription para evitar sobrescrever com null se não estiver no form
     const { error } = await supabase.from('users').upsert(dbUser);
-    if (error) console.error('❌ [Storage] Erro ao atualizar usuário:', error);
+    if (error) {
+      console.error('❌ [Storage] Erro ao atualizar usuário:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cadastra um usuário NOVO: grava no banco primeiro e só então coloca no cache.
+   * Lança erro (com o erro real do Postgres) se o banco recusar - ex.: e-mail ou usuário
+   * já existentes (UNIQUE). Assim o app nunca "loga" alguém que não existe no banco.
+   */
+  async createUser(user: User) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { pushSubscription, ...dbUser } = user;
+    const { error } = await supabase.from('users').insert(dbUser);
+    if (error) {
+      console.error('❌ [Storage] Erro ao cadastrar usuário:', error);
+      throw error;
+    }
+    cache.users = [...cache.users.filter(u => u.id !== user.id), user];
+    saveCacheToLocal();
   },
 
   /**
@@ -704,6 +748,7 @@ export const storage = {
     const { error } = await supabase.from('users').upsert(users);
     if (error) {
       console.error('❌ [Storage] Erro ao salvar usuários no Supabase:', error);
+      throw error;
     }
   },
 

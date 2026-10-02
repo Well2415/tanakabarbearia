@@ -18,7 +18,7 @@ export const CreateClientDialog = () => {
     email: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const users = storage.getUsers();
@@ -47,8 +47,19 @@ export const CreateClientDialog = () => {
       stylePreferences: [],
     };
 
-    storage.saveUsers([...users, newUser]);
-    
+    try {
+      await storage.createUser(newUser);
+    } catch (error: any) {
+      toast({
+        title: 'Cliente NÃO foi cadastrado',
+        description: error?.code === '23505'
+          ? 'Já existe uma conta com este usuário ou e-mail.'
+          : 'Houve um problema ao salvar. Verifique a conexão e tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     toast({
       title: 'Cliente Cadastrado',
       description: `${formData.fullName} foi cadastrado com sucesso!`,
