@@ -28,15 +28,23 @@ export const ClientView = ({ user }: ClientViewProps) => {
     setBarbers(storage.getBarbers());
   }, [user.id]);
 
-  const handleCancelAppointment = (appId: string) => {
+  const handleCancelAppointment = async (appId: string) => {
     if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      const allAppts = storage.getAppointments();
-      const updated = allAppts.map(a => 
-        a.id === appId ? { ...a, status: 'cancelled' as const } : a
-      );
-      storage.saveAppointments(updated);
-      setAppointments(updated.filter(a => a.userId === user.id));
-      toast({ title: 'Agendamento Cancelado', description: 'Seu horário foi liberado com sucesso.' });
+      const target = storage.getAppointments().find(a => a.id === appId);
+      if (!target) return;
+      try {
+        // Atualiza só este agendamento (não regrava a lista inteira do cache do aparelho)
+        await storage.updateAppointment({ ...target, status: 'cancelled' as const });
+        setAppointments(storage.getAppointments().filter(a => a.userId === user.id));
+        toast({ title: 'Agendamento Cancelado', description: 'Seu horário foi liberado com sucesso.' });
+      } catch (error) {
+        console.error('Erro ao cancelar agendamento:', error);
+        toast({
+          title: 'Não foi possível cancelar',
+          description: 'Verifique sua conexão e tente novamente.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

@@ -374,7 +374,7 @@ const MyAppointments = () => {
       // Salva no banco (spread para remover flags extras se houver)
       const { ...dbAppointment } = finalAppointment;
       
-      await storage.saveAppointments([...storage.getAppointments(), dbAppointment as Appointment]);
+      await storage.createAppointment(dbAppointment as Appointment);
     }
 
     const updatedAppointment = {

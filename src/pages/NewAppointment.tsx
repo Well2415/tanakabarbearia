@@ -60,7 +60,10 @@ const NewAppointment = () => {
     const finalForm = restoredForm || formData;
     const finalDate = restoredDate || date;
 
-    if (!finalDate || !user) return;
+    if (!finalDate || !user) {
+      setIsProcessing(false);
+      return;
+    }
 
     try {
       const totalServicePrice = finalForm.serviceIds.reduce((sum, id) => {
@@ -83,7 +86,9 @@ const NewAppointment = () => {
         createdAt: new Date().toISOString()
       };
 
-      await storage.saveAppointments([...storage.getAppointments(), newAppointment]);
+      // Grava só este agendamento e lança erro se o banco recusar (nada de "sucesso" falso,
+      // nem push para o barbeiro de um horário que não foi salvo).
+      await storage.createAppointment(newAppointment);
 
       if (isPaid) {
         const barber = barbers.find(b => b.id === finalForm.barberId);
@@ -99,29 +104,38 @@ const NewAppointment = () => {
       });
 
 
-      // Notificar Barbeiro e Administradores (Push)
-      await storage.refreshUsers();
-      const allUsers = storage.getUsers();
-      const primaryService = services.find(s => s.id === newAppointment.serviceId);
-      const notificationTitle = 'Novo Agendamento! 💈';
-      const notificationBody = `Novo agendamento de ${user.fullName} - ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
+      // Notificar Barbeiro e Administradores (Push). O agendamento já está salvo: uma falha
+      // aqui não pode ser exibida ao cliente como falha do agendamento.
+      try {
+        await storage.refreshUsers();
+        const allUsers = storage.getUsers();
+        const primaryService = services.find(s => s.id === newAppointment.serviceId);
+        const notificationTitle = 'Novo Agendamento! 💈';
+        const notificationBody = `Novo agendamento de ${user.fullName} - ${primaryService?.name} para ${newAppointment.date} às ${newAppointment.time}`;
 
-      // 1. Notificar Barbeiro específico da reserva
-      const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
-      if (barberUser) {
-        await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+        // 1. Notificar Barbeiro específico da reserva
+        const barberUser = allUsers.find(u => u.barberId === newAppointment.barberId);
+        if (barberUser) {
+          await notificationManager.sendPushNotification(barberUser.id, notificationTitle, notificationBody, '/admin/appointments');
+        }
+
+        // 2. Notificar todos os Administradores para que possam confirmar
+        const admins = allUsers.filter(u => u.role === 'admin');
+        admins.forEach(admin => {
+          notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
+        });
+      } catch (pushError) {
+        console.error('Erro ao enviar notificação (agendamento já salvo):', pushError);
       }
 
-      // 2. Notificar todos os Administradores para que possam confirmar
-      const admins = allUsers.filter(u => u.role === 'admin');
-      admins.forEach(admin => {
-        notificationManager.sendPushNotification(admin.id, notificationTitle, notificationBody, '/admin/appointments');
-      });
-
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar:', error);
-      toast({ title: 'Erro', description: 'Erro ao registrar agendamento.', variant: 'destructive' });
+      toast({
+        title: 'Agendamento NÃO foi salvo',
+        description: `Não conseguimos registrar seu horário${error?.message ? ` (${error.message})` : ''}. Verifique sua conexão e tente novamente; se persistir, avise a barbearia.`,
+        variant: 'destructive',
+      });
     } finally {
       setIsProcessing(false);
     }
